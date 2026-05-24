@@ -6,6 +6,8 @@ import 'package:foam_mobile/core/Screens/profile/profile_screen.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:provider/provider.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:ultimate_bottom_navbar/ultimate_bottom_navbar.dart';
 
 class MainScreen extends StatefulWidget {
@@ -62,11 +64,17 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
-    var authProvider = Provider.of<AuthProvider>(context, listen: false);
     super.initState();
+    var authProvider = Provider.of<AuthProvider>(context, listen: false);
+    var basketProvider = Provider.of<BasketProvider>(context, listen: false);
+
     setState(() {
       firstName = authProvider.firstName;
     });
+
+    if (HiveClass.tokenExist()) {
+      basketProvider.fetchBasket(scaffoldKey);
+    }
   }
 
   void home() {

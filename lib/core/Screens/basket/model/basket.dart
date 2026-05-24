@@ -28,19 +28,22 @@ class BasketList {
     required this.quantity,
     required this.name,
     required this.price,
+    required this.imageUrl,
   });
 
   int categoryId;
   int quantity;
   String name;
   int price;
+  String? imageUrl;
 
   factory BasketList.fromJson(Map<String, dynamic> json) {
     return BasketList(
         categoryId: json["categoryId"],
         quantity: json["quantity"],
         name: json["category"]["name"],
-        price: json["category"]["price"]);
+        price: json["category"]["price"],
+        imageUrl: json["category"]["imageUrl"]);
   }
 
   Map<String, dynamic> toJson() => {
@@ -48,5 +51,6 @@ class BasketList {
         "quantity": quantity,
         "name": name,
         "price": price,
+        "imageUrl": imageUrl,
       };
 }

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -9,7 +8,6 @@ import 'package:foam_mobile/core/Screens/drawer.dart';
 import 'package:foam_mobile/core/Screens/home/notifications/notification_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/Screens/profile/profile_image/controller/profile_pic_auth.dart';
-import 'package:foam_mobile/feature/authentication/controller/location/select_location_controlller.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/billing_widget.dart';
@@ -45,6 +43,30 @@ class _HomePageState extends State<HomePage> {
   Timer? timer;
   final discountController = PageController(initialPage: 0);
 
+  final List<Map<String, String>> discountDeals = [
+    {
+      'title': 'Discount Deals',
+      'promoPrefix': 'up to',
+      'promoValue': '30% off',
+      'description': 'all laundry services available!',
+      'imageAsset': 'assets/images/foam_discount.png',
+    },
+    {
+      'title': 'Schedule Pickup',
+      'promoPrefix': 'for as low as',
+      'promoValue': '₦800',
+      'description': 'for an item!',
+      'imageAsset': 'assets/images/foam_discount2.png',
+    },
+    {
+      'title': 'Referral Bonus',
+      'promoPrefix': 'up to',
+      'promoValue': '10% off',
+      'description': 'on all referrals!',
+      'imageAsset': 'assets/images/foam_discount3.png',
+    },
+  ];
+
   @override
   void initState() {
     var authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -60,7 +82,7 @@ class _HomePageState extends State<HomePage> {
 
     //discount tile controller
     timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
-      if (_currentDiscountController < 2) {
+      if (_currentDiscountController < discountDeals.length - 1) {
         _currentDiscountController++;
       } else {
         _currentDiscountController = 0;
@@ -208,7 +230,7 @@ class _HomePageState extends State<HomePage> {
                             textColor: Colors.white,
                             onPressed: () => Navigator.of(context)
                                 .pushNamed(BasketScreen.id),
-                            fontSize: MediaQuery.sizeOf(context).height / 53,
+                            fontSize: MediaQuery.sizeOf(context).height / 60,
                             color: AppColors.secondaryBackgroundColor,
                           ),
                         ),
@@ -228,28 +250,22 @@ class _HomePageState extends State<HomePage> {
                     child: PageView(
                       scrollDirection: Axis.horizontal,
                       controller: discountController,
-                      children: [
-                        DiscountSlider(
+                      children: discountDeals.map<Widget>((deal) {
+                        return DiscountSlider(
                           onPressed: () {},
                           isLoading: false,
-                          imageAsset: 'assets/images/foam_discount.png',
-                        ),
-                        DiscountSlider(
-                          onPressed: () {},
-                          isLoading: false,
-                          imageAsset: 'assets/images/foam_discount2.png',
-                        ),
-                        DiscountSlider(
-                          onPressed: () {},
-                          isLoading: false,
-                          imageAsset: 'assets/images/foam_discount3.png',
-                        ),
-                      ],
+                          imageAsset: deal['imageAsset']!,
+                          title: deal['title']!,
+                          promoPrefix: deal['promoPrefix']!,
+                          promoValue: deal['promoValue']!,
+                          description: deal['description']!,
+                        );
+                      }).toList(),
                     ),
                   ),
                   SmoothPageIndicator(
                     controller: discountController,
-                    count: 3,
+                    count: discountDeals.length,
                     effect: Constants.slideEffect2,
                   ),
 
@@ -444,7 +460,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   SizedBox(
-                    height: 350,
+                    height: 600,
                     child: ListView(
                       scrollDirection: Axis.horizontal,
                       children: [
@@ -453,16 +469,26 @@ class _HomePageState extends State<HomePage> {
                           child: Row(
                             children: [
                               SizedBox(
-                                width: MediaQuery.sizeOf(context).width / 1.4,
+                                width: MediaQuery.sizeOf(context).width / 1.3,
                                 child: Column(
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor:
-                                            AppColors.primaryBackgroundColor,
+                                        backgroundColor: AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.navyBlueAccent,
-                                        title: 'Most Popular Plan',
-                                        price: '14,700',
+                                        title: 'Basic Plan (Heavy Users)',
+                                        subtitle: 'Perfect for users with regular laundry needs twice monthly.',
+                                        price: '54,000',
+                                        services: const [
+                                          '35 items for laundry, 2X monthly',
+                                          'Standard wash, iron & fold',
+                                          '3–4 days turnaround',
+                                          'One free pickup & delivery per month',
+                                        ],
+                                        additionalBenefits: const [
+                                          '10% discount on extra laundry beyond the limit',
+                                        ],
+                                        isComingSoon: true,
                                       ),
                                     ),
                                   ],
@@ -470,16 +496,25 @@ class _HomePageState extends State<HomePage> {
                               ),
                               AppSpaces.horizontalSpace20,
                               SizedBox(
-                                width: MediaQuery.sizeOf(context).width / 1.4,
+                                width: MediaQuery.sizeOf(context).width / 1.3,
                                 child: Column(
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor:
-                                            AppColors.primaryBackgroundColor,
+                                        backgroundColor: AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.greenTaleColor,
-                                        title: 'Monthly Plan',
-                                        price: '14,700',
+                                        title: 'Basic Plan B (Light Users)',
+                                        subtitle: 'Ideal for lighter laundry needs with more item flexibility.',
+                                        price: '44,000',
+                                        services: const [
+                                          '50 items for laundry monthly',
+                                          'Standard wash, iron & fold',
+                                          '3–4 days turnaround',
+                                        ],
+                                        additionalBenefits: const [
+                                          '10% discount on extra laundry beyond the limit',
+                                        ],
+                                        isComingSoon: true,
                                       ),
                                     ),
                                   ],
@@ -487,16 +522,55 @@ class _HomePageState extends State<HomePage> {
                               ),
                               AppSpaces.horizontalSpace20,
                               SizedBox(
-                                width: MediaQuery.sizeOf(context).width / 1.4,
+                                width: MediaQuery.sizeOf(context).width / 1.3,
                                 child: Column(
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor:
-                                            AppColors.primaryBackgroundColor,
+                                        backgroundColor: AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.oceanBlueColor,
-                                        title: 'Annual Plan',
-                                        price: '54,700',
+                                        title: 'Standard Plan (Regular Users)',
+                                        subtitle: 'Balanced plan with added value for regular laundry needs.',
+                                        price: '74,000',
+                                        services: const [
+                                          '100 items for laundry monthly',
+                                          'Wash & fold + ironing',
+                                          '3–4 days turnaround',
+                                          'Two free pickups & deliveries per month',
+                                        ],
+                                        additionalBenefits: const [
+                                          'Free fabric softener or detergent upgrade',
+                                          'Priority customer support',
+                                          '10–15% discount on dry cleaning services',
+                                        ],
+                                        isComingSoon: true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              AppSpaces.horizontalSpace20,
+                              SizedBox(
+                                width: MediaQuery.sizeOf(context).width / 1.3,
+                                child: Column(
+                                  children: [
+                                    Expanded(
+                                      child: BillingWidget(
+                                        backgroundColor: AppColors.primaryBackgroundColor,
+                                        titleColor: AppColors.blackAccentColor,
+                                        title: 'Premium Plan (Heavy Users & Businesses)',
+                                        subtitle: 'All-inclusive service for bulk laundry and business needs.',
+                                        price: '199,000',
+                                        services: const [
+                                          'Unlimited laundry, 2X monthly',
+                                          'Wash & fold + ironing for all items',
+                                          '3–4 days service',
+                                          'Free pickups & deliveries',
+                                        ],
+                                        additionalBenefits: const [
+                                          'Free eco-friendly detergent upgrade',
+                                          '20% discount on special treatments (dry cleaning, stain removal, alterations)',
+                                        ],
                                       ),
                                     ),
                                   ],

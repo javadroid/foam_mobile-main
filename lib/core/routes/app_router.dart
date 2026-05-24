@@ -29,110 +29,130 @@ class AppRouter {
       case OnBoardingScreen.id:
         return MaterialPageRoute(
           builder: (_) => const OnBoardingScreen(),
+          settings: settings,
         );
 
       case SplashScreen.id:
         return MaterialPageRoute(
           builder: (_) => const SplashScreen(),
+          settings: settings,
         );
 
       case MainScreen.id:
         return MaterialPageRoute(
           builder: (_) => const MainScreen(),
+          settings: settings,
         );
 
       case HomePage.id: // Home screen route
         return MaterialPageRoute(
           builder: (_) => const HomePage(),
+          settings: settings,
         );
 
       case HistoryScreen.id: // History screen route
         return MaterialPageRoute(
           builder: (_) => const HistoryScreen(),
+          settings: settings,
         );
 
       case HelpScreen.id: // Help screen route
         return MaterialPageRoute(
           builder: (_) => const HelpScreen(),
+          settings: settings,
         );
 
       case BillingScreen.id:
         return MaterialPageRoute(
           builder: (_) => const BillingScreen(),
+          settings: settings,
         );
 
       case BasketScreen.id: // Basket screen route
         return MaterialPageRoute(
           builder: (_) => const BasketScreen(),
+          settings: settings,
         );
 
       case LoginOrRegisterPage
             .id: // Login screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const LoginOrRegisterPage(),
+          settings: settings,
         );
 
       case SignUpPage0.id: // Sign up screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const SignUpPage0(),
+          settings: settings,
         );
 
       case ForgotPasswordEmail
             .id: // Forgot email screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ForgotPasswordEmail(),
+          settings: settings,
         );
 
       case ForgotPasswordNumber
             .id: // Forgot number screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ForgotPasswordNumber(),
+          settings: settings,
         );
 
       case CreateNewPassword
             .id: // Create New Password screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const CreateNewPassword(),
+          settings: settings,
         );
 
       case VerificationScreen
             .id: // Verification screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const VerificationScreen(),
+          settings: settings,
         );
 
       case ProfileScreen.id: // Profile screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ProfileScreen(),
+          settings: settings,
         );
 
       case ServicesScreen.id: // Services screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ServicesScreen(),
+          settings: settings,
         );
 
       case ServiceDetails
             .id: // Service Details screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ServiceDetails(),
+          settings: settings,
         );
 
       case NotificationScreen
             .id: // Notification screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const NotificationScreen(),
+          settings: settings,
         );
 
       case AddToBasket
             .id: // Notification screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const AddToBasket(),
+          settings: settings,
         );
 
       case PickupDetailsScreen
             .id: // Notification screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const PickupDetailsScreen(),
+          settings: settings,
         );
 
       // Add more routes for other screens as needed

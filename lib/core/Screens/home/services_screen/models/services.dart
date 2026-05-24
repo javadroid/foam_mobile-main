@@ -18,20 +18,28 @@ class ServicesList {
   ServicesList({
     required this.id,
     required this.name,
+    required this.imageUrl,
+    required this.description,
   });
 
   int id;
   String name;
+  String imageUrl;
+  String description;
 
   factory ServicesList.fromJson(Map<String, dynamic> response) {
     return ServicesList(
       id: response["id"],
       name: response["name"],
+      imageUrl: response["imageUrl"] ?? "",
+      description: response["description"] ?? "",
     );
   }
 
   Map<String, dynamic> toJson() => {
         "id": id,
         "name": name,
+        "imageUrl": imageUrl,
+        "description": description,
       };
 }

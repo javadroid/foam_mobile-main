@@ -18,7 +18,7 @@ class PayStackOrderClass {
       reference: 'ps_${DateTime.now().microsecondsSinceEpoch}',
       secretKey: secretKey,
       email: authProvider.email,
-      amount: ((totalAmount + 1500) * 100).toDouble(),
+      amount: (totalAmount * 100).toDouble(),
       currency: PaystackCurrency.ngn,
       channel: [
         PaystackPaymentChannel.mobileMoney,

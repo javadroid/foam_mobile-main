@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/models/services.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/add_to_basket_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/click_button.dart';
@@ -15,6 +16,17 @@ class ServiceDetails extends StatefulWidget {
 class _ServiceDetailsState extends State<ServiceDetails> {
   @override
   Widget build(BuildContext context) {
+    final args = ModalRoute.of(context)!.settings.arguments;
+
+    if (args == null || args is! ServicesList) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Error')),
+        body: const Center(child: Text('Service data not found.')),
+      );
+    }
+
+    final service = args;
+
     return Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -28,7 +40,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Washing and Folding',
+          service.name,
           overflow: TextOverflow.ellipsis,
           style: Constants.headingStyle,
         ),
@@ -47,12 +59,12 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                       width: MediaQuery.sizeOf(context).width * 0.4,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        color: AppColors.primaryAccentColor,
-                        image: const DecorationImage(
-                          image: AssetImage(
-                            'assets/images/services0.png',
+                        color: AppColors.fadeBlueAccentColor,
+                        image: DecorationImage(
+                          image: NetworkImage(
+                            service.imageUrl,
                           ),
-                          fit: BoxFit.fill,
+                          fit: BoxFit.contain,
                         ),
                       ),
                     ),
@@ -74,8 +86,8 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                   ),
                   AppSpaces.verticalSpace10,
                   Text(
-                    "The ultimate convenience for busy lifestyles. Let us handle your laundry, so you can focus on what matters most. Quality, efficiency, and convenience—all in one package.",
-                    maxLines: 6,
+                    service.description,
+                    maxLines: 10,
                     overflow: TextOverflow.ellipsis,
                     style: Constants.subHeadingStyle.copyWith(
                       fontWeight: FontWeight.w600,
@@ -136,7 +148,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                       text: 'Schedule Pickup',
                       textColor: Colors.white,
                       onPressed: () =>
-                          Navigator.pushNamed(context, AddToBasket.id),
+                          Navigator.pushNamed(context, AddToBasket.id, arguments: service.id),
                       fontSize: MediaQuery.sizeOf(context).height / 53,
                       color: AppColors.secondaryBackgroundColor,
                     ),

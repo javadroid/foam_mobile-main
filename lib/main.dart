@@ -5,6 +5,7 @@ import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/routes/app_router.dart';
 import 'package:foam_mobile/core/splash_screen.dart';
+import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -33,6 +34,9 @@ void main() async {
           ),
           ChangeNotifierProvider(
             create: (_) => ProfilePicAuth(),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => BasketProvider(),
           )
         ],
         child: const MyApp(),

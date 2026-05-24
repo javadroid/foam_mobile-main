@@ -28,9 +28,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
   }
 
   getData() async {
-    services = await ServicesClass.getServices(scaffoldKey);
-    if (services != null) {
+    var allServices = await ServicesClass.getServices(scaffoldKey);
+    if (allServices != null) {
       setState(() {
+        services = allServices
+            .where((service) => !service.description.contains('Coming Soon...'))
+            .toList();
         isLoaded = true;
       });
     }
@@ -65,7 +68,11 @@ class _ServicesScreenState extends State<ServicesScreen> {
             itemCount: services?.length,
             itemBuilder: ((context, index) {
               return InkWell(
-                onTap: () => Navigator.pushNamed(context, ServiceDetails.id),
+                onTap: () => Navigator.pushNamed(
+                  context,
+                  ServiceDetails.id,
+                  arguments: services![index],
+                ),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   child: Column(
@@ -79,12 +86,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               width: MediaQuery.sizeOf(context).width * 0.4,
                               decoration: BoxDecoration(
                                 borderRadius: BorderRadius.circular(12),
-                                color: AppColors.primaryAccentColor,
+                                color: AppColors.fadeBlueAccentColor,
                                 image: DecorationImage(
-                                  image: AssetImage(
-                                    'assets/images/services$index.png',
+                                  image: NetworkImage(
+                                    services![index].imageUrl,
                                   ),
-                                  fit: BoxFit.fill,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
                             ),
@@ -104,8 +111,8 @@ class _ServicesScreenState extends State<ServicesScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                          const Text(
-                            'Clothes, towels, lines etc',
+                          Text(
+                            services![index].description,
                             maxLines: 3,
                             overflow: TextOverflow.ellipsis,
                           ),

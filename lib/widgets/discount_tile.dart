@@ -8,11 +8,19 @@ class DiscountSlider extends StatefulWidget {
     required this.onPressed,
     required this.isLoading,
     required this.imageAsset,
+    required this.title,
+    required this.promoPrefix,
+    required this.promoValue,
+    required this.description,
   });
 
   final Function()? onPressed;
   final bool isLoading;
   final String imageAsset;
+  final String title;
+  final String promoPrefix;
+  final String promoValue;
+  final String description;
 
   @override
   State<DiscountSlider> createState() => _DiscountSliderState();
@@ -55,7 +63,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
                 Expanded(
                   flex: 1,
                   child: Text(
-                    'Discount Deals',
+                    widget.title,
                     style: Constants.subHeadingStyle.copyWith(
                       color: Colors.white,
                       fontSize: MediaQuery.sizeOf(context).height / 45,
@@ -75,7 +83,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
                             Row(
                               children: [
                                 Text(
-                                  'up to',
+                                  widget.promoPrefix,
                                   style: Constants.textStyle.copyWith(
                                     color: Colors.white,
                                     fontSize:
@@ -83,7 +91,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
                                   ),
                                 ),
                                 Text(
-                                  ' 40% off',
+                                  ' ${widget.promoValue}',
                                   style: Constants.headingStyle.copyWith(
                                     color: Colors.white,
                                     fontSize:
@@ -93,7 +101,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
                               ],
                             ),
                             Text(
-                              'all laundry services available!',
+                              widget.description,
                               overflow: TextOverflow.ellipsis,
                               style: Constants.textStyle.copyWith(
                                 color: Colors.white,
@@ -131,7 +139,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
                                   overflow: TextOverflow.ellipsis,
                                   style: Constants.subHeadingStyle.copyWith(
                                     color: Colors.white,
-                                    fontSize: 20,
+                                    fontSize: 16,
                                     fontWeight: FontWeight.w900,
                                   ),
                                 ),

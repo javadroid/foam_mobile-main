@@ -1,70 +1,43 @@
-class AddToBasketModel {
-  List<Items>? items = [
-    Items(
-      id: 1,
-      name: 'Shirts',
-      image: 'assets/images/shirt.png',
-      price: 'N500',
-      oldPrice: 'N850',
-      quantity: 0,
-    ),
-    Items(
-      id: 2,
-      name: 'T-Shirts',
-      image: 'assets/images/basket2.png',
-      price: 'N500',
-      oldPrice: 'N850',
-      quantity: 0,
-    ),
-    Items(
-      id: 3,
-      name: 'Polo',
-      image: 'assets/images/polo.png',
-      price: 'N500',
-      oldPrice: 'N850',
-      quantity: 0,
-    ),
-    Items(
-      id: 4,
-      name: 'Female Tops',
-      image: 'assets/images/female_tops.png',
-      price: 'N500',
-      oldPrice: 'N850',
-      quantity: 0,
-    ),
-    Items(
-      id: 5,
-      name: 'Singlets',
-      image: 'assets/images/singlet.png',
-      price: 'N500',
-      oldPrice: 'N850',
-      quantity: 0,
-    ),
-    Items(
-      id: 6,
-      name: 'Caps/Hats',
-      image: 'assets/images/shirt.png', // Fallback image
-      price: 'N400',
-      oldPrice: 'N600',
-      quantity: 0,
-    ),
-  ];
-}
+import 'dart:convert';
 
-class Items {
-  Items({
-    this.id,
-    this.name,
-    this.image,
-    this.price,
-    this.oldPrice,
-    this.quantity,
+List<CategoryItem> categoryListFromJson(dynamic str) => List<CategoryItem>.from(
+      json.decode(str)['categories'].map(
+            (x) => CategoryItem.fromJson(x),
+          ),
+    );
+
+class CategoryItem {
+  CategoryItem({
+    required this.id,
+    required this.imageUrl,
+    required this.name,
+    required this.description,
+    required this.price,
+    this.quantity = 0,
   });
 
-  int? id;
-  String? name;
-  String? image;
-  String? price;
-  String? oldPrice;
-  int? quantity;
+  int id;
+  String? imageUrl;
+  String name;
+  String description;
+  int price;
+  int quantity;
+
+  factory CategoryItem.fromJson(Map<String, dynamic> response) {
+    return CategoryItem(
+      id: response["id"],
+      imageUrl: response["imageUrl"],
+      name: response["name"].toString().trim(),
+      description: response["description"].toString().trim(),
+      price: response["price"],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        "id": id,
+        "imageUrl": imageUrl,
+        "name": name,
+        "description": description,
+        "price": price,
+      };
 }
