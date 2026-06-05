@@ -303,32 +303,32 @@ class _HomePageState extends State<HomePage> {
                       children: [
                         ServiceTile(
                           imageAsset: 'assets/images/washing-machine.png',
-                          label: 'Washing',
+                          label: 'Laundry',
                           onTap: () => Navigator.of(context).pushNamed(
                             ServicesScreen.id,
                           ),
                         ),
                         ServiceTile(
                           imageAsset: 'assets/images/iron.png',
-                          label: 'Iron',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            ServicesScreen.id,
-                          ),
-                        ),
-                        ServiceTile(
-                          imageAsset: 'assets/images/drycleaning.png',
                           label: 'Dry Cleaning',
                           onTap: () => Navigator.of(context).pushNamed(
                             ServicesScreen.id,
                           ),
                         ),
-                        ServiceTile(
-                          imageAsset: 'assets/images/folding.png',
-                          label: 'Folding',
-                          onTap: () => Navigator.of(context).pushNamed(
-                            ServicesScreen.id,
-                          ),
-                        ),
+                        // ServiceTile(
+                        //   imageAsset: 'assets/images/drycleaning.png',
+                        //   label: 'Dry Cleaning',
+                        //   onTap: () => Navigator.of(context).pushNamed(
+                        //     ServicesScreen.id,
+                        //   ),
+                        // ),
+                        // ServiceTile(
+                        //   imageAsset: 'assets/images/folding.png',
+                        //   label: 'Folding',
+                        //   onTap: () => Navigator.of(context).pushNamed(
+                        //     ServicesScreen.id,
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
@@ -474,10 +474,12 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor: AppColors.primaryBackgroundColor,
+                                        backgroundColor:
+                                            AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.navyBlueAccent,
                                         title: 'Basic Plan (Heavy Users)',
-                                        subtitle: 'Perfect for users with regular laundry needs twice monthly.',
+                                        subtitle:
+                                            'Perfect for users with regular laundry needs twice monthly.',
                                         price: '54,000',
                                         services: const [
                                           '35 items for laundry, 2X monthly',
@@ -501,10 +503,12 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor: AppColors.primaryBackgroundColor,
+                                        backgroundColor:
+                                            AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.greenTaleColor,
                                         title: 'Basic Plan B (Light Users)',
-                                        subtitle: 'Ideal for lighter laundry needs with more item flexibility.',
+                                        subtitle:
+                                            'Ideal for lighter laundry needs with more item flexibility.',
                                         price: '44,000',
                                         services: const [
                                           '50 items for laundry monthly',
@@ -527,10 +531,12 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor: AppColors.primaryBackgroundColor,
+                                        backgroundColor:
+                                            AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.oceanBlueColor,
                                         title: 'Standard Plan (Regular Users)',
-                                        subtitle: 'Balanced plan with added value for regular laundry needs.',
+                                        subtitle:
+                                            'Balanced plan with added value for regular laundry needs.',
                                         price: '74,000',
                                         services: const [
                                           '100 items for laundry monthly',
@@ -556,10 +562,13 @@ class _HomePageState extends State<HomePage> {
                                   children: [
                                     Expanded(
                                       child: BillingWidget(
-                                        backgroundColor: AppColors.primaryBackgroundColor,
+                                        backgroundColor:
+                                            AppColors.primaryBackgroundColor,
                                         titleColor: AppColors.blackAccentColor,
-                                        title: 'Premium Plan (Heavy Users & Businesses)',
-                                        subtitle: 'All-inclusive service for bulk laundry and business needs.',
+                                        title:
+                                            'Premium Plan (Heavy Users & Businesses)',
+                                        subtitle:
+                                            'All-inclusive service for bulk laundry and business needs.',
                                         price: '199,000',
                                         services: const [
                                           'Unlimited laundry, 2X monthly',

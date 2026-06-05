@@ -277,62 +277,113 @@ Row(
                                                   ),
                                                 ],
                                               )
-                                            : Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  IconButton(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                    onPressed: () async {
-                                                      if (currentQuantity == 1) {
-                                                        await basketProvider.removeFromBasket(
-                                                                item.id,
-                                                                scaffoldKey);
-                                                      } else if (currentQuantity >
-                                                          1) {
-                                                        await basketProvider.updateQuantity(
-                                                                item.id,
-                                                                currentQuantity - 1,
-                                                                scaffoldKey);
-                                                      }
-                                                    },
-                                                    icon: Icon(
-                                                      Icons.remove_circle,
-                                                      color:
-                                                          AppColors.navyBlueAccent,
-                                                      size: 28,
-                                                    ),
+                                            : currentQuantity >= 6
+                                                ? Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    children: [
+                                                      Container(
+                                                        padding: const EdgeInsets.symmetric(
+                                                            horizontal: 8, vertical: 2),
+                                                        decoration: BoxDecoration(
+                                                          color: AppColors.fadeBlueAccentColor,
+                                                          borderRadius: BorderRadius.circular(8),
+                                                          border: Border.all(
+                                                            color: AppColors.navyBlueAccent.withOpacity(0.5),
+                                                            width: 1.5,
+                                                          ),
+                                                        ),
+                                                        child: DropdownButtonHideUnderline(
+                                                          child: DropdownButton<int>(
+                                                            value: currentQuantity,
+                                                            icon: Icon(
+                                                              Icons.arrow_drop_down,
+                                                              color: AppColors.navyBlueAccent,
+                                                            ),
+                                                            style: TextStyle(
+                                                              fontSize: 16,
+                                                              fontWeight: FontWeight.w700,
+                                                              color: AppColors.navyBlueAccent,
+                                                            ),
+                                                            onChanged: (newValue) async {
+                                                              if (newValue != null) {
+                                                                await basketProvider.updateQuantity(
+                                                                  item.id,
+                                                                  newValue,
+                                                                  scaffoldKey,
+                                                                );
+                                                              }
+                                                            },
+                                                            items: List.generate(
+                                                              currentQuantity > 20 ? currentQuantity + 10 : 20,
+                                                              (index) => index + 1,
+                                                            ).map<DropdownMenuItem<int>>((int value) {
+                                                              return DropdownMenuItem<int>(
+                                                                value: value,
+                                                                child: Text(value.toString()),
+                                                              );
+                                                            }).toList(),
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : Row(
+                                                    mainAxisAlignment:
+                                                        MainAxisAlignment.end,
+                                                    children: [
+                                                      IconButton(
+                                                        padding: EdgeInsets.zero,
+                                                        constraints:
+                                                            const BoxConstraints(),
+                                                        onPressed: () async {
+                                                          if (currentQuantity == 1) {
+                                                            await basketProvider.removeFromBasket(
+                                                                    item.id,
+                                                                    scaffoldKey);
+                                                          } else if (currentQuantity >
+                                                              1) {
+                                                            await basketProvider.updateQuantity(
+                                                                    item.id,
+                                                                    currentQuantity - 1,
+                                                                    scaffoldKey);
+                                                          }
+                                                        },
+                                                        icon: Icon(
+                                                          Icons.remove_circle,
+                                                          color:
+                                                              AppColors.navyBlueAccent,
+                                                          size: 28,
+                                                        ),
+                                                      ),
+                                                      // const SizedBox(width: 8),
+                                                      Text(
+                                                        currentQuantity.toString(),
+                                                        style: const TextStyle(
+                                                          fontSize: 18,
+                                                          fontWeight: FontWeight.w700,
+                                                        ),
+                                                      ),
+                                                      // const SizedBox(width: 8),
+                                                      IconButton(
+                                                        padding: EdgeInsets.zero,
+                                                        constraints:
+                                                            const BoxConstraints(),
+                                                        onPressed: () async {
+                                                          await basketProvider.updateQuantity(
+                                                                  item.id,
+                                                                  currentQuantity + 1,
+                                                                  scaffoldKey);
+                                                        },
+                                                        icon: Icon(
+                                                          Icons.add_circle,
+                                                          color:
+                                                              AppColors.navyBlueAccent,
+                                                          size: 28,
+                                                        ),
+                                                      ),
+                                                    ],
                                                   ),
-                                                  // const SizedBox(width: 8),
-                                                  Text(
-                                                    currentQuantity.toString(),
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight: FontWeight.w700,
-                                                    ),
-                                                  ),
-                                                  // const SizedBox(width: 8),
-                                                  IconButton(
-                                                    padding: EdgeInsets.zero,
-                                                    constraints:
-                                                        const BoxConstraints(),
-                                                    onPressed: () async {
-                                                      await basketProvider.updateQuantity(
-                                                              item.id,
-                                                              currentQuantity + 1,
-                                                              scaffoldKey);
-                                                    },
-                                                    icon: Icon(
-                                                      Icons.add_circle,
-                                                      color:
-                                                          AppColors.navyBlueAccent,
-                                                      size: 28,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
                                       ),
                                     ],
                                   ),
