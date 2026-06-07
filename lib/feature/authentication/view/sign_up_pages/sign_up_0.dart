@@ -221,12 +221,6 @@ class _SignUpPage0State extends State<SignUpPage0> {
                                         createPasswordController.text,
                                         _scaffoldKey,
                                       );
-                                      await SignUpModel.inputToken(
-                                        context,
-                                        emailController.text,
-                                        createPasswordController.text,
-                                        _scaffoldKey,
-                                      );
                                     }
 
                                     setState(() {

@@ -101,10 +101,11 @@ class _ForgotPasswordNumberState extends State<ForgotPasswordNumber> {
                         children: [
                           GradientButton(
                             isLoading: loading,
-                            onPressed: () =>
-                                Navigator.of(context, rootNavigator: true)
-                                    .pushNamed(
-                              VerificationScreen.id,
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const VerificationScreen(isForgotPassword: true),
+                              ),
                             ),
                             text: 'Verify',
                           ),

@@ -30,19 +30,15 @@ class SplashFunction {
         authProvider.fillAuth(
           user["firstName"],
           user["lastName"],
-          user["middleName"],
+          user["middleName"] ?? '',
           user["email"],
           user["phone"],
         );
-        await getAddress(context);
+        bool hasAddress = await getAddress(context);
         authProvider.updateDone(true);
-        return true;
+        return hasAddress;
       } else {
         authProvider.updateError(true);
-        // print(res.reasonPhrase);
-        // print(res.statusCode);
-        // print(res.headers);
-        // print(res.body);
         return false;
       }
     } catch (e) {
@@ -51,7 +47,7 @@ class SplashFunction {
     }
   }
 
-  static Future<void> getAddress(BuildContext context) async {
+  static Future<bool> getAddress(BuildContext context) async {
     try {
       final res = await http.get(
         Uri.parse(
@@ -68,25 +64,22 @@ class SplashFunction {
       var response = json.decode(res.body);
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
-        var address = response["address"][0];
-        authProvider.fillAddress(
-          address["street"],
-          address["city"],
-          address["postalCode"],
-          address["country"],
-        );
-        // print(authProvider.user);
-        return response;
+        if (response["address"] != null && (response["address"] as List).isNotEmpty) {
+          var address = response["address"][0];
+          authProvider.fillAddress(
+            address["street"],
+            address["city"],
+            address["postalCode"],
+            address["country"],
+          );
+          return true;
+        }
+        return false;
       } else {
-        // print(res.reasonPhrase);
-        // print(res.statusCode);
-        // print(res.headers);
-        // print(res.body);
-        return response;
+        return false;
       }
     } catch (e) {
-      // print(e.toString());
-      Exception(e);
+      return false;
     }
   }
 }

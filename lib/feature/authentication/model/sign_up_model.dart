@@ -2,12 +2,17 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_register_page.dart';
-import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+import 'package:foam_mobile/feature/authentication/view/verify_pages/verification_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/utils/values/validator.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:provider/provider.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+
+import 'package:foam_mobile/core/Screens/main_screen.dart';
+import 'package:foam_mobile/core/splash_function.dart';
 
 class SignUpModel {
   static void login(BuildContext context) {
@@ -80,10 +85,14 @@ class SignUpModel {
         log(res.body);
 
         if (res.statusCode == 201 || res.statusCode == 200) {
+          var authProvider = Provider.of<AuthProvider>(context, listen: false);
+          authProvider.fillAuth(firstName, lastName, '', email, phoneNumber);
+          authProvider.password = password;
+
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const SignUpPage1(),
+              builder: (context) => const VerificationScreen(),
             ),
           );
           MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
@@ -174,8 +183,11 @@ class SignUpModel {
         log(res.body);
 
         if (res.statusCode == 201 || res.statusCode == 200) {
+          // Reload all data before navigating to home
+          await SplashFunction.init(context);
+
           Navigator.of(context, rootNavigator: true)
-              .pushNamed(LoginOrRegisterPage.id);
+              .pushNamedAndRemoveUntil(MainScreen.id, (route) => false);
           MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
         } else {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);

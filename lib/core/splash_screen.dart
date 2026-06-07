@@ -10,6 +10,8 @@ import 'package:foam_mobile/widgets/error_widget.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
 import 'package:provider/provider.dart';
 
+import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+
 class SplashScreen extends StatefulWidget {
   static const String id = '/splash_screen';
 
@@ -31,20 +33,25 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   init(BuildContext context) async {
-    Future.delayed(const Duration(seconds: 2), () {
-      SplashFunction.init(context);
-    }).then(
-      (value) {
-        var authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (authProvider.initDone) {
-          Navigator.pushNamed(context, MainScreen.id);
-        } else {
-          setState(() {
-            loadScreen = true;
-          });
-        }
-      },
-    );
+    bool hasAddress = await Future.delayed(const Duration(seconds: 2), () {
+      return SplashFunction.init(context);
+    });
+
+    var authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (authProvider.initDone) {
+      if (hasAddress) {
+        Navigator.pushReplacementNamed(context, MainScreen.id);
+      } else {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const SignUpPage1()),
+        );
+      }
+    } else {
+      setState(() {
+        loadScreen = true;
+      });
+    }
   }
 
   @override
@@ -89,37 +96,30 @@ class _LoadingState extends State<Loading> {
   Widget build(BuildContext context) {
     var authProvider = Provider.of<AuthProvider>(context, listen: true);
 
-    return authProvider.initDone
-        ? const MainScreen()
-        : authProvider.initError
-            ? ErrorScreen(
-                message:
-                    "Oops!,\nError has Occured \nCheck your internet connection",
-                onTap: () {
-                  authProvider.updateError(false);
-                  SplashFunction.init(context);
-                  //     .then(
-                  //   (value) {
-                  //     // if (value) {
-                  //     //   SplashFunction.initService(context).then((value) {
-                  //     //     if (value) {
-                  //     //       SplashFunction.initProduct(context);
-                  //     //     }
-                  //     //   });
-                  //     // }
-                  //   },
-                  // );
-                },
-                logout: true,
-              )
-            : Scaffold(
-                body: Center(
-                  child: LoadingAnimationWidget.fourRotatingDots(
-                    color: AppColors.primaryAccentColor,
-                    // rightDotColor: Constant.generalColor,
-                    size: 60,
-                  ),
-                ),
-              );
+    if (authProvider.initDone) {
+      if (authProvider.addressStreet.isNotEmpty) {
+        return const MainScreen();
+      } else {
+        return const SignUpPage1();
+      }
+    }
+
+    return authProvider.initError
+        ? ErrorScreen(
+            message:
+                "Oops!,\nError has Occured \nCheck your internet connection",
+            onTap: () {
+              authProvider.updateError(false);
+              SplashFunction.init(context);
+            }, logout: false,
+          )
+        : Scaffold(
+            body: Center(
+              child: LoadingAnimationWidget.staggeredDotsWave(
+                color: AppColors.primaryAccentColor,
+                size: 100,
+              ),
+            ),
+          );
   }
 }

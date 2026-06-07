@@ -12,6 +12,9 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:provider/provider.dart';
 
+import 'package:foam_mobile/core/splash_function.dart';
+import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
       GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
@@ -116,28 +119,48 @@ class LoginClass {
       var response = json.decode(res.body);
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
-        var address = response["address"][0];
-        authProvider.fillAddress(
-          address["street"],
-          address["city"],
-          address["postalCode"],
-          address["country"],
-        );
-        log(authProvider.user.toString());
-        Navigator.of(context).pushNamedAndRemoveUntil(
-          MainScreen.id,
-          (Route<dynamic> route) => false,
-        );
+        if (response["address"] != null && (response["address"] as List).isNotEmpty) {
+          var address = response["address"][0];
+          authProvider.fillAddress(
+            address["street"],
+            address["city"],
+            address["postalCode"],
+            address["country"],
+          );
+          log(authProvider.user.toString());
+
+          // Reload all data to be sure
+          await SplashFunction.init(context);
+
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            MainScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          // No address found, go to add address screen
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SignUpPage1(),
+            ),
+          );
+        }
         return log(response);
       } else {
         log(res.reasonPhrase.toString());
         log(res.statusCode.toString());
         log(res.headers.toString());
         log(res.body);
-        MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load profile");
+        MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load address");
+        // Fallback to MainScreen if address fetch fails but status code is not 200
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          MainScreen.id,
+          (Route<dynamic> route) => false,
+        );
       }
     } catch (e) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Address not fetched");
+      // Fallback to MainScreen if something goes wrong
       Navigator.of(context).pushNamedAndRemoveUntil(
         MainScreen.id,
         (Route<dynamic> route) => false,

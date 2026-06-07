@@ -5,8 +5,13 @@ import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/custom_digit_field.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/authentication/model/verification_model.dart';
+import 'package:provider/provider.dart';
+
 class VerificationScreen extends StatefulWidget {
-  const VerificationScreen({super.key});
+  final bool isForgotPassword;
+  const VerificationScreen({super.key, this.isForgotPassword = false});
 
   static const String id = 'verification_screen';
 
@@ -19,16 +24,13 @@ class _VerificationScreenState extends State<VerificationScreen> {
       GlobalKey<ScaffoldMessengerState>();
 
   //text editing controllers
-  final emailController = TextEditingController();
-  final TextEditingController codeController0 = TextEditingController();
-  final TextEditingController codeController1 = TextEditingController();
-  final TextEditingController codeController2 = TextEditingController();
-  final TextEditingController codeController3 = TextEditingController();
+  final List<TextEditingController> controllers = List.generate(6, (index) => TextEditingController());
 
   bool loading = false;
 
   @override
   Widget build(BuildContext context) {
+    var authProvider = Provider.of<AuthProvider>(context);
     return ScaffoldMessenger(
       key: _scaffoldKey,
       child: Scaffold(
@@ -61,7 +63,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
                       //Instruction
                       Text(
-                        'Enter The 4 digit code sent to jessica@example.com',
+                        'Enter The 6 digit code sent to ${authProvider.email}',
                         textAlign: TextAlign.center,
                         style: Constants.textStyle,
                       ),
@@ -69,10 +71,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       AppSpaces.verticalSpace5,
 
                       CustomDigitField(
-                        codeController0: codeController0,
-                        codeController1: codeController1,
-                        codeController2: codeController2,
-                        codeController3: codeController3,
+                        controllers: controllers,
                         hintText: '0',
                       ),
 
@@ -85,11 +84,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             TextButton(
-                              onPressed: () => {
-                                debugPrint(codeController0.text +
-                                    codeController1.text +
-                                    codeController2.text +
-                                    codeController3.text),
+                              onPressed: () async {
+                                await VerifyClass.resend(context, _scaffoldKey);
                               },
                               child: Text(
                                 'Resend Code',
@@ -107,7 +103,6 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   ),
                   AppSpaces.verticalSpace100,
                   AppSpaces.verticalSpace100,
-                  AppSpaces.verticalSpace100,
                   AppSpaces.verticalSpace40,
                   Column(
                     children: [
@@ -117,11 +112,21 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         children: [
                           GradientButton(
                             isLoading: loading,
-                            onPressed: () => Navigator.pushNamed(
-                              context,
-                              CreateNewPassword.id,
-                            ),
-                            text: 'Create New Password',
+                            onPressed: () async {
+                              setState(() {
+                                loading = true;
+                              });
+                              String code = controllers.map((e) => e.text).join();
+                              if (widget.isForgotPassword) {
+                                await VerifyClass.verifyForgotPassword(code, context, _scaffoldKey);
+                              } else {
+                                await VerifyClass.verify(code, context, _scaffoldKey);
+                              }
+                              setState(() {
+                                loading = false;
+                              });
+                            },
+                            text: widget.isForgotPassword ? 'Create New Password' : 'Verify',
                           ),
                         ],
                       ),
