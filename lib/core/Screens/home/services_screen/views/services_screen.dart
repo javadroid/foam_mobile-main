@@ -19,11 +19,18 @@ class _ServicesScreenState extends State<ServicesScreen> {
       GlobalKey<ScaffoldMessengerState>();
   List<ServicesList>? services;
   bool isLoaded = false;
+  String? serviceType;
 
   @override
   void initState() {
     super.initState();
     //fetch data from API
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    serviceType = ModalRoute.of(context)?.settings.arguments as String?;
     getData();
   }
 
@@ -33,6 +40,12 @@ class _ServicesScreenState extends State<ServicesScreen> {
       setState(() {
         services = allServices
             .where((service) => !service.description.contains('Coming Soon...'))
+            .where((service) {
+              if (serviceType == null) {
+                return true;
+              }
+              return service.name.toLowerCase().contains(serviceType!.toLowerCase());
+            })
             .toList();
         isLoaded = true;
       });

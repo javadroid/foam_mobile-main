@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/models/services.dart';
+import 'package:foam_mobile/core/Screens/history/model/order.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
@@ -137,6 +138,32 @@ class ServicesClass {
     } catch (e) {
       log("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "An error occurred");
+    }
+  }
+
+  static Future<List<Order>?> getOrders(
+      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+    try {
+      final res = await http.get(
+        Uri.parse("${Constants.url}/api/order/"),
+        headers: {
+          "Accept": "application/json",
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ${HiveClass.getToken()}',
+        },
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        log(jsonEncode(json.decode(res.body)));
+        return OrderResponse.fromJson(json.decode(res.body)).orders;
+      } else {
+        MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Orders");
+        return null;
+      }
+    } catch (e) {
+      log("Exception: $e");
+      MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Orders");
+      return null;
     }
   }
 }

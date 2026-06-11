@@ -306,6 +306,7 @@ class _HomePageState extends State<HomePage> {
                           label: 'Laundry',
                           onTap: () => Navigator.of(context).pushNamed(
                             ServicesScreen.id,
+                            arguments: 'laundry',
                           ),
                         ),
                         ServiceTile(
@@ -313,6 +314,7 @@ class _HomePageState extends State<HomePage> {
                           label: 'Dry Cleaning',
                           onTap: () => Navigator.of(context).pushNamed(
                             ServicesScreen.id,
+                            arguments: 'dry cleaning',
                           ),
                         ),
                         // ServiceTile(

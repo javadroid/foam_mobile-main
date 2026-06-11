@@ -7,6 +7,8 @@ import 'package:foam_mobile/core/Screens/basket/controller/remote_basket.dart';
 import 'package:foam_mobile/core/Screens/basket/model/basket.dart';
 import 'package:foam_mobile/core/Screens/basket/view/pickup_address_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/models/add_to_basket_model.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -28,18 +30,48 @@ class BasketScreen extends StatefulWidget {
 class _BasketScreenState extends State<BasketScreen> {
   final GlobalKey<ScaffoldMessengerState> scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
-  final int noFoldingSurcharge = 200;
   final int deliveryChargePerItem = 1500;
   bool isLoaded = false;
   bool isLoading = false;
   bool isNoFolding = false;
+  List<CategoryItem> categories = [];
+  bool categoriesLoaded = false;
+
+  int calculateNoFoldingSurcharge(List<BasketList> basket) {
+
+    final totalTopsPrice = basket.fold(0, (sum, item) {
+      final category = categories.firstWhere(
+        (cat) => cat.id == item.categoryId,
+        orElse: () => CategoryItem(
+          id: 0,
+          imageUrl: null,
+          name: '',
+          description: '',
+          price: 0,
+        ),
+      );
+    debugPrint(category.description);
+      if (category.description.toLowerCase().contains('top')) {
+        return sum + (item.price * item.quantity);
+      }
+      return sum;
+    });
+    return (totalTopsPrice * 0.3).round();
+  }
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<BasketProvider>(context, listen: false)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Provider.of<BasketProvider>(context, listen: false)
           .fetchBasket(scaffoldKey);
+      final fetchedCategories = await ServicesClass.getCategories(scaffoldKey);
+      if (fetchedCategories != null) {
+        setState(() {
+          categories = fetchedCategories;
+          categoriesLoaded = true;
+        });
+      }
     });
   }
 
@@ -48,9 +80,9 @@ class _BasketScreenState extends State<BasketScreen> {
     final basketProvider = Provider.of<BasketProvider>(context);
     final basket = basketProvider.basketItems;
     final totalAmount = basketProvider.totalAmount;
-    final deliveryCharge =
-        basketProvider.basketItems.length * deliveryChargePerItem;
-
+    final deliveryCharge =2 * deliveryChargePerItem;
+    final noFoldingSurcharge = calculateNoFoldingSurcharge(basket);
+    debugPrint("noFoldingSurcharge ${noFoldingSurcharge.toString()}");
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return ScaffoldMessenger(
       key: scaffoldKey,
@@ -63,7 +95,9 @@ class _BasketScreenState extends State<BasketScreen> {
               Icons.arrow_back_ios_new,
               color: AppColors.blackAccentColor,
             ),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => {
+              if (Navigator.canPop(context)) Navigator.pop(context)
+            },
           ),
           title: Text(
             'Basket',
@@ -115,6 +149,7 @@ class _BasketScreenState extends State<BasketScreen> {
                       children: [
                         ListView.builder(
                           shrinkWrap: true,
+                          padding: EdgeInsets.zero,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: basket.length + 1,
                           itemBuilder: ((context, index) {
@@ -150,16 +185,14 @@ class _BasketScreenState extends State<BasketScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  SizedBox(
-                                    width: MediaQuery.sizeOf(context).width,
-                                    child: Row(
+                                   Row(
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
                                         Row(
                                           children: [
                                             SizedBox(
-                                              width: 100,
+                                              width: 50,
                                               child: Container(
                                                 height:
                                                     MediaQuery.sizeOf(context)
@@ -192,8 +225,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                                     CrossAxisAlignment.start,
                                                 children: [
                                                   Text(
-                                                    item.name[0].toUpperCase() +
-                                                        item.name.substring(1),
+                                                    item.name.trimRight(),
                                                     maxLines: 3,
                                                     overflow:
                                                         TextOverflow.ellipsis,
@@ -205,6 +237,9 @@ class _BasketScreenState extends State<BasketScreen> {
                                                   ),
                                                   const SizedBox(height: 4),
                                                   Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
                                                     children: [
                                                       Text(
                                                         '₦${Constants().currencyFormat(item.price)}',
@@ -219,7 +254,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                                           fontSize: 14,
                                                         ),
                                                       ),
-                                                      const SizedBox(width: 8),
+                                                      const SizedBox(height: 4),
                                                       Text(
                                                         '₦${Constants().currencyFormat((item.price * 1.3).round())}',
                                                         style: Constants
@@ -240,8 +275,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                           ],
                                         ),
                                         SizedBox(
-                                          width:
-                                              120, // Fixed width for the entire quantity selector
+                                          // Fixed width for the entire quantity selector
                                           child: item.quantity >= 6
                                               ? Row(
                                                   mainAxisAlignment:
@@ -378,13 +412,13 @@ class _BasketScreenState extends State<BasketScreen> {
                                         ),
                                       ],
                                     ),
-                                  ),
+                                 
                                 ],
                               ),
                             );
                           }),
                         ),
-                        AppSpaces.verticalSpace20,
+                        // AppSpaces.verticalSpace20,
                         Container(
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
@@ -445,7 +479,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                       style: TextStyle(fontSize: 16),
                                     ),
                                     Text(
-                                      '₦1,500 * 2',
+                                      '₦${Constants().currencyFormat(deliveryChargePerItem)} *2',
                                       style: const TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -515,7 +549,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                   ),
                                 ],
                               ),
-                              AppSpaces.verticalSpace40,
+                              SizedBox(height: 100),
                             ],
                           ),
                         ),

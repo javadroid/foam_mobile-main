@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
+import 'package:foam_mobile/core/Screens/history/model/order.dart';
+import 'package:foam_mobile/core/Screens/history/order_details_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/history_widget.dart';
+import 'package:intl/intl.dart';
 
 class HistoryScreen extends StatefulWidget {
   static const String id = '/history_page';
@@ -19,11 +23,51 @@ class _HistoryScreenState extends State<HistoryScreen> {
     "Completed",
     "Cancelled",
   ];
+  List<Order> orders = [];
+  bool isLoading = true;
+  final GlobalKey<ScaffoldMessengerState> scaffoldKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  @override
+  void initState() {
+    super.initState();
+    fetchOrders();
+  }
+
+  Future<void> fetchOrders() async {
+    final fetchedOrders = await ServicesClass.getOrders(scaffoldKey);
+    if (fetchedOrders != null) {
+      setState(() {
+        orders = fetchedOrders;
+        isLoading = false;
+      });
+    } else {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  List<Order> getFilteredOrders() {
+    switch (selectedHistory) {
+      case "Ongoing":
+        return orders.where((order) => 
+          order.status == "PENDING" || 
+          order.status == "IN_PROGRESS" || 
+          order.status == "ONGOING"
+        ).toList();
+      case "Completed":
+        return orders.where((order) => order.status == "COMPLETED").toList();
+      case "Cancelled":
+        return orders.where((order) => order.status == "CANCELLED").toList();
+      default:
+        return orders;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<ScaffoldMessengerState> scaffoldKey =
-        GlobalKey<ScaffoldMessengerState>();
+    final filteredOrders = getFilteredOrders();
 
     return ScaffoldMessenger(
       key: scaffoldKey,
@@ -45,101 +89,93 @@ class _HistoryScreenState extends State<HistoryScreen> {
             style: Constants.headingStyle,
           ),
         ),
-        body: Scaffold(
-          body: SafeArea(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                child: Column(
-                  children: [
-                    Center(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(10.0),
-                          color: AppColors.shadeGreyAccentColor,
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              for (String history in differentHistory)
-                                TextButton(
-                                  onPressed: () {
-                                    setState(() {
-                                      selectedHistory = history;
-                                    });
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Column(
+                children: [
+                  Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10.0),
+                        color: AppColors.shadeGreyAccentColor,
+                      ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            for (String history in differentHistory)
+                              TextButton(
+                                onPressed: () {
+                                  setState(() {
+                                    selectedHistory = history;
+                                  });
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: history == selectedHistory
+                                        ? AppColors.primaryBackgroundColor
+                                        : Colors.transparent,
+                                    borderRadius: BorderRadius.circular(14.0),
+                                  ),
+                                  child: Text(
+                                    history,
+                                    style: Constants.subHeadingStyle.copyWith(
                                       color: history == selectedHistory
-                                          ? AppColors.primaryBackgroundColor
-                                          : Colors.transparent,
-                                      borderRadius: BorderRadius.circular(14.0),
-                                    ),
-                                    child: Text(
-                                      history,
-                                      style: Constants.subHeadingStyle.copyWith(
-                                        color: history == selectedHistory
-                                            ? AppColors.primaryAccentColor
-                                            : Colors.black,
-                                        fontWeight: FontWeight.w700,
-                                      ),
+                                          ? AppColors.primaryAccentColor
+                                          : Colors.black,
+                                      fontWeight: FontWeight.w700,
                                     ),
                                   ),
                                 ),
-                            ],
-                          ),
+                              ),
+                          ],
                         ),
                       ),
                     ),
-                    AppSpaces.verticalSpace20,
-                    selectedHistory != differentHistory[0]
-                        ? const Column(
-                            children: [
-                              HistoryWidget(
-                                date: '10 April 2024',
-                                details: 'Order Details',
+                  ),
+                  AppSpaces.verticalSpace20,
+                  isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : filteredOrders.isEmpty
+                          ? Center(
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.history,
+                                    color: AppColors.primaryAccentColor,
+                                    size: MediaQuery.sizeOf(context).width / 3,
+                                  ),
+                                  Text(
+                                    'No history',
+                                    style: Constants.headingStyle,
+                                  ),
+                                ],
                               ),
-                              HistoryWidget(
-                                date: '10 April 2024',
-                                details: 'Order Details',
-                              ),
-                              HistoryWidget(
-                                date: '10 April 2024',
-                                details: 'Order Details',
-                              ),
-                              HistoryWidget(
-                                date: '10 April 2024',
-                                details: 'Order Details',
-                              ),
-                              HistoryWidget(
-                                date: '10 April 2024',
-                                details: 'Order Details',
-                              ),
-                            ],
-                          )
-                        : Center(
-                            child: Column(
-                              children: [
-                                Icon(
-                                  Icons.history,
-                                  color: AppColors.primaryAccentColor,
-                                  size: MediaQuery.sizeOf(context).width / 3,
-                                ),
-                                Text(
-                                  'No history',
-                                  style: Constants.headingStyle,
-                                ),
-                              ],
+                            )
+                          : Column(
+                              children: filteredOrders.map((order) {
+                                return HistoryWidget(
+                                  date: DateFormat('dd MMMM yyyy').format(order.createdAt),
+                                  details: 'Order #${order.id} - ₦${Constants().currencyFormat(order.totalPrice)}',
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => OrderDetailsScreen(order: order),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }).toList(),
                             ),
-                          ),
-                  ],
-                ),
+                ],
               ),
             ),
           ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/view/basket_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/models/add_to_basket_model.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/models/services.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/utils/shimmer_effect.dart';
@@ -22,6 +23,9 @@ class _AddToBasketState extends State<AddToBasket> {
       GlobalKey<ScaffoldMessengerState>();
   bool isLoaded = false;
   String selectedFilter = "Tops";
+  ServicesList? service;
+  bool isDryCleaning = false;
+  bool isLaundry = false;
   
   final List<Map<String, String>> filterOptions = [
     {"label": "Tops", "filter": "tops"},
@@ -45,7 +49,6 @@ class _AddToBasketState extends State<AddToBasket> {
   @override
   void initState() {
     super.initState();
-    fetchCategories();
   }
 
   fetchCategories() async {
@@ -62,6 +65,14 @@ class _AddToBasketState extends State<AddToBasket> {
     setState(() {
       filteredCategories = allCategories
           .where((item) => item.description.toLowerCase().contains(selectedFilter.toLowerCase()))
+          .where((item) {
+            if (isDryCleaning) {
+              return item.description.toLowerCase().contains('dc_');
+            } else if (isLaundry) {
+              return !item.description.toLowerCase().contains('dc_');
+            }
+            return true;
+          })
           .toList();
     });
   }
@@ -69,13 +80,20 @@ class _AddToBasketState extends State<AddToBasket> {
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)!.settings.arguments;
-    if (args == null || args is! int) {
+    if (args == null || args is! ServicesList) {
       return Scaffold(
         appBar: AppBar(title: const Text('Error')),
-        body: const Center(child: Text('Service ID not found.')),
+        body: const Center(child: Text('Service data not found.')),
       );
     }
-    final int serviceId = args;
+    if (allCategories.isEmpty) {
+      service = args;
+      final serviceNameLower = service!.name.toLowerCase();
+      isDryCleaning = serviceNameLower.contains('dry cleaning');
+      isLaundry = serviceNameLower.contains('laundry');
+      fetchCategories();
+    }
+    final int serviceId = service!.id;
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(

@@ -148,7 +148,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                       text: 'Schedule Pickup',
                       textColor: Colors.white,
                       onPressed: () =>
-                          Navigator.pushNamed(context, AddToBasket.id, arguments: service.id),
+                          Navigator.pushNamed(context, AddToBasket.id, arguments: service),
                       fontSize: MediaQuery.sizeOf(context).height / 53,
                       color: AppColors.secondaryBackgroundColor,
                     ),
