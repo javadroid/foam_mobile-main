@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/feature/authentication/model/login_model.dart';
+import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/authentication/model/sign_up_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
@@ -30,10 +32,20 @@ class _SignUpPage1State extends State<SignUpPage1> {
       key: _scaffoldKey,
       child: Scaffold(
         appBar: AppBar(
-          actions: const [
+          actions: [
             Padding(
-              padding: EdgeInsets.only(right: 18.0),
-              child: Text('step 2 of 2'),
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: TextButton(
+                onPressed: () {
+                  LogoutClass.logOut2(context);
+                },
+                child: Text(
+                  'Log Out',
+                  style: TextStyle(
+                    color: AppColors.primaryAccentColor,
+                  ),
+                ),
+              ),
             ),
           ],
         ),

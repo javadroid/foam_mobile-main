@@ -82,7 +82,7 @@ class SignUpModel {
         );
 
         var response = json.decode(res.body);
-        log(res.body);
+        debugPrint("SignUpModel getStarted response: ${res.body}");
 
         if (res.statusCode == 201 || res.statusCode == 200) {
           var authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -100,6 +100,7 @@ class SignUpModel {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
       } catch (e) {
+        debugPrint("SignUpModel getStarted error: ${e.toString()}");
         MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
       }
     }
@@ -161,7 +162,7 @@ class SignUpModel {
       MyMessageHandler.showSnackBar(scaffoldKey, "Input Country Name");
     } else {
       try {
-        http.Response res = await http.put(
+        http.Response res = await http.post(
           Uri.parse("${Constants.url}/api/user/address"),
           headers: {
             // here you get authorize by adding the token like a key to the header to have answers

@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
@@ -30,6 +31,12 @@ class ChangePasswordModel {
           },
         ),
       );
+      
+      if (res.statusCode == 401) {
+        LogoutClass.logOut2(context);
+        return;
+      }
+      
       var response = json.decode(res.body);
 
       log(response);

@@ -4,15 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/models/services.dart';
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 import 'package:foam_mobile/core/Screens/home/services_screen/models/add_to_basket_model.dart';
 
 class ServicesClass {
   static Future<List<CategoryItem>?> getCategories(
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.get(
         Uri.parse("${Constants.url}/api/category/"),
@@ -21,6 +26,11 @@ class ServicesClass {
           'Content-Type': 'application/json'
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         log(jsonEncode(json.decode(res.body)));
@@ -37,7 +47,8 @@ class ServicesClass {
   }
 
   static Future<List<ServicesList>?> getServices(
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.get(
         Uri.parse("${Constants.url}/api/services"),
@@ -46,6 +57,11 @@ class ServicesClass {
           'Content-Type': 'application/json'
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Services loaded");
@@ -66,7 +82,8 @@ class ServicesClass {
   }
 
   static Future<void> updateQuantity(
-      int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.put(
         Uri.parse("${Constants.url}/api/user/basket/category/$categoryId"),
@@ -77,6 +94,11 @@ class ServicesClass {
         },
         body: jsonEncode({"quantity": quantity}),
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         log("Item updated successfully");
@@ -89,7 +111,8 @@ class ServicesClass {
   }
 
   static Future<void> removeFromBasket(
-      int categoryId, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      int categoryId, GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.delete(
         Uri.parse("${Constants.url}/api/user/basket/category/$categoryId"),
@@ -99,6 +122,11 @@ class ServicesClass {
           'Authorization': 'Bearer ${HiveClass.getToken()}',
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         log("Item removed from basket successfully");
@@ -129,6 +157,11 @@ class ServicesClass {
           "quantity": quantity,
         }),
       );
+      
+      if (res.statusCode == 401) {
+        LogoutClass.logOut2(context);
+        return;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Added to basket");
@@ -142,7 +175,8 @@ class ServicesClass {
   }
 
   static Future<List<Order>?> getOrders(
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.get(
         Uri.parse("${Constants.url}/api/order/"),
@@ -152,6 +186,11 @@ class ServicesClass {
           'Authorization': 'Bearer ${HiveClass.getToken()}',
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         log(jsonEncode(json.decode(res.body)));

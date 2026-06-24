@@ -109,9 +109,10 @@ class _LoadingState extends State<Loading> {
             message:
                 "Oops!,\nError has Occured \nCheck your internet connection",
             onTap: () {
+              debugPrint("onTap ${authProvider.initError}");
               authProvider.updateError(false);
               SplashFunction.init(context);
-            }, logout: false,
+            }, logout: true,
           )
         : Scaffold(
             body: Center(

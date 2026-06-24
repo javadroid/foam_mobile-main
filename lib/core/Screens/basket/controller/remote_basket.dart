@@ -3,13 +3,18 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/model/basket.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 
 class BasketClass {
   static Future<List<BasketList>?> getServices(
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.get(
         Uri.parse(
@@ -22,6 +27,12 @@ class BasketClass {
           'Content-Type': 'application/json'
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
+      
       var response = res.body;
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Basket loaded");
@@ -46,6 +57,7 @@ class BasketClass {
     int categoryId,
     int quantity,
     GlobalKey<ScaffoldMessengerState> scaffoldKey,
+    [BuildContext? context]
   ) async {
     try {
       final res = await http.put(
@@ -57,6 +69,11 @@ class BasketClass {
         },
         body: jsonEncode({"quantity": quantity}),
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         log("Quantity updated: ${res.body}");
@@ -72,6 +89,7 @@ class BasketClass {
 
   static Future<void> clearBasket(
     GlobalKey<ScaffoldMessengerState> scaffoldKey,
+    [BuildContext? context]
   ) async {
     try {
       final res = await http.delete(
@@ -82,6 +100,11 @@ class BasketClass {
           "Content-Type": "application/json",
         },
       );
+      
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return;
+      }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Basket cleared");

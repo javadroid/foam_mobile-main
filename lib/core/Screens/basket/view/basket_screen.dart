@@ -96,7 +96,9 @@ class _BasketScreenState extends State<BasketScreen> {
               color: AppColors.blackAccentColor,
             ),
             onPressed: () => {
-              if (Navigator.canPop(context)) Navigator.pop(context)
+              if (Navigator.canPop(context)) {Navigator.pop(context)}else{
+                Navigator.pushNamed(context, MainScreen.id)
+              }
             },
           ),
           title: Text(

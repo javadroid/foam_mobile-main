@@ -33,8 +33,8 @@ class VerifyClass {
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, response["message"] ?? "Verification successful");
-        // After successful verification, login the user
-        LoginClass.login(context, authProvider.email, authProvider.password, scaffoldKey);
+        // After successful verification, login the user and indicate it's a signup
+        LoginClass.login(context, authProvider.email, authProvider.password, scaffoldKey, isSignup: true);
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, response["error"] ?? "Wrong code");
       }

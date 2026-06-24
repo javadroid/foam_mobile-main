@@ -145,56 +145,44 @@ class MyDrawer extends StatelessWidget {
               SizedBox(
                 height: MediaQuery.sizeOf(context).height / 7,
               ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 25.0),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 18.0,
-                    horizontal: 60.0,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.secondaryBackgroundColor,
-                    borderRadius: const BorderRadius.all(
-                      Radius.circular(
-                        8.0,
-                      ),
-                    ),
-                  ),
-                  child: InkWell(
-                    onTap: () {
-                      showLogOutMessage('Are you Sure?');
-                    },
-                    child: Stack(
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              flex: 1,
-                              child: Text(
-                                'Log Out',
-                                textAlign: TextAlign.center,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            Expanded(
-                              flex: 1,
-                              child: Icon(
-                                Icons.logout,
-                                color: AppColors.primaryBackgroundColor,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+         Padding(
+  padding: const EdgeInsets.symmetric(horizontal: 25.0),
+  child: Material(
+    color: AppColors.secondaryBackgroundColor,
+    borderRadius: BorderRadius.circular(8),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(8),
+      onTap: () {
+        showLogOutMessage('Are you Sure?');
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          vertical: 12.0,
+          horizontal: 24.0,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'Log Out',
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
               ),
-            ],
+            ),
+            const SizedBox(width: 8),
+            Icon(
+              Icons.logout,
+              size: 18,
+              color: AppColors.primaryBackgroundColor,
+            ),
+          ],
+        ),
+      ),
+    ),
+  ),
+) ],
           ),
         ),
       ),

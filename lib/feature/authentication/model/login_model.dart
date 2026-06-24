@@ -17,7 +17,7 @@ import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool isSignup = false}) async {
     if (!email.trim().isValidEmail()) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Please input a valid email");
     } else if (password.isEmpty) {
@@ -51,7 +51,7 @@ class LoginClass {
           HiveClass.insertToken(
             response["token"],
           );
-          getProfile(context, scaffoldKey);
+          getProfile(context, scaffoldKey, isSignup: isSignup);
         } else {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
@@ -64,8 +64,9 @@ class LoginClass {
 
   static Future<void> getProfile(
     BuildContext context,
-    GlobalKey<ScaffoldMessengerState> scaffoldKey,
-  ) async {
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool isSignup = false,
+  }) async {
     final res = await http.get(
       Uri.parse(
         "${Constants.url}/api/user/profile",
@@ -91,7 +92,7 @@ class LoginClass {
         user["phone"],
       );
       // log(message)(message)(authProvider.getUser());
-      getAddress(context, scaffoldKey);
+      getAddress(context, scaffoldKey, isSignup: isSignup);
       // return log(message)(message)(response);
     } else {
       log(res.reasonPhrase.toString());
@@ -103,7 +104,7 @@ class LoginClass {
   }
 
   static Future<void> getAddress(BuildContext context,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool isSignup = false}) async {
     try {
       final res = await http.get(
         Uri.parse(
@@ -117,8 +118,18 @@ class LoginClass {
         },
       );
       var response = json.decode(res.body);
+      debugPrint("Address API status code: ${res.statusCode}");
+      debugPrint("Address API response: $response");
+      debugPrint("Is signup: $isSignup");
+      
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
+        debugPrint("Response address: ${response["address"]}");
+        debugPrint("Address is list: ${response["address"] is List}");
+        if (response["address"] is List) {
+          debugPrint("Address list length: ${(response["address"] as List).length}");
+        }
+        
         if (response["address"] != null && (response["address"] as List).isNotEmpty) {
           var address = response["address"][0];
           authProvider.fillAddress(
@@ -132,11 +143,25 @@ class LoginClass {
           // Reload all data to be sure
           await SplashFunction.init(context);
 
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            MainScreen.id,
-            (Route<dynamic> route) => false,
-          );
+          // If it's not a signup, go to main screen
+          if (!isSignup) {
+            debugPrint("Going to main screen");
+            Navigator.of(context).pushNamedAndRemoveUntil(
+              MainScreen.id,
+              (Route<dynamic> route) => false,
+            );
+          } else {
+            debugPrint("Going to address page (signup flow)");
+            // If it's a signup, go to address page even if address exists
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SignUpPage1(),
+              ),
+            );
+          }
         } else {
+          debugPrint("No address found, going to address page");
           // No address found, go to add address screen
           Navigator.push(
             context,
@@ -152,19 +177,41 @@ class LoginClass {
         log(res.headers.toString());
         log(res.body);
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load address");
-        // Fallback to MainScreen if address fetch fails but status code is not 200
+        // Fallback to MainScreen if address fetch fails but status code is not 200 and it's not a signup
+        if (!isSignup) {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            MainScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          // If it's a signup, go to address page
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const SignUpPage1(),
+            ),
+          );
+        }
+      }
+    } catch (e, stackTrace) {
+      debugPrint("Error in getAddress: $e");
+      debugPrint("Stack trace: $stackTrace");
+      MyMessageHandler.showSnackBar(scaffoldKey, "Address not fetched");
+      // Fallback to MainScreen if something goes wrong and it's not a signup
+      if (!isSignup) {
         Navigator.of(context).pushNamedAndRemoveUntil(
           MainScreen.id,
           (Route<dynamic> route) => false,
         );
+      } else {
+        // If it's a signup, go to address page
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const SignUpPage1(),
+          ),
+        );
       }
-    } catch (e) {
-      MyMessageHandler.showSnackBar(scaffoldKey, "Address not fetched");
-      // Fallback to MainScreen if something goes wrong
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        MainScreen.id,
-        (Route<dynamic> route) => false,
-      );
     }
   }
 

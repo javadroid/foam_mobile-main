@@ -89,7 +89,7 @@ class AuthProvider extends ChangeNotifier {
     addressStreet = userAddressStreet;
     addressCity = userAddressCity;
     addressPostalCode = userAddressPostalCode;
-    addressCountry = userAddressPostalCode;
+    addressCountry = userAddressCountry;
     notifyListeners();
   }
 }

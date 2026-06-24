@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/Screens/profile/profile_image/view/profile_image.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/controller/location/select_location_controlller.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/model/change_address_controller.dart';
@@ -12,6 +14,7 @@ import 'package:foam_mobile/widgets/custom_API_button.dart';
 import 'package:foam_mobile/widgets/click_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
 import 'package:foam_mobile/widgets/profile_tile.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -37,6 +40,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String? phoneNumber;
   bool loading = false;
   final TextEditingController _addressController = TextEditingController();
+
+  Future<void> fetchAddress() async {
+    try {
+      final res = await http.get(
+        Uri.parse("${Constants.url}/api/user/address"),
+        headers: {
+          "Authorization": "Bearer ${HiveClass.getToken()}",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+      );
+      var response = json.decode(res.body);
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        var authProvider = Provider.of<AuthProvider>(context, listen: false);
+        if (response["address"] != null && (response["address"] as List).isNotEmpty) {
+          var address = response["address"][0];
+          authProvider.fillAddress(
+            address["street"],
+            address["city"],
+            address["postalCode"],
+            address["country"],
+          );
+          setState(() {
+            _addressController.text = address["street"] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint("Error fetching address: $e");
+    }
+  }
 
   // password matching error message
   void showErrorMessage(String message) {
@@ -172,11 +206,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     setState(() {
       lastName = authProvider.lastName;
-      _addressController.text =
-          Provider.of<AuthProvider>(context, listen: false).addressStreet ?? '';
+      _addressController.text = authProvider.addressStreet ?? '';
       firstName = authProvider.firstName;
       phoneNumber = authProvider.phoneNumber;
     });
+    // Fetch address in case it's not already loaded
+    fetchAddress();
   }
 
   @override
@@ -249,56 +284,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
               label: phoneNumber!,
             ),
             AppSpaces.verticalSpace20,
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GestureDetector(
-                  onTap: () async {
-                    setState(() {
-                      _addressController.text = '';
-                    });
-                  },
-                  child: (_addressController.text == '')
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text('Address'),
-                              AppSpaces.verticalSpace10,
-                              LocationAutocompleteWidget(
-                                onLocationSelected: (String address) {
-                                  setState(() {
-                                    List<String> parts = address
-                                        .split(',')
-                                        .map((part) => part.trim())
-                                        .toList();
-                                    String street = parts[0];
-                                    String city = parts[1];
-                                    String country = parts[2];
-                                    ChangeAddressController.changeAddress(
-                                      context,
-                                      scaffoldKey,
-                                      street: street,
-                                      city: city,
-                                      country: country,
-                                    );
-                                    _addressController.text = address;
-                                    Provider.of<AuthProvider>(context,
-                                            listen: false)
-                                        .addressStreet = address;
-                                  });
-                                },
+            Consumer<AuthProvider>(
+              builder: (context, authProvider, child) {
+                // Update _addressController if authProvider.addressStreet changed
+                if (_addressController.text != authProvider.addressStreet) {
+                  _addressController.text = authProvider.addressStreet ?? '';
+                }
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    GestureDetector(
+                      onTap: () async {
+                        setState(() {
+                          _addressController.text = '';
+                        });
+                      },
+                      child: (_addressController.text == '')
+                          ? Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Address'),
+                                  AppSpaces.verticalSpace10,
+                                  LocationAutocompleteWidget(
+                                    onLocationSelected: (String address) {
+                                      setState(() {
+                                        List<String> parts = address
+                                            .split(',')
+                                            .map((part) => part.trim())
+                                            .toList();
+                                        String street = parts[0];
+                                        String city = parts[1];
+                                        String country = parts[2];
+                                        ChangeAddressController.changeAddress(
+                                          context,
+                                          scaffoldKey,
+                                          street: street,
+                                          city: city,
+                                          country: country,
+                                        );
+                                        _addressController.text = address;
+                                        Provider.of<AuthProvider>(context,
+                                                listen: false)
+                                            .addressStreet = address;
+                                      });
+                                    },
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                        )
-                      : ProfileTile(
-                          title: 'Address',
-                          label: _addressController.text,
-                        ),
-                ),
-              ],
+                            )
+                          : ProfileTile(
+                              title: 'Address',
+                              label: _addressController.text,
+                            ),
+                    ),
+                  ],
+                );
+              },
             ),
             AppSpaces.verticalSpace50,
             Padding(

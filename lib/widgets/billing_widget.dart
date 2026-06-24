@@ -12,6 +12,7 @@ class BillingWidget extends StatelessWidget {
     required this.services,
     required this.additionalBenefits,
     this.isComingSoon = false,
+    this.onGetStarted,
   });
 
   final Color backgroundColor;
@@ -22,244 +23,222 @@ class BillingWidget extends StatelessWidget {
   final List<String> services;
   final List<String> additionalBenefits;
   final bool isComingSoon;
+  final VoidCallback? onGetStarted;
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.sizeOf(context);
+final isSmallScreen = MediaQuery.of(context).size.width < 360;
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
         color: backgroundColor,
         boxShadow: [
-          const BoxShadow(
-            spreadRadius: 1,
-            blurRadius: 20,
-            offset: Offset(4.0, 4.0),
-            color: Colors.grey,
-          ),
           BoxShadow(
-            spreadRadius: 1,
-            blurRadius: 20,
-            offset: const Offset(-4.0, -4.0),
-            color: AppColors.primaryBackgroundColor,
-          )
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
-      child: Stack(
-        children: [
-          Column(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: 
+Stack(
+  clipBehavior: Clip.none,
+  children: [
+    Column(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: size.width / 30,
+            vertical: size.width / 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 16),
-                    height: 40,
-                    width: MediaQuery.sizeOf(context).width,
-                    decoration: BoxDecoration(
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(
-                          12.0,
+              Text(
+                subtitle,
+                style: Constants.subHeadingStyle.copyWith(
+                  fontWeight: FontWeight.w300,
+                  fontSize: 14,
+                ),
+              ),
+              AppSpaces.verticalSpace10,
+              Text(
+                'As low as*',
+                style: Constants.subHeadingStyle.copyWith(
+                  color: Colors.grey[500],
+                  fontWeight: FontWeight.w900,
+                  fontSize: 14,
+                ),
+              ),
+              AppSpaces.verticalSpace10,
+              Text(
+                'NGN $price',
+                style: Constants.headingStyle.copyWith(
+                  color: AppColors.blackAccentColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 24,
+                ),
+              ),
+              AppSpaces.verticalSpace10,
+              const Divider(thickness: 1),
+              AppSpaces.verticalSpace10,
+              Text(
+                'Services Included:',
+                style: Constants.subHeadingStyle.copyWith(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                ),
+              ),
+              ...services.map(
+                (service) => Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '• ',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      color: titleColor,
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Expanded(child: 
-                        Text(
-                          title,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      Expanded(
+                        child: Text(
+                          service,
                           style: Constants.subHeadingStyle.copyWith(
-                            color: AppColors.primaryBackgroundColor,
-                            fontSize: MediaQuery.sizeOf(context).height / 50,
-                            fontWeight: FontWeight.w900,
+                            color: AppColors.blackAccentColor,
+                            fontSize: 13,
                           ),
                         ),
-                    )],
-                    ),
+                      ),
+                    ],
                   ),
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: MediaQuery.sizeOf(context).width / 30,
-                      vertical: MediaQuery.sizeOf(context).width / 20,
-                    ),
-                    child: Column(
+                ),
+              ),
+              if (additionalBenefits.isNotEmpty) ...[
+                AppSpaces.verticalSpace10,
+                Text(
+                  'Additional Benefits:',
+                  style: Constants.subHeadingStyle.copyWith(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                ...additionalBenefits.map(
+                  (benefit) => Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          subtitle,
-                          style: Constants.subHeadingStyle.copyWith(
-                              fontWeight: FontWeight.w300, fontSize: 14),
-                        ),
-                        AppSpaces.verticalSpace10,
-                        Text(
-                          'As low as*',
-                          style: Constants.subHeadingStyle.copyWith(
-                            color: Colors.grey[500],
-                            fontWeight: FontWeight.w900,
-                            fontSize: 14,
+                        const Text(
+                          '• ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        AppSpaces.verticalSpace10,
-                        Text(
-                          'NGN $price',
-                          style: Constants.headingStyle.copyWith(
-                            color: AppColors.blackAccentColor,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 24,
-                          ),
-                        ),
-                        AppSpaces.verticalSpace10,
-                        const Divider(thickness: 1),
-                        AppSpaces.verticalSpace10,
-                        Text(
-                          'Services Included:',
-                          style: Constants.subHeadingStyle.copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 14,
-                          ),
-                        ),
-                        ...services.map((service) => Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('• ',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold)),
-                                  Expanded(
-                                    child: Text(
-                                      service,
-                                      style: Constants.subHeadingStyle.copyWith(
-                                        color: AppColors.blackAccentColor,
-                                        fontSize: 13,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )),
-                        AppSpaces.verticalSpace10,
-                        if (additionalBenefits.isNotEmpty) ...[
-                          Text(
-                            'Additional Benefits:',
+                        Expanded(
+                          child: Text(
+                            benefit,
                             style: Constants.subHeadingStyle.copyWith(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
+                              color: AppColors.blackAccentColor,
+                              fontSize: 13,
                             ),
                           ),
-                          ...additionalBenefits.map((benefit) => Padding(
-                                padding: const EdgeInsets.only(top: 4.0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text('• ',
-                                        style: TextStyle(
-                                            fontWeight: FontWeight.bold)),
-                                    Expanded(
-                                      child: Text(
-                                        benefit,
-                                        style:
-                                            Constants.subHeadingStyle.copyWith(
-                                          color: AppColors.blackAccentColor,
-                                          fontSize: 13,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              )),
-                        ],
+                        ),
                       ],
                     ),
                   ),
-                ],
-              ),
-              Padding(
-                padding: EdgeInsets.symmetric(
-                  horizontal: MediaQuery.sizeOf(context).width / 30,
-                  vertical: MediaQuery.sizeOf(context).width / 20,
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Opacity(
-                      opacity: isComingSoon ? 0.5 : 1.0,
-                      child: InkWell(
-                        onTap: isComingSoon ? null : () {},
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            vertical: MediaQuery.sizeOf(context).height * 0.01,
-                            horizontal: MediaQuery.sizeOf(context).width * 0.04,
-                          ),
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: AppColors.blackAccentColor,
-                              width: 2.0,
-                            ),
-                            color: Colors.transparent,
-                            borderRadius: const BorderRadius.all(
-                              Radius.circular(
-                                8.0,
-                              ),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                isComingSoon ? 'Coming Soon' : 'Get Started',
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.center,
-                                style: Constants.subHeadingStyle.copyWith(
-                                  color: AppColors.blackAccentColor,
-                                  fontSize: 18,
-                                ),
-                              ),
-                              if (!isComingSoon) ...[
-                                AppSpaces.horizontalSpace10,
-                                Icon(
-                                  Icons.arrow_forward_outlined,
-                                  color: AppColors.blackAccentColor,
-                                )
-                              ],
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              )
+              ],
             ],
           ),
-          if (isComingSoon)
-            Positioned(
-              top: 40,
-              right: -25,
-              child: Transform.rotate(
-                angle: 0.785398, // 45 degrees
+        ),
+
+        Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: size.width / 30,
+            vertical: size.width / 25,
+          ),
+          child: Opacity(
+            opacity: isComingSoon ? 0.5 : 1.0,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: isComingSoon ? null : onGetStarted,
                 child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 40, vertical: 5),
-                  color: Colors.orange,
-                  child: const Text(
-                    'COMING SOON',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 10,
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 10,
+                    horizontal: 20,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: AppColors.blackAccentColor,
+                      width: 2,
                     ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        isComingSoon
+                            ? 'Coming Soon'
+                            : 'Get Started',
+                        style: Constants.subHeadingStyle.copyWith(
+                          color: AppColors.blackAccentColor,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (!isComingSoon) ...[
+                        const SizedBox(width: 8),
+                        Icon(
+                          Icons.arrow_forward_outlined,
+                          size: 18,
+                          color: AppColors.blackAccentColor,
+                        ),
+                      ],
+                    ],
                   ),
                 ),
               ),
             ),
-        ],
+          ),
+        ),
+      ],
+    ),
+
+    if (isComingSoon)
+      Positioned(
+        top: isSmallScreen ? 12 : 18,
+        right: isSmallScreen ? -10 : -15,
+        child: Transform.rotate(
+          angle: 0.785398, // 45 degrees
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isSmallScreen ? 22 : 32,
+              vertical: 5,
+            ),
+            decoration: BoxDecoration(
+              color: Colors.orange,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              'COMING SOON',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: isSmallScreen ? 8 : 10,
+              ),
+            ),
+          ),
+        ),
       ),
+  ],
+)
     );
   }
 }
