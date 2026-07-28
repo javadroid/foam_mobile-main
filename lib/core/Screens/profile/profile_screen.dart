@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
@@ -14,6 +13,7 @@ import 'package:foam_mobile/widgets/custom_API_button.dart';
 import 'package:foam_mobile/widgets/click_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
 import 'package:foam_mobile/widgets/profile_tile.dart';
+import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
@@ -51,10 +51,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           "Content-Type": "application/json",
         },
       );
+      if (!context.mounted) return;
       var response = json.decode(res.body);
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (response["address"] != null && (response["address"] as List).isNotEmpty) {
+        if (response["address"] != null &&
+            (response["address"] as List).isNotEmpty) {
           var address = response["address"][0];
           authProvider.fillAddress(
             address["street"],
@@ -206,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     setState(() {
       lastName = authProvider.lastName;
-      _addressController.text = authProvider.addressStreet ?? '';
+      _addressController.text = authProvider.addressStreet;
       firstName = authProvider.firstName;
       phoneNumber = authProvider.phoneNumber;
     });
@@ -253,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 children: [
                   ProfileImage(
                     radius: MediaQuery.sizeOf(context).height * 0.045,
-                    initials: 'YN',
+                    initials: '${firstName![0]} ${lastName![0]}',
                   ),
                 ],
               ),
@@ -288,57 +290,61 @@ class _ProfileScreenState extends State<ProfileScreen> {
               builder: (context, authProvider, child) {
                 // Update _addressController if authProvider.addressStreet changed
                 if (_addressController.text != authProvider.addressStreet) {
-                  _addressController.text = authProvider.addressStreet ?? '';
+                  _addressController.text = authProvider.addressStreet;
                 }
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    GestureDetector(
-                      onTap: () async {
-                        setState(() {
-                          _addressController.text = '';
-                        });
-                      },
-                      child: (_addressController.text == '')
-                          ? Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Text('Address'),
-                                  AppSpaces.verticalSpace10,
-                                  LocationAutocompleteWidget(
-                                    onLocationSelected: (String address) {
-                                      setState(() {
-                                        List<String> parts = address
-                                            .split(',')
-                                            .map((part) => part.trim())
-                                            .toList();
-                                        String street = parts[0];
-                                        String city = parts[1];
-                                        String country = parts[2];
-                                        ChangeAddressController.changeAddress(
-                                          context,
-                                          scaffoldKey,
-                                          street: street,
-                                          city: city,
-                                          country: country,
-                                        );
-                                        _addressController.text = address;
-                                        Provider.of<AuthProvider>(context,
-                                                listen: false)
-                                            .addressStreet = address;
-                                      });
-                                    },
-                                  ),
-                                ],
-                              ),
-                            )
-                          : ProfileTile(
-                              title: 'Address',
-                              label: _addressController.text,
+                    if (_addressController.text == '')
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('Address'),
+                            AppSpaces.verticalSpace10,
+                            LocationAutocompleteWidget(
+                              onLocationSelected: (String address) {
+                                setState(() {
+                                  List<String> parts = address
+                                      .split(',')
+                                      .map((part) => part.trim())
+                                      .toList();
+                                  String street = parts[0];
+                                  String city = parts[1];
+                                  String country = parts[2];
+                                  ChangeAddressController.changeAddress(
+                                    context,
+                                    scaffoldKey,
+                                    street: street,
+                                    city: city,
+                                    country: country,
+                                  );
+                                  _addressController.text = address;
+                                  Provider.of<AuthProvider>(context,
+                                          listen: false)
+                                      .addressStreet = address;
+                                });
+                              },
                             ),
-                    ),
+                          ],
+                        ),
+                      )
+                    else
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const SignUpPage1(),
+                            ),
+                          );
+                        },
+                        child: ProfileTile(
+                          title: 'Address',
+                          label: _addressController.text,
+                        ),
+                      ),
                   ],
                 );
               },
@@ -347,7 +353,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 18.0),
               child: ClickButton(
-                text: 'Change Passsword',
+                text: 'Update Address',
+                textColor: Colors.white,
+                color: AppColors.secondaryBackgroundColor,
+                fontSize: 20,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const SignUpPage1(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            AppSpaces.verticalSpace20,
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18.0),
+              child: ClickButton(
+                text: 'Change Password',
                 textColor: Colors.white,
                 color: AppColors.secondaryBackgroundColor,
                 fontSize: 20,

@@ -36,6 +36,7 @@ class _HomePageState extends State<HomePage> {
   String? fullName;
   String? addressStreet;
   String? firstName;
+  String? lastName;
   File? image;
 
   // discount slider CONTROLLER
@@ -78,6 +79,7 @@ class _HomePageState extends State<HomePage> {
       fullName = "${authProvider.firstName} ${authProvider.lastName}";
       addressStreet = authProvider.addressStreet;
       firstName = authProvider.firstName;
+      lastName = authProvider.lastName;
     });
 
     //discount tile controller
@@ -149,7 +151,8 @@ class _HomePageState extends State<HomePage> {
                                       radius: 25,
                                       child: image == null
                                           ? const Icon(Icons.person, size: 30)
-                                          : null,
+                                          : Text(
+                                              '${firstName?[0]} ${lastName?[0]}'),
                                     ),
                                   ),
                                 ),

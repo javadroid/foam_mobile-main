@@ -41,12 +41,13 @@ class _ServicesScreenState extends State<ServicesScreen> {
         services = allServices
             .where((service) => !service.description.contains('Coming Soon...'))
             .where((service) {
-              if (serviceType == null) {
-                return true;
-              }
-              return service.name.toLowerCase().contains(serviceType!.toLowerCase());
-            })
-            .toList();
+          if (serviceType == null) {
+            return true;
+          }
+          return service.name
+              .toLowerCase()
+              .contains(serviceType!.toLowerCase());
+        }).toList();
         isLoaded = true;
       });
     }
@@ -104,7 +105,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                                   image: NetworkImage(
                                     services![index].imageUrl,
                                   ),
-                                  fit: BoxFit.contain,
+                                  fit: BoxFit.cover,
                                 ),
                               ),
                             ),

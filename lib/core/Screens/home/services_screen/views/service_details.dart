@@ -64,7 +64,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                           image: NetworkImage(
                             service.imageUrl,
                           ),
-                          fit: BoxFit.contain,
+                          fit: BoxFit.fill,
                         ),
                       ),
                     ),
@@ -147,8 +147,9 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                     child: ClickButton(
                       text: 'Schedule Pickup',
                       textColor: Colors.white,
-                      onPressed: () =>
-                          Navigator.pushNamed(context, AddToBasket.id, arguments: service),
+                      onPressed: () => Navigator.pushNamed(
+                          context, AddToBasket.id,
+                          arguments: service),
                       fontSize: MediaQuery.sizeOf(context).height / 53,
                       color: AppColors.secondaryBackgroundColor,
                     ),

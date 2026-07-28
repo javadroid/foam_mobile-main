@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/model/sign_up_model.dart';
+import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_register_page.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 import 'package:foam_mobile/widgets/login_with_button.dart';
@@ -211,6 +212,8 @@ class _SignUpPage0State extends State<SignUpPage0> {
                                       _scaffoldKey,
                                     );
 
+                                    if (!context.mounted) return;
+
                                     if (isVerified) {
                                       await SignUpModel.getStarted(
                                         context,
@@ -270,7 +273,41 @@ class _SignUpPage0State extends State<SignUpPage0> {
                         ],
                       ),
 
-                      AppSpaces.verticalSpace50,
+                      const SizedBox(height: 30),
+
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Already have an account? ',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 17,
+                              color: Colors.grey[800],
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context, rootNavigator: true).pushNamed(
+                                LoginOrRegisterPage.id,
+                              );
+                            },
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4.0),
+                              child: Text(
+                                'Log in',
+                                style: GoogleFonts.dmSans(
+                                  color: AppColors.primaryAccentColor,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  decoration: TextDecoration.underline,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 30),
 
                       //agreeing with terms and conditions
                       Row(
