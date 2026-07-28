@@ -51,7 +51,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           "Content-Type": "application/json",
         },
       );
-      if (!context.mounted) return;
+      if (!mounted) return;
       var response = json.decode(res.body);
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
