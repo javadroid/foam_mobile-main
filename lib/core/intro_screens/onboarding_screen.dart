@@ -3,7 +3,11 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:foam_mobile/core/intro_screens/intro_page.dart';
+import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_register_page.dart';
+import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_0.dart';
 import 'package:foam_mobile/utils/values.dart';
+import 'package:foam_mobile/widgets/click_button.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
@@ -43,9 +47,8 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
 
   @override
   void dispose() {
-    super.dispose();
-    // discount slider CONTROLLER
     timer?.cancel();
+    screenController.dispose();
     super.dispose();
   }
 
@@ -55,56 +58,117 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark,
       child: Scaffold(
-        body: Stack(
-          children: [
-            SizedBox(
-              height: mainProvider.height,
-              child: PageView(
+        body: Container(
+          height: mainProvider.height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: const Alignment(0, 0),
+              end: const Alignment(0, 0.9),
+              colors: [
+                ...AppColors.gradientColor,
+              ],
+            ),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(5),
+            ),
+          ),
+          padding: const EdgeInsets.only(
+            top: 50,
+            left: 15.0,
+            right: 15.0,
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Image.asset('assets/images/foam.png'),
+                ],
+              ),
+              Expanded(
+                child: PageView(
+                  controller: screenController,
+                  children: const [
+                    IntroPage(
+                      imageAsset: 'assets/images/laundry0.png',
+                      text:
+                          'Experience convenience and freshness like never before.',
+                    ),
+                    IntroPage(
+                      imageAsset: 'assets/images/laundry1.png',
+                      text:
+                          'Simplify Your Life with Seamless Laundry Pickup and Delivery.',
+                    ),
+                    IntroPage(
+                      imageAsset: 'assets/images/laundry2.png',
+                      text:
+                          'Eco-Friendly Cleaning that Cares for Your Clothes and the Planet',
+                    ),
+                    IntroPage(
+                      imageAsset: 'assets/images/laundry3.png',
+                      text: 'Join Us and Transform the Way You Do Laundry!',
+                    ),
+                  ],
+                ),
+              ),
+              SmoothPageIndicator(
                 controller: screenController,
+                count: 4,
+                effect: Constants.slideEffect1,
+              ),
+              const SizedBox(height: 24),
+              Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  IntroPage(
-                    imageAsset: 'assets/images/laundry0.png',
-                    text:
-                        'Experience convenience and freshness like never before.',
-                    color: AppColors.primaryAccentColor,
+                  Text(
+                    'Schedule your pickup today',
+                    style: GoogleFonts.dmSans(
+                      color: AppColors.blackAccentColor,
+                      fontSize: 19,
+                    ),
                   ),
-                  IntroPage(
-                    imageAsset: 'assets/images/laundry1.png',
-                    text:
-                        'Simplify Your Life with Seamless Laundry Pickup and Delivery.',
-                    color: AppColors.primaryAccentColor,
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: ClickButton(
+                          text: 'Sign me up!',
+                          textColor: Colors.white,
+                          color: AppColors.secondaryBackgroundColor,
+                          fontSize: 20.0,
+                          onPressed: () =>
+                              Navigator.of(context, rootNavigator: true)
+                                  .pushNamed(
+                            SignUpPage0.id,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  IntroPage(
-                    imageAsset: 'assets/images/laundry2.png',
-                    text:
-                        'Eco-Friendly Cleaning that Cares for Your Clothes and the Planet',
-                    color: AppColors.primaryAccentColor,
+                  const SizedBox(height: 20),
+                  InkWell(
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                      LoginOrRegisterPage.id,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Log in with your existing account',
+                        style: GoogleFonts.dmSans(
+                          color: AppColors.blackAccentColor,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
                   ),
-                  IntroPage(
-                    imageAsset: 'assets/images/laundry3.png',
-                    text: 'Join Us and Transform the Way You Do Laundry!',
-                    color: AppColors.primaryAccentColor,
-                  ),
+                  const SizedBox(height: 16),
                 ],
               ),
-            ),
-
-            //dot controller
-            Container(
-              alignment: const Alignment(0, 0.20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  //dot indicator
-                  SmoothPageIndicator(
-                    controller: screenController,
-                    count: 4,
-                    effect: Constants.slideEffect1,
-                  ),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
