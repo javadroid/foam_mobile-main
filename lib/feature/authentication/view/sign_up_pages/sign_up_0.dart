@@ -102,7 +102,7 @@ class _SignUpPage0State extends State<SignUpPage0> {
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             color: Colors.grey[900],
-                            fontSize: 25,
+                            fontSize: 22,
                             fontWeight: FontWeight.w600,
                           ),
                         ),

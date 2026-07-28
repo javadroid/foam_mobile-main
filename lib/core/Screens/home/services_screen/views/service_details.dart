@@ -80,7 +80,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Constants.headingStyle.copyWith(
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -91,7 +91,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                     overflow: TextOverflow.ellipsis,
                     style: Constants.subHeadingStyle.copyWith(
                       fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                      fontSize: 14,
                     ),
                   ),
                 ],
@@ -105,7 +105,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: Constants.headingStyle.copyWith(
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
@@ -119,7 +119,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                         overflow: TextOverflow.ellipsis,
                         style: Constants.subHeadingStyle.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                       AppSpaces.horizontalSpace5,
@@ -133,7 +133,7 @@ class _ServiceDetailsState extends State<ServiceDetails> {
                         overflow: TextOverflow.ellipsis,
                         style: Constants.subHeadingStyle.copyWith(
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: 14,
                         ),
                       ),
                     ],

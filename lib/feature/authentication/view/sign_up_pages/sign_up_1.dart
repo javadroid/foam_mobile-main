@@ -66,7 +66,7 @@ class _SignUpPage1State extends State<SignUpPage1> {
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             color: Colors.grey[700],
-                            fontSize: 25,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

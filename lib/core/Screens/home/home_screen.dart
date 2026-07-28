@@ -172,7 +172,7 @@ class _HomePageState extends State<HomePage> {
                                       maxLines:
                                           1, // ✅ Ensures text stays in one line
                                       style: GoogleFonts.dmSans(
-                                        fontSize: 20,
+                                        fontSize: 16,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
@@ -183,7 +183,7 @@ class _HomePageState extends State<HomePage> {
                                           : 'No Address Provided',
                                       overflow: TextOverflow.ellipsis,
                                       maxLines: 1, // ✅ Prevents text wrapping
-                                      style: GoogleFonts.dmSans(fontSize: 16),
+                                      style: GoogleFonts.dmSans(fontSize: 13),
                                     ),
                                   ],
                                 ),
@@ -282,7 +282,7 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           'Choose a Service',
                           style: Constants.headingStyle.copyWith(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -348,7 +348,7 @@ class _HomePageState extends State<HomePage> {
                         Text(
                           'Product on sale',
                           style: Constants.headingStyle.copyWith(
-                            fontSize: 22,
+                            fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -446,7 +446,7 @@ class _HomePageState extends State<HomePage> {
                             Text(
                               'Plans',
                               style: Constants.headingStyle.copyWith(
-                                fontSize: 22,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),

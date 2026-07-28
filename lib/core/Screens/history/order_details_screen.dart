@@ -119,7 +119,7 @@ class OrderDetailsScreen extends StatelessWidget {
                               Text(
                                 'Order Cancelled',
                                 style: Constants.headingStyle.copyWith(
-                                  fontSize: 18,
+                                  fontSize: 16,
                                   color: Colors.red[900],
                                 ),
                               ),
@@ -145,7 +145,7 @@ class OrderDetailsScreen extends StatelessWidget {
                     child: Text(
                       headerText,
                       style: const TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         color: Colors.grey,
                         fontWeight: FontWeight.w500,
                       ),
@@ -207,7 +207,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                   Text(
                                     stages[index]['title']!,
                                     style: TextStyle(
-                                      fontSize: 16,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w600,
                                       color: index <= activeIndex
                                           ? Colors.black87
@@ -259,14 +259,14 @@ class OrderDetailsScreen extends StatelessWidget {
                         Text(
                           _getOrdinalDate(order.createdAt),
                           style: Constants.headingStyle.copyWith(
-                            fontSize: 18,
+                            fontSize: 16,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('h:mm a').format(order.createdAt),
                           style: Constants.subHeadingStyle.copyWith(
-                            fontSize: 15,
+                            fontSize: 13,
                             color: Colors.black54,
                           ),
                         ),
@@ -275,7 +275,7 @@ class OrderDetailsScreen extends StatelessWidget {
                     Text(
                       '₦ ${Constants().currencyFormat(order.totalPrice)}',
                       style: Constants.headingStyle.copyWith(
-                        fontSize: 22,
+                        fontSize: 18,
                       ),
                     ),
                   ],
@@ -287,7 +287,7 @@ class OrderDetailsScreen extends StatelessWidget {
                 // Items Section
                 Text(
                   'Items',
-                  style: Constants.headingStyle.copyWith(fontSize: 18),
+                  style: Constants.headingStyle.copyWith(fontSize: 16),
                 ),
                 const SizedBox(height: 15),
                 Column(
@@ -350,14 +350,14 @@ class OrderDetailsScreen extends StatelessWidget {
                               Text(
                                 'x${item.quantity}',
                                 style: Constants.headingStyle.copyWith(
-                                  fontSize: 18,
+                                  fontSize: 15,
                                 ),
                               ),
                               AppSpaces.verticalSpace5,
                               Text(
                                 '₦${Constants().currencyFormat(item.category.price * item.quantity)}',
                                 style: Constants.headingStyle.copyWith(
-                                  fontSize: 16,
+                                  fontSize: 14,
                                   color: AppColors.primaryAccentColor,
                                 ),
                               ),

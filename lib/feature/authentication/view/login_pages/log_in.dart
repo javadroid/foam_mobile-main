@@ -52,7 +52,7 @@ class _LoginPageState extends State<LoginPage> {
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             color: AppColors.blackAccentColor,
-                            fontSize: 25,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

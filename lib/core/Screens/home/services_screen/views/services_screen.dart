@@ -121,7 +121,7 @@ class _ServicesScreenState extends State<ServicesScreen> {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
-                              fontSize: 24,
+                              fontSize: 18,
                               fontWeight: FontWeight.bold,
                             ),
                           ),

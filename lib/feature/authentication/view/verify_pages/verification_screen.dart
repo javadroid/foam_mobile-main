@@ -52,7 +52,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                           textAlign: TextAlign.left,
                           style: TextStyle(
                             color: AppColors.blackAccentColor,
-                            fontSize: 25,
+                            fontSize: 22,
                             fontWeight: FontWeight.bold,
                           ),
                         ),

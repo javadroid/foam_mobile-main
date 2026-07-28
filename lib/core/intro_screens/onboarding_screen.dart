@@ -123,7 +123,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                     'Schedule your pickup today',
                     style: GoogleFonts.dmSans(
                       color: AppColors.blackAccentColor,
-                      fontSize: 19,
+                      fontSize: 16,
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -135,7 +135,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                           text: 'Sign me up!',
                           textColor: Colors.white,
                           color: AppColors.secondaryBackgroundColor,
-                          fontSize: 20.0,
+                          fontSize: 16.0,
                           onPressed: () =>
                               Navigator.of(context, rootNavigator: true)
                                   .pushNamed(
@@ -157,7 +157,7 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                         'Log in with your existing account',
                         style: GoogleFonts.dmSans(
                           color: AppColors.blackAccentColor,
-                          fontSize: 17,
+                          fontSize: 14,
                           fontWeight: FontWeight.w500,
                           decoration: TextDecoration.underline,
                         ),

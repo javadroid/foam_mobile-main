@@ -19,7 +19,7 @@ class Constants {
 
   static TextStyle headingStyle = GoogleFonts.dmSans(
     color: AppColors.blackAccentColor,
-    fontSize: 25,
+    fontSize: 20,
     fontWeight: FontWeight.w500,
     textStyle: const TextStyle(
       textBaseline: TextBaseline.ideographic,
@@ -28,7 +28,7 @@ class Constants {
 
   static TextStyle subHeadingStyle = GoogleFonts.dmSans(
     color: AppColors.blackAccentColor,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: FontWeight.w300,
     textStyle: const TextStyle(
       textBaseline: TextBaseline.alphabetic,
@@ -37,7 +37,7 @@ class Constants {
 
   static TextStyle textStyle = const TextStyle(
     fontWeight: FontWeight.w300,
-    fontSize: 18,
+    fontSize: 14,
     textBaseline: TextBaseline.alphabetic,
   );
 

@@ -138,7 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     message,
                     overflow: TextOverflow.visible,
-                    style: Constants.headingStyle.copyWith(fontSize: 24),
+                    style: Constants.headingStyle.copyWith(fontSize: 18),
                   ),
                   AppSpaces.horizontalSpace10,
                 ],
@@ -356,7 +356,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: 'Update Address',
                 textColor: Colors.white,
                 color: AppColors.secondaryBackgroundColor,
-                fontSize: 20,
+                fontSize: 16,
                 onPressed: () {
                   Navigator.push(
                     context,
@@ -374,7 +374,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: 'Change Password',
                 textColor: Colors.white,
                 color: AppColors.secondaryBackgroundColor,
-                fontSize: 20,
+                fontSize: 16,
                 onPressed: () {
                   changePassword(
                     'Change Password',
@@ -390,7 +390,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: 'Delete Account',
                 textColor: Colors.white,
                 color: AppColors.secondaryBackgroundColor,
-                fontSize: 20,
+                fontSize: 16,
                 onPressed: () {},
               ),
             ),

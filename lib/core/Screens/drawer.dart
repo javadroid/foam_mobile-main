@@ -33,7 +33,7 @@ class MyDrawer extends StatelessWidget {
                   message,
                   style: GoogleFonts.dmSans(
                     fontWeight: FontWeight.bold,
-                    fontSize: 25,
+                    fontSize: 20,
                     color: Colors.black,
                   ),
                 ),
@@ -44,14 +44,14 @@ class MyDrawer extends StatelessWidget {
                     DecisionButton(
                       text: 'Cancel',
                       color: AppColors.primaryBackgroundColor,
-                      fontSize: 17,
+                      fontSize: 15,
                       border: false,
                       onPressed: () => Navigator.pop(context),
                     ),
                     DecisionButton(
                       text: 'Log Out',
                       color: AppColors.blackAccentColor,
-                      fontSize: 17,
+                      fontSize: 15,
                       border: true,
                       onPressed: () {
                         LogoutClass.logOut(
@@ -89,7 +89,7 @@ class MyDrawer extends StatelessWidget {
                         Text(
                           'Hello $firstName',
                           style: const TextStyle(
-                            fontSize: 25,
+                            fontSize: 20,
                           ),
                         ),
                         IconButton(

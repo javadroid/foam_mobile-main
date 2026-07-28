@@ -30,7 +30,7 @@ class IntroPage extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(
               color: AppColors.blackAccentColor,
-              fontSize: 25,
+              fontSize: 20,
               fontWeight: FontWeight.w500,
             ),
           ),
