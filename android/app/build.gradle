@@ -78,6 +78,9 @@ android {
             jniDebuggable false
             renderscriptDebuggable false
             zipAlignEnabled true
+            ndk {
+                debugSymbolLevel 'none'
+            }
         }
     }
 }

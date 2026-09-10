@@ -27,15 +27,15 @@ class BasketClass {
           'Content-Type': 'application/json'
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return null;
       }
-      
+
       var response = res.body;
       if (res.statusCode == 200 || res.statusCode == 201) {
-        MyMessageHandler.showSnackBar(scaffoldKey, "Basket loaded");
+        // MyMessageHandler.showSnackBar(scaffoldKey, "Basket loaded");
         log(response.toString());
         return basketListFromJson(response);
       } else {
@@ -53,12 +53,9 @@ class BasketClass {
     }
   }
 
-  static Future<void> updateQuantity(
-    int categoryId,
-    int quantity,
-    GlobalKey<ScaffoldMessengerState> scaffoldKey,
-    [BuildContext? context]
-  ) async {
+  static Future<void> updateQuantity(int categoryId, int quantity,
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.put(
         Uri.parse("${Constants.url}/api/user/basket/category/$categoryId"),
@@ -69,7 +66,7 @@ class BasketClass {
         },
         body: jsonEncode({"quantity": quantity}),
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return;
@@ -87,10 +84,8 @@ class BasketClass {
     }
   }
 
-  static Future<void> clearBasket(
-    GlobalKey<ScaffoldMessengerState> scaffoldKey,
-    [BuildContext? context]
-  ) async {
+  static Future<void> clearBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      [BuildContext? context]) async {
     try {
       final res = await http.delete(
         Uri.parse("${Constants.url}/api/user/basket/"),
@@ -100,7 +95,7 @@ class BasketClass {
           "Content-Type": "application/json",
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return;
