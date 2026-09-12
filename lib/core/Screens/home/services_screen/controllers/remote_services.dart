@@ -64,7 +64,6 @@ class ServicesClass {
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        MyMessageHandler.showSnackBar(scaffoldKey, "Services loaded");
         log(jsonEncode(json.decode(res.body))); // Properly log response
         return servicesListFromJson(res.body);
       } else {

@@ -78,11 +78,33 @@ class BasketProvider extends ChangeNotifier {
   }
 
   Future<void> updateQuantity(int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+    // Optimistic local update for instant UI responsiveness
+    final index = _basketItems.indexWhere((item) => item.categoryId == categoryId);
+    if (index != -1) {
+      if (quantity <= 0) {
+        _basketItems.removeAt(index);
+      } else {
+        final current = _basketItems[index];
+        _basketItems[index] = BasketList(
+          categoryId: current.categoryId,
+          quantity: quantity,
+          name: current.name,
+          price: current.price,
+          imageUrl: current.imageUrl,
+        );
+      }
+      notifyListeners();
+    }
+
     await BasketClass.updateQuantity(categoryId, quantity, scaffoldKey);
     await fetchBasket(scaffoldKey, showLoading: false);
   }
 
   Future<void> removeFromBasket(int categoryId, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+    // Optimistic local removal
+    _basketItems.removeWhere((item) => item.categoryId == categoryId);
+    notifyListeners();
+
     await ServicesClass.removeFromBasket(categoryId, scaffoldKey);
     await fetchBasket(scaffoldKey, showLoading: false);
   }

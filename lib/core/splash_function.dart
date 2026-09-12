@@ -35,7 +35,6 @@ class SplashFunction {
       var response = json.decode(res.body);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        // print(res.body);
         var user = response["user"];
         authProvider.fillAuth(
           user["firstName"],
@@ -44,7 +43,21 @@ class SplashFunction {
           user["email"],
           user["phone"],
         );
-        bool hasAddress = await getAddress(context);
+
+        bool hasAddress = false;
+        if (user["address"] != null && user["address"] is List && (user["address"] as List).isNotEmpty) {
+          var address = user["address"][0];
+          authProvider.fillAddress(
+            address["street"],
+            address["city"],
+            address["postalCode"],
+            address["country"],
+          );
+          hasAddress = true;
+        } else {
+          hasAddress = await getAddress(context);
+        }
+
         authProvider.updateDone(true);
         return hasAddress;
       } else {

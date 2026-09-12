@@ -68,56 +68,56 @@ class _HomePageState extends State<HomePage> {
     },
   ];
 
+  final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
+      GlobalKey<ScaffoldMessengerState>();
+
   @override
   void initState() {
-    var authProvider = Provider.of<AuthProvider>(context, listen: false);
-    var profileAuth = Provider.of<ProfilePicAuth>(context, listen: false);
-    setState(() {
-      image = profileAuth.image;
-    });
-    setState(() {
-      fullName = "${authProvider.firstName} ${authProvider.lastName}";
-      addressStreet = authProvider.addressStreet;
-      firstName = authProvider.firstName;
-      lastName = authProvider.lastName;
-    });
+    super.initState();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final profileAuth = Provider.of<ProfilePicAuth>(context, listen: false);
 
-    //discount tile controller
+    image = profileAuth.image;
+    fullName = "${authProvider.firstName} ${authProvider.lastName}";
+    addressStreet = authProvider.addressStreet;
+    firstName = authProvider.firstName;
+    lastName = authProvider.lastName;
+
+    // discount tile controller
     timer = Timer.periodic(const Duration(seconds: 5), (Timer timer) {
+      if (!mounted) return;
       if (_currentDiscountController < discountDeals.length - 1) {
         _currentDiscountController++;
       } else {
         _currentDiscountController = 0;
       }
 
-      discountController.animateToPage(
-        _currentDiscountController,
-        duration: const Duration(milliseconds: 700),
-        curve: Curves.easeIn,
-      );
+      if (discountController.hasClients) {
+        discountController.animateToPage(
+          _currentDiscountController,
+          duration: const Duration(milliseconds: 700),
+          curve: Curves.easeIn,
+        );
+      }
     });
-    super.initState();
   }
 
   @override
   void dispose() {
-    super.dispose();
-    // discount slider CONTROLLER
     timer?.cancel();
+    discountController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final GlobalKey<ScaffoldMessengerState> scaffoldKey =
-        GlobalKey<ScaffoldMessengerState>();
-
     return ScaffoldMessenger(
-      key: scaffoldKey,
+      key: _scaffoldKey,
       child: Scaffold(
         backgroundColor: AppColors.primaryBackgroundColor,
         drawer: MyDrawer(
           firstName: firstName ?? 'error',
-          scaffoldKey: scaffoldKey,
+          scaffoldKey: _scaffoldKey,
         ),
         body: SafeArea(
           child: ListView(

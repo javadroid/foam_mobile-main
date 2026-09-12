@@ -108,7 +108,10 @@ class _MainScreenState extends State<MainScreen> {
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(
-        body: screens[currentIndex],
+        body: IndexedStack(
+          index: currentIndex,
+          children: screens,
+        ),
         extendBody: true,
         //<------like this
         bottomNavigationBar: Container(
