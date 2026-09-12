@@ -7,12 +7,18 @@ class GradientButton extends StatefulWidget {
   final String text;
   final Function()? onPressed;
   final bool isLoading;
+  final double? width;
+  final double? fontSize;
+  final EdgeInsetsGeometry? padding;
 
   const GradientButton({
     super.key,
     required this.text,
     required this.onPressed,
     required this.isLoading,
+    this.width,
+    this.fontSize,
+    this.padding,
   });
 
   @override
@@ -23,17 +29,18 @@ class _GradientButtonState extends State<GradientButton> {
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: widget.onPressed,
+      onTap: widget.isLoading ? null : widget.onPressed,
+      borderRadius: BorderRadius.circular(8.0),
       child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 18.0,
-          horizontal: 100,
-        ),
+        width: widget.width ?? double.infinity,
+        padding: widget.padding ??
+            const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 16.0,
+            ),
         decoration: BoxDecoration(
           borderRadius: const BorderRadius.all(
-            Radius.circular(
-              8.0,
-            ),
+            Radius.circular(8.0),
           ),
           gradient: LinearGradient(
             begin: Alignment.topLeft,
@@ -43,23 +50,21 @@ class _GradientButtonState extends State<GradientButton> {
             ],
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            (widget.isLoading)
-                ? LoadingAnimationWidget.fourRotatingDots(
+        child: Center(
+          child: widget.isLoading
+              ? LoadingAnimationWidget.fourRotatingDots(
+                  color: Colors.white,
+                  size: 28,
+                )
+              : Text(
+                  widget.text,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.dmSans(
+                    fontSize: widget.fontSize ?? 18.0,
+                    fontWeight: FontWeight.w600,
                     color: Colors.white,
-                    size: 30,
-                  )
-                : Text(
-                    widget.text,
-                    style: GoogleFonts.dmSans(
-                      fontSize: 20.0,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                    ),
                   ),
-          ],
+                ),
         ),
       ),
     );
