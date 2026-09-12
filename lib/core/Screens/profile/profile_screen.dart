@@ -304,21 +304,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             const Text('Address'),
                             AppSpaces.verticalSpace10,
                             LocationAutocompleteWidget(
-                              onLocationSelected: (String address) {
+                              onLocationSelected: (String address) {},
+                              onLocationCoordinatesSelected: (String address, double? lat, double? lng) {
                                 setState(() {
                                   List<String> parts = address
                                       .split(',')
                                       .map((part) => part.trim())
                                       .toList();
-                                  String street = parts[0];
-                                  String city = parts[1];
-                                  String country = parts[2];
+                                  String street = parts.isNotEmpty ? parts[0] : address;
+                                  String city = parts.length > 1 ? parts[1] : 'Port Harcourt';
+                                  String country = parts.length > 2 ? parts.last : 'Nigeria';
                                   ChangeAddressController.changeAddress(
                                     context,
                                     scaffoldKey,
                                     street: street,
                                     city: city,
                                     country: country,
+                                    latitude: lat,
+                                    longitude: lng,
                                   );
                                   _addressController.text = address;
                                   Provider.of<AuthProvider>(context,

@@ -4,7 +4,7 @@ class OrderResponse {
   OrderResponse({required this.orders});
 
   factory OrderResponse.fromJson(Map<String, dynamic> json) {
-    var ordersList = json['orders'] as List;
+    var ordersList = (json['orders'] as List?) ?? [];
     List<Order> orders = ordersList.map((i) => Order.fromJson(i)).toList();
     return OrderResponse(orders: orders);
   }
@@ -23,6 +23,7 @@ class Order {
   final DateTime? pickupDate;
   final DateTime? deliveryDate;
   final int totalPrice;
+  final bool noFolding;
   final String paymentType;
   final String paymentId;
   final String paymentStatus;
@@ -38,6 +39,7 @@ class Order {
     this.pickupDate,
     this.deliveryDate,
     required this.totalPrice,
+    this.noFolding = false,
     required this.paymentType,
     required this.paymentId,
     required this.paymentStatus,
@@ -48,20 +50,28 @@ class Order {
   });
 
   factory Order.fromJson(Map<String, dynamic> json) {
-    var itemsList = json['items'] as List;
-    List<OrderItem> items = itemsList.map((i) => OrderItem.fromJson(i)).toList();
+    var itemsList = (json['items'] as List?) ?? [];
+    List<OrderItem> items =
+        itemsList.map((i) => OrderItem.fromJson(i)).toList();
 
     return Order(
-      id: json['id'],
-      userId: json['userId'],
-      status: json['status'],
-      pickupDate: json['pickupDate'] != null ? DateTime.parse(json['pickupDate']) : null,
-      deliveryDate: json['deliveryDate'] != null ? DateTime.parse(json['deliveryDate']) : null,
-      totalPrice: json['totalPrice'],
-      paymentType: json['paymentType'],
-      paymentId: json['paymentId'],
-      paymentStatus: json['paymentStatus'],
-      createdAt: DateTime.parse(json['createdAt']),
+      id: json['id'] ?? 0,
+      userId: json['userId'] ?? 0,
+      status: json['status'] ?? '',
+      pickupDate: json['pickupDate'] != null
+          ? DateTime.tryParse(json['pickupDate'])
+          : null,
+      deliveryDate: json['deliveryDate'] != null
+          ? DateTime.tryParse(json['deliveryDate'])
+          : null,
+      totalPrice: (json['totalPrice'] as num?)?.toInt() ?? 0,
+      noFolding: json['noFolding'] == true,
+      paymentType: json['paymentType'] ?? '',
+      paymentId: json['paymentId'] ?? '',
+      paymentStatus: json['paymentStatus'] ?? '',
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
       orderHistoryId: json['orderHistoryId'],
       riderId: json['riderId'],
       items: items,
@@ -76,6 +86,7 @@ class Order {
       'pickupDate': pickupDate?.toIso8601String(),
       'deliveryDate': deliveryDate?.toIso8601String(),
       'totalPrice': totalPrice,
+      'noFolding': noFolding,
       'paymentType': paymentType,
       'paymentId': paymentId,
       'paymentStatus': paymentStatus,
@@ -93,6 +104,7 @@ class OrderItem {
   final int orderId;
   final int categoryId;
   final int quantity;
+  final int foldingSurcharge;
   final DateTime createdAt;
   final DateTime updatedAt;
   final OrderItemCategory category;
@@ -103,6 +115,7 @@ class OrderItem {
     required this.orderId,
     required this.categoryId,
     required this.quantity,
+    this.foldingSurcharge = 0,
     required this.createdAt,
     required this.updatedAt,
     required this.category,
@@ -110,14 +123,27 @@ class OrderItem {
 
   factory OrderItem.fromJson(Map<String, dynamic> json) {
     return OrderItem(
-      id: json['id'],
+      id: json['id'] ?? 0,
       basketId: json['basketId'],
-      orderId: json['orderId'],
-      categoryId: json['categoryId'],
-      quantity: json['quantity'],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
-      category: OrderItemCategory.fromJson(json['category']),
+      orderId: json['orderId'] ?? 0,
+      categoryId: json['categoryId'] ?? 0,
+      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+      foldingSurcharge:
+          (json['foldingSurcharge'] as num?)?.toInt() ?? 0,
+      createdAt: json['createdAt'] != null
+          ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
+          : DateTime.now(),
+      updatedAt: json['updatedAt'] != null
+          ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now()
+          : DateTime.now(),
+      category: json['category'] != null
+          ? OrderItemCategory.fromJson(json['category'])
+          : OrderItemCategory(
+              id: 0,
+              name: '',
+              description: '',
+              price: 0,
+            ),
     );
   }
 
@@ -128,6 +154,7 @@ class OrderItem {
       'orderId': orderId,
       'categoryId': categoryId,
       'quantity': quantity,
+      'foldingSurcharge': foldingSurcharge,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'category': category.toJson(),
@@ -141,6 +168,7 @@ class OrderItemCategory {
   final String name;
   final String description;
   final int price;
+  final double? foldingSurchargeRate;
 
   OrderItemCategory({
     required this.id,
@@ -148,15 +176,18 @@ class OrderItemCategory {
     required this.name,
     required this.description,
     required this.price,
+    this.foldingSurchargeRate,
   });
 
   factory OrderItemCategory.fromJson(Map<String, dynamic> json) {
     return OrderItemCategory(
-      id: json['id'],
+      id: json['id'] ?? 0,
       imageUrl: json['imageUrl'],
-      name: json['name'],
-      description: json['description'],
-      price: json['price'],
+      name: json['name'] ?? '',
+      description: json['description'] ?? '',
+      price: (json['price'] as num?)?.toInt() ?? 0,
+      foldingSurchargeRate:
+          (json['foldingSurchargeRate'] as num?)?.toDouble(),
     );
   }
 
@@ -167,6 +198,8 @@ class OrderItemCategory {
       'name': name,
       'description': description,
       'price': price,
+      if (foldingSurchargeRate != null)
+        'foldingSurchargeRate': foldingSurchargeRate,
     };
   }
 }

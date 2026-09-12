@@ -14,6 +14,11 @@ class ChangeAddressController {
     required String street,
     required String city,
     required String country,
+    String? state,
+    String? lga,
+    String postalCode = "",
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       http.Response res = await http.post(
@@ -28,8 +33,12 @@ class ChangeAddressController {
         body: jsonEncode({
           "street": street,
           "city": city,
-          "postalCode": "",
-          "country": country
+          "state": state,
+          "lga": lga,
+          "postalCode": postalCode,
+          "country": country,
+          "latitude": latitude,
+          "longitude": longitude,
         }),
       );
       

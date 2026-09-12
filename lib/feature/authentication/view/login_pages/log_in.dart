@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/feature/authentication/controller/social_auth_service.dart';
 import 'package:foam_mobile/feature/authentication/model/login_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
@@ -28,6 +29,9 @@ class _LoginPageState extends State<LoginPage> {
   final _passwordController = TextEditingController();
 
   bool loading = false;
+  bool isGoogleLoading = false;
+  bool isAppleLoading = false;
+
 
   @override
   Widget build(BuildContext context) {
@@ -158,23 +162,58 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       AppSpaces.verticalSpace20,
 
-                      const Column(
+                      Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              LoginWithButton(text: 'Google'),
+                              LoginWithButton(
+                                text: 'Google',
+                                isLoading: isGoogleLoading,
+                                onTap: () async {
+                                  setState(() {
+                                    isGoogleLoading = true;
+                                  });
+                                  await SocialAuthService.handleGoogleSignIn(
+                                    context,
+                                    _scaffoldKey,
+                                  );
+                                  if (mounted) {
+                                    setState(() {
+                                      isGoogleLoading = false;
+                                    });
+                                  }
+                                },
+                              ),
                             ],
                           ),
                           AppSpaces.verticalSpace20,
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              LoginWithButton(text: 'Apple'),
+                              LoginWithButton(
+                                text: 'Apple',
+                                isLoading: isAppleLoading,
+                                onTap: () async {
+                                  setState(() {
+                                    isAppleLoading = true;
+                                  });
+                                  await SocialAuthService.handleAppleSignIn(
+                                    context,
+                                    _scaffoldKey,
+                                  );
+                                  if (mounted) {
+                                    setState(() {
+                                      isAppleLoading = false;
+                                    });
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         ],
                       ),
+
 
                       AppSpaces.verticalSpace50,
 

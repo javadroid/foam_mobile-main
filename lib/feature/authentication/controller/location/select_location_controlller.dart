@@ -5,11 +5,13 @@ import 'package:google_places_flutter/model/prediction.dart';
 
 class LocationAutocompleteWidget extends StatefulWidget {
   final Function(String) onLocationSelected;
+  final Function(String address, double? lat, double? lng)? onLocationCoordinatesSelected;
   final InputDecoration? decoration;
 
   const LocationAutocompleteWidget({
     super.key,
     required this.onLocationSelected,
+    this.onLocationCoordinatesSelected,
     this.decoration,
   });
 
@@ -28,8 +30,12 @@ class LocationAutocompleteWidgetState
     final selectedAddress = prediction.description ?? 'No address selected';
     _searchController.text = selectedAddress;
 
+    final lat = prediction.lat != null ? double.tryParse(prediction.lat!) : null;
+    final lng = prediction.lng != null ? double.tryParse(prediction.lng!) : null;
+
     // Notify parent widget
     widget.onLocationSelected(selectedAddress);
+    widget.onLocationCoordinatesSelected?.call(selectedAddress, lat, lng);
 
     // Close keyboard and clear focus
     FocusScope.of(context).unfocus();
@@ -64,8 +70,12 @@ class LocationAutocompleteWidgetState
             // Update text controller to show selected address
             _searchController.text = selectedAddress;
 
+            final lat = prediction?.lat != null ? double.tryParse(prediction!.lat!) : null;
+            final lng = prediction?.lng != null ? double.tryParse(prediction!.lng!) : null;
+
             // Notify parent widget
             widget.onLocationSelected(selectedAddress);
+            widget.onLocationCoordinatesSelected?.call(selectedAddress, lat, lng);
           },
 
           // Customize prediction items with explicit tapping

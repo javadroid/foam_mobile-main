@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/authentication/controller/social_auth_service.dart';
 import 'package:foam_mobile/feature/authentication/model/sign_up_model.dart';
 import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_register_page.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -30,7 +31,10 @@ class _SignUpPage0State extends State<SignUpPage0> {
   final repeatPasswordController = TextEditingController();
 
   bool loading = false;
+  bool isGoogleLoading = false;
+  bool isAppleLoading = false;
   bool isVerified = false;
+
 
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
@@ -255,23 +259,58 @@ class _SignUpPage0State extends State<SignUpPage0> {
 
                       AppSpaces.verticalSpace20,
 
-                      const Column(
+                      Column(
                         children: [
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              LoginWithButton(text: 'Google'),
+                              LoginWithButton(
+                                text: 'Google',
+                                isLoading: isGoogleLoading,
+                                onTap: () async {
+                                  setState(() {
+                                    isGoogleLoading = true;
+                                  });
+                                  await SocialAuthService.handleGoogleSignIn(
+                                    context,
+                                    _scaffoldKey,
+                                  );
+                                  if (mounted) {
+                                    setState(() {
+                                      isGoogleLoading = false;
+                                    });
+                                  }
+                                },
+                              ),
                             ],
                           ),
                           AppSpaces.verticalSpace20,
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              LoginWithButton(text: 'Apple'),
+                              LoginWithButton(
+                                text: 'Apple',
+                                isLoading: isAppleLoading,
+                                onTap: () async {
+                                  setState(() {
+                                    isAppleLoading = true;
+                                  });
+                                  await SocialAuthService.handleAppleSignIn(
+                                    context,
+                                    _scaffoldKey,
+                                  );
+                                  if (mounted) {
+                                    setState(() {
+                                      isAppleLoading = false;
+                                    });
+                                  }
+                                },
+                              ),
                             ],
                           ),
                         ],
                       ),
+
 
                       const SizedBox(height: 30),
 

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/controller/order_controller.dart';
+import 'package:foam_mobile/core/Screens/basket/controller/remote_basket.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -9,7 +11,13 @@ import 'package:provider/provider.dart';
 
 class PickupAddressScreen extends StatefulWidget {
   final int totalAmount;
-  const PickupAddressScreen({super.key, required this.totalAmount});
+  final bool noFolding;
+
+  const PickupAddressScreen({
+    super.key,
+    required this.totalAmount,
+    this.noFolding = false,
+  });
 
   @override
   State<PickupAddressScreen> createState() => _PickupAddressScreenState();
@@ -252,27 +260,53 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
               Center(
 
                 child: 
-                   ClickButton(
-                text: 'Pay Now',
-                textColor: Colors.white,
-                isLoading: isLoading,
-                onPressed: () async {
-                  setState(() {
-                    isLoading = true;
-                  });
-                  try {
-                    await PayStackOrderClass.payStackOrder(
-                        context, scaffoldKey, widget.totalAmount, isLoading);
-                    await basketProvider.fetchBasket(scaffoldKey);
-                  } finally {
-                    setState(() {
-                      isLoading = false;
-                    });
-                  }
-                },
-                fontSize: MediaQuery.sizeOf(context).height / 53,
-                color: AppColors.primaryAccentColor,
-              ),
+                    ClickButton(
+                      text: 'Pay Now',
+                      textColor: Colors.white,
+                      isLoading: isLoading,
+                      onPressed: () async {
+                        setState(() {
+                          isLoading = true;
+                        });
+                        try {
+                          // 1. Re-quote right before payment to get authoritative total from server
+                          final freshQuote = await BasketClass.getQuote(
+                            widget.noFolding,
+                            scaffoldKey: scaffoldKey,
+                            context: context,
+                          );
+                          final int amountToPay = freshQuote != null
+                              ? freshQuote.totalPrice
+                              : widget.totalAmount;
+
+                          // 2. Perform Paystack payment & create order
+                          final bool success =
+                              await PayStackOrderClass.payStackOrder(
+                            context: context,
+                            scaffoldKey: scaffoldKey,
+                            totalAmount: amountToPay,
+                            noFolding: widget.noFolding,
+                          );
+
+                          if (success && mounted) {
+                            await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
+                            Navigator.pushNamedAndRemoveUntil(
+                              context,
+                              MainScreen.id,
+                              (route) => false,
+                            );
+                          }
+                        } finally {
+                          if (mounted) {
+                            setState(() {
+                              isLoading = false;
+                            });
+                          }
+                        }
+                      },
+                      fontSize: MediaQuery.sizeOf(context).height / 53,
+                      color: AppColors.primaryAccentColor,
+                    ),
               
                 
               ),

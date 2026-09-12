@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/model/basket.dart';
+import 'package:foam_mobile/core/Screens/basket/model/basket_quote.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
@@ -12,6 +13,45 @@ import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 class BasketClass {
+  static Future<BasketQuote?> getQuote(
+    bool noFolding, {
+    GlobalKey<ScaffoldMessengerState>? scaffoldKey,
+    BuildContext? context,
+  }) async {
+    try {
+      final res = await http.post(
+        Uri.parse("${Constants.url}/api/user/basket/quote"),
+        headers: {
+          "Authorization": "Bearer ${HiveClass.getToken()}",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({"noFolding": noFolding}),
+      );
+
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        log("Basket quote: ${res.body}");
+        return basketQuoteFromJson(res.body);
+      } else {
+        log("Failed to get quote: ${res.statusCode} ${res.body}");
+        if (scaffoldKey != null) {
+          MyMessageHandler.showSnackBar(scaffoldKey, "Failed to calculate quote");
+        }
+        return null;
+      }
+    } catch (e) {
+      log("Error fetching quote: $e");
+      if (scaffoldKey != null) {
+        MyMessageHandler.showSnackBar(scaffoldKey, "Failed to calculate quote");
+      }
+      return null;
+    }
+  }
   static Future<List<BasketList>?> getServices(
       GlobalKey<ScaffoldMessengerState> scaffoldKey,
       [BuildContext? context]) async {

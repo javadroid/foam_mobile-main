@@ -151,13 +151,16 @@ class SignUpModel {
       String city,
       String postalCode,
       String country,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+      String? state,
+      String? lga,
+      double? latitude,
+      double? longitude,
+  }) async {
     if (street.isEmpty) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Input Street Name");
     } else if (city.isEmpty) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Input City Name");
-    } else if (postalCode.isEmpty) {
-      MyMessageHandler.showSnackBar(scaffoldKey, "Input Postal Code number");
     } else if (country.isEmpty) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Input Country Name");
     } else {
@@ -174,8 +177,12 @@ class SignUpModel {
             {
               "street": street,
               "city": city,
+              "state": state,
+              "lga": lga,
               "postalCode": postalCode,
               "country": country,
+              "latitude": latitude,
+              "longitude": longitude,
             },
           ),
         );

@@ -51,5 +51,9 @@
 	<string>Use images as profile photos</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Record videos for profiles</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Foam Laundry uses your location to auto-detect pickup and delivery addresses and ensure we service your area.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Foam Laundry uses your location for delivery address detection and tracking.</string>
 </dict>
 </plist>

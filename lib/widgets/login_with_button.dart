@@ -4,16 +4,23 @@ import 'package:foam_mobile/utils/values.dart';
 
 class LoginWithButton extends StatelessWidget {
   final String text;
+  final VoidCallback? onTap;
+  final bool isLoading;
 
   const LoginWithButton({
     super.key,
     required this.text,
+    this.onTap,
+    this.isLoading = false,
   });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
-      onTap: null,
+      onTap: isLoading ? null : onTap,
+      borderRadius: const BorderRadius.all(
+        Radius.circular(8.0),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(
           vertical: 12.0,
@@ -31,27 +38,38 @@ class LoginWithButton extends StatelessWidget {
             ),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SvgPicture.asset(
-              text == 'Google'
-                  ? 'assets/images/google.svg'
-                  : 'assets/images/apple.svg',
-              height: 25,
-            ),
-            AppSpaces.horizontalSpace10,
-            Text(
-              'Continue with $text',
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: Constants.textStyle.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Colors.grey[500],
-                  fontSize: MediaQuery.sizeOf(context).height * 0.017),
-            ),
-          ],
-        ),
+        child: isLoading
+            ? const Center(
+                child: SizedBox(
+                  height: 22,
+                  width: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
+                  ),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  SvgPicture.asset(
+                    text == 'Google'
+                        ? 'assets/images/google.svg'
+                        : 'assets/images/apple.svg',
+                    height: 25,
+                  ),
+                  AppSpaces.horizontalSpace10,
+                  Text(
+                    'Continue with $text',
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
+                    style: Constants.textStyle.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[500],
+                        fontSize: MediaQuery.sizeOf(context).height * 0.017),
+                  ),
+                ],
+              ),
       ),
     );
   }

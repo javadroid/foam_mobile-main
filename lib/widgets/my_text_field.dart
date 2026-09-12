@@ -7,6 +7,7 @@ class MyTextField extends StatefulWidget {
   final bool obscureText;
   final bool isPassword;
   final TextInputType? keyboardType;
+  final FocusNode? focusNode;
 
   const MyTextField({
     super.key,
@@ -15,6 +16,7 @@ class MyTextField extends StatefulWidget {
     required this.obscureText,
     required this.isPassword,
     this.keyboardType,
+    this.focusNode,
   });
 
   @override
@@ -32,6 +34,7 @@ class _MyTextFieldState extends State<MyTextField> {
       ),
       child: TextField(
         controller: widget.controller,
+        focusNode: widget.focusNode,
         obscureText: obscureTxt,
         keyboardType: widget.keyboardType,
         decoration: InputDecoration(

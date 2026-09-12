@@ -1,17 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/controller/remote_basket.dart';
 import 'package:foam_mobile/core/Screens/basket/model/basket.dart';
+import 'package:foam_mobile/core/Screens/basket/model/basket_quote.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
 
 class BasketProvider extends ChangeNotifier {
   List<BasketList> _basketItems = [];
   bool _isLoading = false;
+  bool _isQuoteLoading = false;
+  bool _isNoFolding = false;
+  BasketQuote? _currentQuote;
 
   List<BasketList> get basketItems => _basketItems;
   bool get isLoading => _isLoading;
+  bool get isQuoteLoading => _isQuoteLoading;
+  bool get isNoFolding => _isNoFolding;
+  BasketQuote? get currentQuote => _currentQuote;
 
   int get totalItems => _basketItems.fold(0, (sum, item) => sum + item.quantity);
-  int get totalAmount => _basketItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+  int get totalAmount => _currentQuote?.subtotal ?? _basketItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+  int get foldingSurchargeTotal => _currentQuote?.foldingSurchargeTotal ?? 0;
+  int get deliveryFee => _currentQuote?.deliveryFee ?? 3000;
+  int get totalPrice => _currentQuote?.totalPrice ?? (totalAmount + deliveryFee + (_isNoFolding ? foldingSurchargeTotal : 0));
 
   int getQuantity(int categoryId) {
     final item = _basketItems.firstWhere(
@@ -19,6 +29,25 @@ class BasketProvider extends ChangeNotifier {
       orElse: () => BasketList(categoryId: categoryId, quantity: 0, name: '', price: 0, imageUrl: null),
     );
     return item.quantity;
+  }
+
+  Future<void> fetchQuote({bool? noFolding, GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
+    final flag = noFolding ?? _isNoFolding;
+    _isQuoteLoading = true;
+    notifyListeners();
+
+    final quote = await BasketClass.getQuote(flag, scaffoldKey: scaffoldKey);
+    if (quote != null) {
+      _currentQuote = quote;
+    }
+    _isQuoteLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> setNoFolding(bool value, {GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
+    _isNoFolding = value;
+    notifyListeners();
+    await fetchQuote(noFolding: value, scaffoldKey: scaffoldKey);
   }
 
   Future<void> fetchBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool showLoading = true}) async {
@@ -30,6 +59,11 @@ class BasketProvider extends ChangeNotifier {
     final result = await BasketClass.getServices(scaffoldKey);
     if (result != null) {
       _basketItems = result;
+      if (_basketItems.isNotEmpty) {
+        await fetchQuote(noFolding: _isNoFolding, scaffoldKey: scaffoldKey);
+      } else {
+        _currentQuote = BasketQuote.empty();
+      }
     }
     
     if (showLoading) {
@@ -56,6 +90,7 @@ class BasketProvider extends ChangeNotifier {
   Future<void> clearBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
     await BasketClass.clearBasket(scaffoldKey);
     _basketItems = [];
+    _currentQuote = BasketQuote.empty();
     notifyListeners();
   }
 }
