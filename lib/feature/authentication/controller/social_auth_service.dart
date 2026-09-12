@@ -14,11 +14,22 @@ import 'package:http/http.dart' as http;
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 
 class SocialAuthService {
-  static final GoogleSignIn _googleSignIn = GoogleSignIn(
-    scopes: <String>['email', 'profile'],
-    serverClientId: Constants.googleWebClientId,
-    clientId: Platform.isIOS ? Constants.googleIosClientId : null,
-  );
+  static bool _initialized = false;
+
+  static Future<GoogleSignIn> _getGoogleSignIn() async {
+    final GoogleSignIn signIn = GoogleSignIn.instance;
+    if (!_initialized) {
+      final String clientId = Platform.isAndroid
+          ? Constants.googleClientId
+          : Constants.googleIosClientId;
+      await signIn.initialize(
+        serverClientId: clientId,
+        clientId: clientId,
+      );
+      _initialized = true;
+    }
+    return signIn;
+  }
 
   /// Handle Google Sign In / Registration
   static Future<void> handleGoogleSignIn(
@@ -26,18 +37,17 @@ class SocialAuthService {
     GlobalKey<ScaffoldMessengerState>? scaffoldKey,
   ) async {
     try {
+      final GoogleSignIn googleSignIn = await _getGoogleSignIn();
+
       // Disconnect previous session to allow selecting an account again if needed
       try {
-        await _googleSignIn.signOut();
+        await googleSignIn.signOut();
       } catch (_) {}
 
-      final GoogleSignInAccount? account = await _googleSignIn.signIn();
-      if (account == null) {
-        // User cancelled Google sign-in
-        return;
-      }
+      final GoogleSignInAccount account =
+          await googleSignIn.authenticate(scopeHint: const <String>['email']);
 
-      final GoogleSignInAuthentication auth = await account.authentication;
+      final GoogleSignInAuthentication auth = account.authentication;
       final String? idToken = auth.idToken;
 
       if (idToken == null) {
@@ -46,20 +56,24 @@ class SocialAuthService {
         return;
       }
 
-      log('Google Sign-In successful for: ${account.email}');
+      debugPrint("Google Sign-In successful for: ${account.email}");
+      debugPrint(
+          "idToken: ${Uri.parse('${Constants.url}/api/auth/google/callback/login?idToken=${Uri.encodeComponent(idToken)}').toString()}");
 
       // 1. Try logging in first
-      final http.Response loginRes = await http.post(
-        Uri.parse('${Constants.url}/api/auth/google/callback/login'),
+      final http.Response loginRes = await http.get(
+        Uri.parse(
+            '${Constants.url}/api/auth/google/callback/login?idToken=${Uri.encodeComponent(idToken)}'),
         headers: <String, String>{
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $idToken',
         },
       );
 
+      debugPrint('loginRes: $loginRes');
       final dynamic loginBody = jsonDecode(loginRes.body);
-      log('Google login status: ${loginRes.statusCode}, body: $loginBody');
+      debugPrint(
+          'Google login status: ${loginRes.statusCode}, body: $loginBody');
 
       if (loginRes.statusCode == 200) {
         final String token = loginBody['token'];
@@ -97,12 +111,17 @@ class SocialAuthService {
           'Google sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
     } catch (e, stackTrace) {
-      debugPrint(
-        'Google Sign In Error: $e',
-      );
+      final String errStr = e.toString();
+      // Handle user cancellation gracefully without intrusive error toast
+      if (errStr.contains('canceled') ||
+          errStr.contains('cancelled') ||
+          errStr.contains('sign_in_canceled')) {
+        log('Google Sign-In cancelled by user');
+        return;
+      }
+      debugPrint('Google Sign In Error: $e');
       log('Google Sign In Error: $e', stackTrace: stackTrace);
-      _showError(scaffoldKey,
-          'Unable to sign in with Google. Please check your internet connection and try again.');
+      _showError(scaffoldKey, 'Unable to sign in with Google.');
     }
   }
 
@@ -115,7 +134,8 @@ class SocialAuthService {
   }) async {
     try {
       final http.Response regRes = await http.post(
-        Uri.parse('${Constants.url}/api/auth/google/callback/register'),
+        Uri.parse(
+            '${Constants.url}/api/auth/google/callback/register?idToken=${Uri.encodeComponent(idToken)}'),
         headers: <String, String>{
           'Accept': 'application/json',
           'Content-Type': 'application/json',
@@ -195,16 +215,13 @@ class SocialAuthService {
       log('Apple Sign-In successful. User: ${credential.userIdentifier}, email: $appleEmail');
 
       // 1. Try logging in first
-      final http.Response loginRes = await http.post(
-        Uri.parse('${Constants.url}/api/auth/apple/callback/login'),
+      final http.Response loginRes = await http.get(
+        Uri.parse(
+            '${Constants.url}/api/auth/apple/callback/login?identityToken=${Uri.encodeComponent(identityToken)}'),
         headers: <String, String>{
           'Accept': 'application/json',
-          'Content-Type': 'application/json',
           'Authorization': 'Bearer $identityToken',
         },
-        body: jsonEncode(<String, dynamic>{
-          if (appleEmail != null) 'email': appleEmail,
-        }),
       );
 
       final dynamic loginBody = jsonDecode(loginRes.body);
@@ -279,7 +296,8 @@ class SocialAuthService {
   }) async {
     try {
       final http.Response regRes = await http.post(
-        Uri.parse('${Constants.url}/api/auth/apple/callback/register'),
+        Uri.parse(
+            '${Constants.url}/api/auth/apple/callback/register?identityToken=${Uri.encodeComponent(identityToken)}'),
         headers: <String, String>{
           'Accept': 'application/json',
           'Content-Type': 'application/json',
