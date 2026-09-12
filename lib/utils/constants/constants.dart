@@ -2,9 +2,9 @@ part of '../values.dart';
 
 class Constants {
   // URL
-  static String url = "http://10.50.125.52:8081";
+  // static String url = "http://10.50.125.52:8081";
   // static String url = "http://10.0.2.2:8081";
-  // static String url = "https://foamlaundryapp.com";
+  static String url = "https://foamlaundryapp.com";
 
   // PayStack public key
   static String payStackPublicKey =

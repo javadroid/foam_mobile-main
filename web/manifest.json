@@ -1,6 +1,6 @@
 {
-    "name": "foam_mobile",
-    "short_name": "foam_mobile",
+    "name": "Foam",
+    "short_name": "Foam",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
