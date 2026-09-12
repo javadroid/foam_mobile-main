@@ -16,6 +16,8 @@ import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 class SocialAuthService {
   static final GoogleSignIn _googleSignIn = GoogleSignIn(
     scopes: <String>['email', 'profile'],
+    serverClientId: Constants.googleWebClientId,
+    clientId: Platform.isIOS ? Constants.googleIosClientId : null,
   );
 
   /// Handle Google Sign In / Registration
@@ -39,7 +41,8 @@ class SocialAuthService {
       final String? idToken = auth.idToken;
 
       if (idToken == null) {
-        _showError(scaffoldKey, 'Unable to retrieve Google authentication token. Please try again.');
+        _showError(scaffoldKey,
+            'Unable to retrieve Google authentication token. Please try again.');
         return;
       }
 
@@ -90,11 +93,16 @@ class SocialAuthService {
       }
 
       // Other error response
-      final String errorMsg = loginBody['error'] ?? 'Google sign in could not be completed. Please try again.';
+      final String errorMsg = loginBody['error'] ??
+          'Google sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
     } catch (e, stackTrace) {
+      debugPrint(
+        'Google Sign In Error: $e',
+      );
       log('Google Sign In Error: $e', stackTrace: stackTrace);
-      _showError(scaffoldKey, 'Unable to sign in with Google. Please check your internet connection and try again.');
+      _showError(scaffoldKey,
+          'Unable to sign in with Google. Please check your internet connection and try again.');
     }
   }
 
@@ -124,17 +132,20 @@ class SocialAuthService {
       if (regRes.statusCode == 200 || regRes.statusCode == 201) {
         final String token = regBody['token'];
         HiveClass.insertToken(token);
-        _showSuccess(scaffoldKey, regBody['message'] ?? 'Registration successful');
+        _showSuccess(
+            scaffoldKey, regBody['message'] ?? 'Registration successful');
         if (context.mounted) {
           await LoginClass.getProfile(context, scaffoldKey!, isSignup: true);
         }
       } else {
-        final String errorMsg = regBody['error'] ?? 'Google registration could not be completed. Please try again.';
+        final String errorMsg = regBody['error'] ??
+            'Google registration could not be completed. Please try again.';
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
       log('Google Register Error: $e');
-      _showError(scaffoldKey, 'Unable to complete registration. Please check your connection and try again.');
+      _showError(scaffoldKey,
+          'Unable to complete registration. Please check your connection and try again.');
     }
   }
 
@@ -172,7 +183,8 @@ class SocialAuthService {
 
       final String? identityToken = credential.identityToken;
       if (identityToken == null) {
-        _showError(scaffoldKey, 'Unable to retrieve Apple authentication token. Please try again.');
+        _showError(scaffoldKey,
+            'Unable to retrieve Apple authentication token. Please try again.');
         return;
       }
 
@@ -216,9 +228,12 @@ class SocialAuthService {
           scaffoldKey: scaffoldKey,
           providerName: 'Apple',
           email: appleEmail,
-          displayName: [firstName, lastName].where((s) => s != null && s.isNotEmpty).join(' '),
+          displayName: [firstName, lastName]
+              .where((s) => s != null && s.isNotEmpty)
+              .join(' '),
           requireEmail: appleEmail == null,
-          onCompleteWithDetails: (String phoneNumber, String? email, String? fName, String? lName) async {
+          onCompleteWithDetails: (String phoneNumber, String? email,
+              String? fName, String? lName) async {
             await _registerAppleUser(
               context: context,
               scaffoldKey: scaffoldKey,
@@ -234,7 +249,8 @@ class SocialAuthService {
       }
 
       // Other error response
-      final String errorMsg = loginBody['error'] ?? 'Apple sign in could not be completed. Please try again.';
+      final String errorMsg = loginBody['error'] ??
+          'Apple sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
     } on SignInWithAppleAuthorizationException catch (e, stackTrace) {
       log('Apple Auth Exception: ${e.code}', stackTrace: stackTrace);
@@ -242,10 +258,12 @@ class SocialAuthService {
         // User cancelled Apple sign in dialog
         return;
       }
-      _showError(scaffoldKey, 'Apple Sign-In was cancelled or could not be completed.');
+      _showError(scaffoldKey,
+          'Apple Sign-In was cancelled or could not be completed.');
     } catch (e, stackTrace) {
       log('Apple Sign In Error: $e', stackTrace: stackTrace);
-      _showError(scaffoldKey, 'Apple Sign-In is unavailable on this device. Please use Google or Email.');
+      _showError(scaffoldKey,
+          'Apple Sign-In is unavailable on this device. Please use Google or Email.');
     }
   }
 
@@ -281,17 +299,20 @@ class SocialAuthService {
       if (regRes.statusCode == 200 || regRes.statusCode == 201) {
         final String token = regBody['token'];
         HiveClass.insertToken(token);
-        _showSuccess(scaffoldKey, regBody['message'] ?? 'Registration successful');
+        _showSuccess(
+            scaffoldKey, regBody['message'] ?? 'Registration successful');
         if (context.mounted) {
           await LoginClass.getProfile(context, scaffoldKey!, isSignup: true);
         }
       } else {
-        final String errorMsg = regBody['error'] ?? 'Apple registration could not be completed. Please try again.';
+        final String errorMsg = regBody['error'] ??
+            'Apple registration could not be completed. Please try again.';
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
       log('Apple Register Error: $e');
-      _showError(scaffoldKey, 'Unable to complete registration. Please check your connection and try again.');
+      _showError(scaffoldKey,
+          'Unable to complete registration. Please check your connection and try again.');
     }
   }
 
@@ -304,11 +325,15 @@ class SocialAuthService {
     String? displayName,
     bool requireEmail = false,
     Function(String phoneNumber)? onComplete,
-    Function(String phoneNumber, String? email, String? firstName, String? lastName)? onCompleteWithDetails,
+    Function(String phoneNumber, String? email, String? firstName,
+            String? lastName)?
+        onCompleteWithDetails,
   }) async {
     final TextEditingController phoneController = TextEditingController();
-    final TextEditingController emailController = TextEditingController(text: email ?? '');
-    final TextEditingController nameController = TextEditingController(text: displayName ?? '');
+    final TextEditingController emailController =
+        TextEditingController(text: email ?? '');
+    final TextEditingController nameController =
+        TextEditingController(text: displayName ?? '');
     bool isSubmitting = false;
 
     await showModalBottomSheet<void>(
@@ -394,12 +419,16 @@ class SocialAuthService {
                       onPressed: () async {
                         final String phone = phoneController.text.trim();
                         if (phone.length < 10 || phone.length > 15) {
-                          _showError(scaffoldKey, 'Please enter a valid phone number (10-15 digits)');
+                          _showError(scaffoldKey,
+                              'Please enter a valid phone number (10-15 digits)');
                           return;
                         }
 
-                        if (requireEmail && (emailController.text.trim().isEmpty || !emailController.text.contains('@'))) {
-                          _showError(scaffoldKey, 'Please enter a valid email address');
+                        if (requireEmail &&
+                            (emailController.text.trim().isEmpty ||
+                                !emailController.text.contains('@'))) {
+                          _showError(scaffoldKey,
+                              'Please enter a valid email address');
                           return;
                         }
 
@@ -409,16 +438,22 @@ class SocialAuthService {
 
                         Navigator.of(sheetContext).pop();
 
-                        final List<String> nameParts = nameController.text.trim().split(RegExp(r'\s+'));
-                        final String? fName = nameParts.isNotEmpty ? nameParts.first : null;
-                        final String? lName = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : null;
+                        final List<String> nameParts =
+                            nameController.text.trim().split(RegExp(r'\s+'));
+                        final String? fName =
+                            nameParts.isNotEmpty ? nameParts.first : null;
+                        final String? lName = nameParts.length > 1
+                            ? nameParts.sublist(1).join(' ')
+                            : null;
 
                         if (onComplete != null) {
                           await onComplete(phone);
                         } else if (onCompleteWithDetails != null) {
                           await onCompleteWithDetails(
                             phone,
-                            emailController.text.trim().isNotEmpty ? emailController.text.trim() : email,
+                            emailController.text.trim().isNotEmpty
+                                ? emailController.text.trim()
+                                : email,
                             fName,
                             lName,
                           );
@@ -435,13 +470,15 @@ class SocialAuthService {
     );
   }
 
-  static void _showError(GlobalKey<ScaffoldMessengerState>? scaffoldKey, String message) {
+  static void _showError(
+      GlobalKey<ScaffoldMessengerState>? scaffoldKey, String message) {
     if (scaffoldKey != null) {
       MyMessageHandler.showSnackBar(scaffoldKey, message);
     }
   }
 
-  static void _showSuccess(GlobalKey<ScaffoldMessengerState>? scaffoldKey, String message) {
+  static void _showSuccess(
+      GlobalKey<ScaffoldMessengerState>? scaffoldKey, String message) {
     if (scaffoldKey != null) {
       MyMessageHandler.showSnackBar(scaffoldKey, message);
     }

@@ -17,6 +17,16 @@ class Constants {
   static const String googleAPIKey = 'AIzaSyA7hyiwzU6LHTHhtntU36tAPRi46DXrygo';
   static const String googleMapsApiKey =
       "AIzaSyB5O_2oARf0lU5YlGfDsxgeEj_l_HxOjNY";
+  // Google OAuth 2.0 Client IDs
+  static const String googleIosClientId =
+      '791114743359-2oschsrqbca3agqbihvqjvg0r95hrk51.apps.googleusercontent.com';
+  static const String googleAndroidClient1 =
+      '791114743359-5kjubqe1nids9feo84fhqkn4acaaa9c3.apps.googleusercontent.com';
+  static const String googleAndroidClient2 =
+      '791114743359-cdm609nek1mfg3g06a40etihs1cebetg.apps.googleusercontent.com';
+  static const String googleWebClientId =
+      '791114743359-8b6vbiairi8q619vcovm3h8dg5re9u9a.apps.googleusercontent.com';
+  static const String googleClientId = googleWebClientId;
 
   static TextStyle headingStyle = GoogleFonts.dmSans(
     color: AppColors.blackAccentColor,

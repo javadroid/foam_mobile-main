@@ -8,11 +8,14 @@ import 'package:foam_mobile/core/splash_screen.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Use bundled offline Google Fonts
+  GoogleFonts.config.allowRuntimeFetching = false;
   // initialize hive
   await Hive.initFlutter();
   // open the hive box

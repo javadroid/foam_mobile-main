@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/splash_function.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -26,18 +27,34 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void initState() {
-    init(context);
-    log(HiveClass.getToken());
-    log(HiveClass.getPic());
     super.initState();
+    init(context);
+    log('Splash token check: ${HiveClass.getToken()}');
   }
 
   init(BuildContext context) async {
-    bool hasAddress = await Future.delayed(const Duration(seconds: 2), () {
-      return SplashFunction.init(context);
-    });
+    // Show splash branding for at least 2 seconds
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
 
-    var authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final String? token = HiveClass.getToken();
+    if (token == null || token.isEmpty) {
+      // User is not logged in -> navigate to OnBoarding
+      Navigator.pushReplacementNamed(context, OnBoardingScreen.id);
+      return;
+    }
+
+    // User has a token -> validate with backend
+    bool hasAddress = false;
+    try {
+      hasAddress = await SplashFunction.init(context).timeout(const Duration(seconds: 6));
+    } catch (e) {
+      debugPrint('Splash init error: $e');
+    }
+
+    if (!mounted) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     if (authProvider.initDone) {
       if (hasAddress) {
         Navigator.pushReplacementNamed(context, MainScreen.id);
@@ -48,9 +65,15 @@ class _SplashScreenState extends State<SplashScreen> {
         );
       }
     } else {
-      setState(() {
-        loadScreen = true;
-      });
+      if (authProvider.initError) {
+        setState(() {
+          loadScreen = true;
+        });
+      } else {
+        // Unauthenticated or expired token -> clear and go to onboarding
+        HiveClass.clearHive();
+        Navigator.pushReplacementNamed(context, OnBoardingScreen.id);
+      }
     }
   }
 

@@ -12,18 +12,22 @@ class SplashFunction {
   static Future<bool> init(BuildContext context) async {
     var authProvider = Provider.of<AuthProvider>(context, listen: false);
 
+    final String? token = HiveClass.getToken();
+    if (token == null || token.isEmpty) {
+      return false;
+    }
+
     try {
       final http.Response res = await http.get(
         Uri.parse(
           "${Constants.url}/api/user/profile",
         ),
         headers: {
-          // here you get authorize by adding the token like a key to the header to have answers
-          "Authorization": "Bearer ${HiveClass.getToken()}",
+          "Authorization": "Bearer $token",
           "Accept": "application/json",
           'Content-Type': 'application/json'
         },
-      );
+      ).timeout(const Duration(seconds: 7));
       debugPrint('Profile response status: ${res.statusCode}');
       debugPrint('Profile response body: ${res.body}');
       
