@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/utils/values.dart';
 
 class LoginWithButton extends StatelessWidget {
@@ -16,61 +17,67 @@ class LoginWithButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: isLoading ? null : onTap,
-      borderRadius: const BorderRadius.all(
-        Radius.circular(8.0),
-      ),
-      child: Container(
-        padding: const EdgeInsets.symmetric(
-          vertical: 12.0,
-        ),
-        width: MediaQuery.sizeOf(context).width * 0.8,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Colors.grey[800]!,
-            width: 1.0,
-          ),
-          color: Colors.transparent,
-          borderRadius: const BorderRadius.all(
-            Radius.circular(
-              8.0,
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: isLoading ? null : onTap,
+        borderRadius: BorderRadius.circular(16.0),
+        child: Container(
+          width: double.infinity,
+          height: 52,
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16.0),
+            border: Border.all(
+              color: const Color(0xFFE2E8F0),
+              width: 1.2,
             ),
-          ),
-        ),
-        child: isLoading
-            ? const Center(
-                child: SizedBox(
-                  height: 22,
-                  width: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.0,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey),
-                  ),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SvgPicture.asset(
-                    text == 'Google'
-                        ? 'assets/images/google.svg'
-                        : 'assets/images/apple.svg',
-                    height: 25,
-                  ),
-                  AppSpaces.horizontalSpace10,
-                  Text(
-                    'Continue with $text',
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style: Constants.textStyle.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey[500],
-                        fontSize: MediaQuery.sizeOf(context).height * 0.017),
-                  ),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
               ),
+            ],
+          ),
+          child: isLoading
+              ? Center(
+                  child: SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryAccentColor,
+                      ),
+                    ),
+                  ),
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SvgPicture.asset(
+                      text == 'Google'
+                          ? 'assets/images/google.svg'
+                          : 'assets/images/apple.svg',
+                      height: 22,
+                      width: 22,
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Continue with $text',
+                      style: GoogleFonts.dmSans(
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF1E293B),
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
       ),
     );
   }
 }
+
