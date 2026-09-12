@@ -200,14 +200,9 @@ class SignUpModel {
         } else {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
-      } catch (e) {
-        log(e.toString());
-        log(country);
-        log(city);
-        log(postalCode);
-        log(street);
-        log(HiveClass.getToken());
-        MyMessageHandler.showSnackBar(scaffoldKey, e.toString());
+      } catch (e, stackTrace) {
+        log('Address save error: $e', stackTrace: stackTrace);
+        MyMessageHandler.showSnackBar(scaffoldKey, "Unable to save address. Please check your internet connection.");
       }
     }
   }

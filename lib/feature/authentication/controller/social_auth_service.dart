@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/model/login_model.dart';
@@ -38,7 +39,7 @@ class SocialAuthService {
       final String? idToken = auth.idToken;
 
       if (idToken == null) {
-        _showError(scaffoldKey, 'Failed to obtain Google authentication token.');
+        _showError(scaffoldKey, 'Unable to retrieve Google authentication token. Please try again.');
         return;
       }
 
@@ -89,11 +90,11 @@ class SocialAuthService {
       }
 
       // Other error response
-      final String errorMsg = loginBody['error'] ?? 'Google sign in failed';
+      final String errorMsg = loginBody['error'] ?? 'Google sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
     } catch (e, stackTrace) {
       log('Google Sign In Error: $e', stackTrace: stackTrace);
-      _showError(scaffoldKey, 'Google sign in error: ${e.toString()}');
+      _showError(scaffoldKey, 'Unable to sign in with Google. Please check your internet connection and try again.');
     }
   }
 
@@ -128,12 +129,12 @@ class SocialAuthService {
           await LoginClass.getProfile(context, scaffoldKey!, isSignup: true);
         }
       } else {
-        final String errorMsg = regBody['error'] ?? 'Google registration failed';
+        final String errorMsg = regBody['error'] ?? 'Google registration could not be completed. Please try again.';
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
       log('Google Register Error: $e');
-      _showError(scaffoldKey, 'Registration error: ${e.toString()}');
+      _showError(scaffoldKey, 'Unable to complete registration. Please check your connection and try again.');
     }
   }
 
@@ -143,6 +144,24 @@ class SocialAuthService {
     GlobalKey<ScaffoldMessengerState>? scaffoldKey,
   ) async {
     try {
+      // Check if running on Android or Apple Sign In is not supported on this device
+      if (Platform.isAndroid) {
+        _showError(
+          scaffoldKey,
+          'Apple Sign-In is only available on iOS devices. Please continue with Google or Email.',
+        );
+        return;
+      }
+
+      final bool isAvailable = await SignInWithApple.isAvailable();
+      if (!isAvailable) {
+        _showError(
+          scaffoldKey,
+          'Apple Sign-In is not supported on this device. Please continue with Google or Email.',
+        );
+        return;
+      }
+
       final AuthorizationCredentialAppleID credential =
           await SignInWithApple.getAppleIDCredential(
         scopes: <AppleIDAuthorizationScopes>[
@@ -153,7 +172,7 @@ class SocialAuthService {
 
       final String? identityToken = credential.identityToken;
       if (identityToken == null) {
-        _showError(scaffoldKey, 'Failed to obtain Apple authentication token.');
+        _showError(scaffoldKey, 'Unable to retrieve Apple authentication token. Please try again.');
         return;
       }
 
@@ -215,11 +234,18 @@ class SocialAuthService {
       }
 
       // Other error response
-      final String errorMsg = loginBody['error'] ?? 'Apple sign in failed';
+      final String errorMsg = loginBody['error'] ?? 'Apple sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
+    } on SignInWithAppleAuthorizationException catch (e, stackTrace) {
+      log('Apple Auth Exception: ${e.code}', stackTrace: stackTrace);
+      if (e.code == AuthorizationErrorCode.canceled) {
+        // User cancelled Apple sign in dialog
+        return;
+      }
+      _showError(scaffoldKey, 'Apple Sign-In was cancelled or could not be completed.');
     } catch (e, stackTrace) {
       log('Apple Sign In Error: $e', stackTrace: stackTrace);
-      _showError(scaffoldKey, 'Apple sign in error: ${e.toString()}');
+      _showError(scaffoldKey, 'Apple Sign-In is unavailable on this device. Please use Google or Email.');
     }
   }
 
@@ -260,12 +286,12 @@ class SocialAuthService {
           await LoginClass.getProfile(context, scaffoldKey!, isSignup: true);
         }
       } else {
-        final String errorMsg = regBody['error'] ?? 'Apple registration failed';
+        final String errorMsg = regBody['error'] ?? 'Apple registration could not be completed. Please try again.';
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
       log('Apple Register Error: $e');
-      _showError(scaffoldKey, 'Registration error: ${e.toString()}');
+      _showError(scaffoldKey, 'Unable to complete registration. Please check your connection and try again.');
     }
   }
 

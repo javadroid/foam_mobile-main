@@ -55,9 +55,9 @@ class LoginClass {
         } else {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
-      } catch (e) {
-        log(e.toString());
-        MyMessageHandler.showSnackBar(scaffoldKey, e.toString());
+      } catch (e, stackTrace) {
+        log('Login Error: $e', stackTrace: stackTrace);
+        MyMessageHandler.showSnackBar(scaffoldKey, "Unable to connect to server. Please check your internet connection.");
       }
     }
   }
