@@ -79,7 +79,7 @@ android {
             renderscriptDebuggable false
             zipAlignEnabled true
             ndk {
-                debugSymbolLevel 'none'
+                debugSymbolLevel 'SYMBOL_TABLE'
             }
         }
     }

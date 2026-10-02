@@ -43,7 +43,8 @@ class _ProfileImageState extends State<ProfileImage> {
         children: [
           InkWell(
             onTap: () async {
-              var profileAuth = Provider.of<ProfilePicAuth>(context, listen: false);
+              var profileAuth =
+                  Provider.of<ProfilePicAuth>(context, listen: false);
               final files = await imageHelper.pickImage();
               if (files.isNotEmpty) {
                 final croppedFile = await imageHelper.crop(
@@ -88,25 +89,20 @@ class _ProfileImageState extends State<ProfileImage> {
                 borderRadius: BorderRadius.circular(avatarSize),
                 child: Container(
                   color: Colors.white,
-                  child: _image != null
-                      ? Image.file(
-                          _image!,
-                          fit: BoxFit.cover,
-                          width: avatarSize,
-                          height: avatarSize,
-                        )
-                      : Container(
-                          color: AppColors.fadeBlueAccentColor,
-                          alignment: Alignment.center,
-                          child: Text(
-                            widget.initials.trim().isEmpty ? 'U' : widget.initials.trim(),
-                            style: GoogleFonts.dmSans(
-                              fontSize: widget.radius * 0.75,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryAccentColor,
-                            ),
-                          ),
-                        ),
+                  child: Container(
+                    color: AppColors.fadeBlueAccentColor,
+                    alignment: Alignment.center,
+                    child: Text(
+                      widget.initials.trim().isEmpty
+                          ? 'U'
+                          : widget.initials.trim(),
+                      style: GoogleFonts.dmSans(
+                        fontSize: widget.radius * 0.75,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.primaryAccentColor,
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -141,4 +137,3 @@ class _ProfileImageState extends State<ProfileImage> {
     );
   }
 }
-

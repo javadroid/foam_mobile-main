@@ -64,39 +64,12 @@ class _LoginPageState extends State<LoginPage> {
                   children: [
                     const SizedBox(height: 16),
 
-                    // Brand Icon / Header Badge
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.primaryAccentColor,
-                                  AppColors.oceanBlueColor,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(16.0),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primaryAccentColor.withValues(alpha: 0.3),
-                                  blurRadius: 12,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Icon(
-                              Icons.local_laundry_service_rounded,
-                              color: Colors.white,
-                              size: 28,
-                            ),
-                          ),
-                        ],
+                    // Foam Logo
+                    Center(
+                      child: Image.asset(
+                        'assets/images/foam.png',
+                        height: 56,
+                        fit: BoxFit.contain,
                       ),
                     ),
 
