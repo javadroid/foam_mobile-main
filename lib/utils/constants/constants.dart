@@ -10,6 +10,9 @@ class Constants {
   static String payStackPublicKey =
       "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69";
 
+  // OneSignal App ID
+  static String oneSignalAppId = "your-onesignal-app-id";
+
 
   // Google API key
   static const String googleAPIKey = 'AIzaSyA7hyiwzU6LHTHhtntU36tAPRi46DXrygo';

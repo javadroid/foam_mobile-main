@@ -4,10 +4,12 @@ import 'package:foam_mobile/core/Screens/profile/profile_image/controller/profil
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/routes/app_router.dart';
-import 'package:foam_mobile/core/splash_screen.dart';
+import 'package:foam_mobile/core/services/notification_service.dart';
+import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
+import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -21,6 +23,9 @@ void main() async {
   await Hive.initFlutter();
   // open the hive box
   await Hive.openBox('foam');
+
+  // Initialize OneSignal Push Notifications
+  await NotificationService.initOneSignal(Constants.oneSignalAppId);
 
   SystemChrome.setPreferredOrientations(
     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
@@ -44,6 +49,9 @@ void main() async {
           ),
           ChangeNotifierProvider(
             create: (_) => VendorProvider(),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => WalletProvider(),
           ),
         ],
         child: const MyApp(),

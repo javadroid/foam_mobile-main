@@ -2,6 +2,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
+import 'package:foam_mobile/core/services/notification_service.dart';
+import 'package:foam_mobile/core/services/socket_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
@@ -23,11 +25,15 @@ class LogoutClass {
       );
 
       var response = json.decode(res.body);
-      log(jsonEncode(response)); // Log properly
+      log(jsonEncode(response));
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(
             scaffoldKey, response["message"] ?? "Logged out successfully");
+
+        // Unregister OneSignal and disconnect socket
+        await NotificationService.logoutUser();
+        SocketService.disconnect();
 
         // Clear user token and authentication data
         HiveClass.clearHive();
@@ -51,6 +57,8 @@ class LogoutClass {
   }
 
   static void logOut2(BuildContext context) {
+    NotificationService.logoutUser();
+    SocketService.disconnect();
     HiveClass.clearHive();
     Provider.of<AuthProvider>(context, listen: false).clearAuth();
     Navigator.pushNamedAndRemoveUntil(

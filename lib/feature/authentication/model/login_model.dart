@@ -13,7 +13,8 @@ import 'dart:convert';
 import 'package:provider/provider.dart';
 
 import 'package:foam_mobile/core/splash_function.dart';
-import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+import 'package:foam_mobile/core/services/notification_service.dart';
+import 'package:foam_mobile/core/services/socket_service.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
@@ -98,6 +99,15 @@ class LoginClass {
         vendorStatus: user["vendorStatus"] ?? 'PENDING',
         vendorRejectionReason: user["vendorRejectionReason"],
       );
+
+      // Register user with OneSignal using their Foam userId as external_id & connect live socket
+      if (user["id"] != null) {
+        final int userId = user["id"] is int ? user["id"] : int.tryParse(user["id"].toString()) ?? 0;
+        if (userId > 0) {
+          NotificationService.registerUser(userId);
+          SocketService.connect();
+        }
+      }
 
       if (authProvider.isVendor) {
         if (authProvider.vendorStatus == 'APPROVED') {

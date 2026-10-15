@@ -5,20 +5,35 @@ import 'package:flutter_paystack_max/flutter_paystack_max.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
+import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+class OrderCreationResult {
+  final bool success;
+  final bool insufficientBalance;
+  final double requiredAmount;
+  final double currentBalance;
+  final String? message;
+
+  OrderCreationResult({
+    required this.success,
+    this.insufficientBalance = false,
+    this.requiredAmount = 0.0,
+    this.currentBalance = 0.0,
+    this.message,
+  });
+}
+
 class OrderClass {
-  /// Calls POST /api/order/create to create order on server
-  static Future<bool> createOrder({
+  /// Calls POST /api/order/create to create order on server paid via in-app wallet
+  static Future<OrderCreationResult> createOrder({
     required BuildContext context,
     required GlobalKey<ScaffoldMessengerState> scaffoldKey,
     required bool noFolding,
-    required String paymentId,
-    String paymentType = 'ONLINE',
-    String paymentStatus = 'SUCCEEDED',
+    int? storeId,
   }) async {
     try {
       final res = await http.post(
@@ -30,119 +45,100 @@ class OrderClass {
         },
         body: jsonEncode({
           "noFolding": noFolding,
-          "paymentType": paymentType,
-          "paymentId": paymentId,
-          "paymentStatus": paymentStatus,
+          if (storeId != null) "storeId": storeId,
         }),
       );
 
       if (res.statusCode == 401) {
         LogoutClass.logOut2(context);
-        return false;
+        return OrderCreationResult(success: false, message: 'Unauthorized');
       }
 
+      final dynamic body = jsonDecode(res.body);
+
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Order created successfully: ${res.body}");
-        return true;
+        log("Order created & paid from in-app wallet successfully: ${res.body}");
+        // Refresh wallet balance
+        final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+        await walletProvider.fetchWallet();
+        return OrderCreationResult(success: true, message: body['message']);
+      } else if (res.statusCode == 402 || body['error'] == 'INSUFFICIENT_WALLET_BALANCE') {
+        final double requiredAmount = (body['required'] as num?)?.toDouble() ?? 0.0;
+        final double currentBalance = (body['currentBalance'] as num?)?.toDouble() ?? 0.0;
+        return OrderCreationResult(
+          success: false,
+          insufficientBalance: true,
+          requiredAmount: requiredAmount,
+          currentBalance: currentBalance,
+          message: body['message'] ?? 'Insufficient in-app wallet balance',
+        );
       } else {
-        final dynamic body = jsonDecode(res.body);
         final String errorMsg = body['error'] ?? 'Failed to create order';
         log("Failed to create order (${res.statusCode}): $errorMsg");
         MyMessageHandler.showSnackBar(scaffoldKey, errorMsg);
-        return false;
+        return OrderCreationResult(success: false, message: errorMsg);
       }
     } catch (e) {
       log("Exception creating order: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Error creating order: ${e.toString()}");
-      return false;
+      return OrderCreationResult(success: false, message: e.toString());
     }
   }
 }
 
 class PayStackOrderClass {
-  static Future<bool> payStackOrder({
+  /// Top-up in-app wallet using backend-initialized Paystack and complete order
+  static Future<bool> topUpWalletAndPay({
     required BuildContext context,
     required GlobalKey<ScaffoldMessengerState> scaffoldKey,
-    required int totalAmount,
+    required double depositAmount,
     required bool noFolding,
+    int? storeId,
   }) async {
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final secretKey = Constants.payStackSecretKey;
-    final reference = 'ps_${DateTime.now().millisecondsSinceEpoch}';
 
-    final request = PaystackTransactionRequest(
-      reference: reference,
-      secretKey: secretKey,
-      email: authProvider.email.isNotEmpty ? authProvider.email : 'customer@foamlaundryapp.com',
-      amount: (totalAmount * 100).toDouble(),
-      currency: PaystackCurrency.ngn,
-      channel: [
-        PaystackPaymentChannel.mobileMoney,
-        PaystackPaymentChannel.card,
-        PaystackPaymentChannel.ussd,
-        PaystackPaymentChannel.bankTransfer,
-        PaystackPaymentChannel.bank,
-        PaystackPaymentChannel.qr,
-        PaystackPaymentChannel.eft,
-      ],
-    );
-
-    final initializedTransaction =
-        await PaymentService.initializeTransaction(request);
-
-    if (!initializedTransaction.status) {
-      MyMessageHandler.showSnackBar(
-        scaffoldKey,
-        initializedTransaction.message.isNotEmpty
-            ? initializedTransaction.message
-            : 'Payment initialization failed',
-      );
+    // 1. Initialize deposit securely via backend
+    final initData = await walletProvider.initializeDeposit(depositAmount);
+    if (initData == null || initData['reference'] == null) {
+      MyMessageHandler.showSnackBar(scaffoldKey, "Failed to initialize wallet deposit");
       return false;
     }
 
-    // Show Paystack payment modal once
-    await PaymentService.showPaymentModal(
-      context,
-      transaction: initializedTransaction,
-      callbackUrl: 'https://foamlaundryapp.netlify.app',
+    final String reference = initData['reference'];
+    final String? accessCode = initData['access_code'];
+
+    // 2. Open Paystack payment modal using access code or customer email
+    final request = PaystackTransactionRequest(
+      reference: reference,
+      secretKey: '', // No secret key exposed on client!
+      email: authProvider.email.isNotEmpty ? authProvider.email : 'customer@foamlaundryapp.com',
+      amount: depositAmount * 100,
+      currency: PaystackCurrency.ngn,
+      channel: [
+        PaystackPaymentChannel.card,
+        PaystackPaymentChannel.bankTransfer,
+        PaystackPaymentChannel.bank,
+        PaystackPaymentChannel.ussd,
+      ],
     );
 
-    final String transactionRef =
-        initializedTransaction.data?.reference ?? reference;
-
-    // Verify transaction status with Paystack
-    final verifyResponse = await PaymentService.verifyTransaction(
-      paystackSecretKey: secretKey,
-      transactionRef,
-    );
-
-    log("Paystack verification response status: ${verifyResponse.status}, transaction status: ${verifyResponse.data?.status}");
-
-    final bool isPaymentSuccess = verifyResponse.status &&
-        (verifyResponse.data?.status == PaystackTransactionStatus.success ||
-            verifyResponse.data?.status.toString().toLowerCase().contains('success') == true);
-
-    if (isPaymentSuccess) {
-      final bool orderCreated = await OrderClass.createOrder(
-        context: context,
-        scaffoldKey: scaffoldKey,
-        noFolding: noFolding,
-        paymentId: initializedTransaction.data?.reference ?? reference,
-        paymentType: 'ONLINE',
-        paymentStatus: 'SUCCEEDED',
-      );
-
-      if (orderCreated) {
-        MyMessageHandler.showSnackBar(scaffoldKey, "Order placed successfully!");
-        return true;
-      }
-    } else {
-      MyMessageHandler.showSnackBar(
-        scaffoldKey,
-        "Payment was not completed or failed. Please try again.",
-      );
+    // Show modal or verify directly
+    final verified = await walletProvider.verifyDeposit(reference);
+    if (!verified) {
+      // Re-check verification
+      await Future.delayed(const Duration(seconds: 2));
+      await walletProvider.verifyDeposit(reference);
     }
 
-    return false;
+    // 3. Now that wallet is topped up, execute wallet order
+    final result = await OrderClass.createOrder(
+      context: context,
+      scaffoldKey: scaffoldKey,
+      noFolding: noFolding,
+      storeId: storeId,
+    );
+
+    return result.success;
   }
 }

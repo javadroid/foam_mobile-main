@@ -564,34 +564,71 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                       isLoading = true;
                     });
                     try {
-                      // 1. Re-quote right before payment to get authoritative total from server
-                      final freshQuote = await BasketClass.getQuote(
-                        widget.noFolding,
-                        scaffoldKey: scaffoldKey,
-                        context: context,
-                      );
-                      final int amountToPay = freshQuote != null
-                          ? freshQuote.totalPrice
-                          : widget.totalAmount;
-
-                      if (!mounted) return;
-
-                      // 2. Perform Paystack payment & create order
-                      final bool success =
-                          await PayStackOrderClass.payStackOrder(
+                      // Attempt payment directly with in-app wallet
+                      final orderResult = await OrderClass.createOrder(
                         context: context,
                         scaffoldKey: scaffoldKey,
-                        totalAmount: amountToPay,
                         noFolding: widget.noFolding,
                       );
 
-                      if (success && mounted) {
-                        await basketProvider.fetchBasket(scaffoldKey,
-                            showLoading: false);
+                      if (!mounted) return;
+
+                      if (orderResult.success) {
+                        await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
+                        MyMessageHandler.showSnackBar(scaffoldKey, "Order placed & paid successfully via in-app wallet!");
                         Navigator.pushNamedAndRemoveUntil(
                           context,
                           MainScreen.id,
                           (route) => false,
+                        );
+                      } else if (orderResult.insufficientBalance) {
+                        // Prompt user to top-up wallet
+                        final double shortfall = orderResult.requiredAmount - orderResult.currentBalance;
+                        showDialog(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text('Top-Up In-App Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
+                            content: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Order Total: ₦${orderResult.requiredAmount.toStringAsFixed(0)}'),
+                                const SizedBox(height: 6),
+                                Text('Wallet Balance: ₦${orderResult.currentBalance.toStringAsFixed(0)}', style: const TextStyle(color: Colors.grey)),
+                                const SizedBox(height: 12),
+                                Text(
+                                  'Top up ₦${shortfall.toStringAsFixed(0)} to complete this order with your in-app wallet.',
+                                  style: const TextStyle(fontWeight: FontWeight.w500),
+                                ),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(ctx),
+                                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryAccentColor),
+                                onPressed: () async {
+                                  Navigator.pop(ctx);
+                                  setState(() => isLoading = true);
+                                  final toppedUpAndPaid = await PayStackOrderClass.topUpWalletAndPay(
+                                    context: context,
+                                    scaffoldKey: scaffoldKey,
+                                    depositAmount: shortfall > 500 ? shortfall : 500,
+                                    noFolding: widget.noFolding,
+                                  );
+                                  if (toppedUpAndPaid && mounted) {
+                                    await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
+                                    Navigator.pushNamedAndRemoveUntil(context, MainScreen.id, (route) => false);
+                                  }
+                                  if (mounted) setState(() => isLoading = false);
+                                },
+                                child: const Text('Top-Up & Pay', style: TextStyle(color: Colors.white)),
+                              ),
+                            ],
+                          ),
                         );
                       }
                     } finally {
