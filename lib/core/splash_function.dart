@@ -41,12 +41,17 @@ class SplashFunction {
       if (res.statusCode == 200 || res.statusCode == 201) {
         var user = response["user"];
         authProvider.fillAuth(
-          user["firstName"],
-          user["lastName"],
+          user["firstName"] ?? '',
+          user["lastName"] ?? '',
           user["middleName"] ?? '',
-          user["email"],
-          user["phone"],
+          user["email"] ?? '',
+          user["phone"] ?? '',
+          role: user["role"] ?? 'USER',
+          businessName: user["businessName"] ?? '',
+          vendorStatus: user["vendorStatus"] ?? 'PENDING',
+          vendorRejectionReason: user["vendorRejectionReason"],
         );
+
 
         bool hasAddress = false;
         if (user["address"] != null && user["address"] is List && (user["address"] as List).isNotEmpty) {

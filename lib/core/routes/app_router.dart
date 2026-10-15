@@ -19,6 +19,16 @@ import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/fo
 import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/forgot_number_page.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_0.dart';
 import 'package:foam_mobile/feature/authentication/view/verify_pages/verification_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_documents_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_payout_bank_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_service_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_review_live_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
+import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 
 class AppRouter {
   static final GlobalKey<NavigatorState> navigatorKey =
@@ -155,6 +165,66 @@ class AppRouter {
           settings: settings,
         );
 
+      case VendorSignUpScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorSignUpScreen(),
+          settings: settings,
+        );
+
+      case VendorDocumentsScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorDocumentsScreen(),
+          settings: settings,
+        );
+
+      case VendorPayoutBankScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorPayoutBankScreen(),
+          settings: settings,
+        );
+
+      case VendorPendingVerificationScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorPendingVerificationScreen(),
+          settings: settings,
+        );
+
+      case VendorRejectedScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorRejectedScreen(),
+          settings: settings,
+        );
+
+      case VendorApprovedScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorApprovedScreen(),
+          settings: settings,
+        );
+
+      case VendorStoreDetailsScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorStoreDetailsScreen(),
+          settings: settings,
+        );
+
+      case VendorPricingServiceScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorPricingServiceScreen(),
+          settings: settings,
+        );
+
+      case VendorReviewLiveScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorReviewLiveScreen(),
+          settings: settings,
+        );
+
+      case VendorMainScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorMainScreen(),
+          settings: settings,
+        );
+
       // Add more routes for other screens as needed
       default:
         return MaterialPageRoute(
@@ -163,3 +233,4 @@ class AppRouter {
     }
   }
 }
+

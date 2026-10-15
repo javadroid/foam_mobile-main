@@ -14,6 +14,9 @@ import 'package:provider/provider.dart';
 
 import 'package:foam_mobile/core/splash_function.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
+import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
@@ -85,14 +88,39 @@ class LoginClass {
       log(res.body);
       var user = response["user"];
       authProvider.fillAuth(
-        user["firstName"],
-        user["lastName"],
+        user["firstName"] ?? '',
+        user["lastName"] ?? '',
         user["middleName"] ?? '',
-        user["email"],
-        user["phone"],
+        user["email"] ?? '',
+        user["phone"] ?? '',
+        role: user["role"] ?? 'USER',
+        businessName: user["businessName"] ?? '',
+        vendorStatus: user["vendorStatus"] ?? 'PENDING',
+        vendorRejectionReason: user["vendorRejectionReason"],
       );
-      // log(message)(message)(authProvider.getUser());
+
+      if (authProvider.isVendor) {
+        if (authProvider.vendorStatus == 'APPROVED') {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            VendorMainScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        } else if (authProvider.vendorStatus == 'REJECTED') {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            VendorRejectedScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            VendorPendingVerificationScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        }
+        return;
+      }
+
       getAddress(context, scaffoldKey, isSignup: isSignup);
+
       // return log(message)(message)(response);
     } else {
       log(res.reasonPhrase.toString());

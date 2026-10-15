@@ -7,6 +7,7 @@ import 'package:foam_mobile/core/routes/app_router.dart';
 import 'package:foam_mobile/core/splash_screen.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -40,11 +41,15 @@ void main() async {
           ),
           ChangeNotifierProvider(
             create: (_) => BasketProvider(),
-          )
+          ),
+          ChangeNotifierProvider(
+            create: (_) => VendorProvider(),
+          ),
         ],
         child: const MyApp(),
       ),
     ),
+
     // ),
   );
 }

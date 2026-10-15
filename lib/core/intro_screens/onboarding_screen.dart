@@ -10,7 +10,9 @@ import 'package:foam_mobile/widgets/click_button.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
+
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({super.key});
@@ -164,9 +166,39 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       ),
                     ),
                   ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                      VendorSignUpScreen.id,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.storefront_outlined,
+                            size: 16,
+                            color: AppColors.primaryAccentColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Partner with Foam · Vendor Portal',
+                            style: GoogleFonts.dmSans(
+                              color: AppColors.primaryAccentColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                 ],
               ),
+
             ],
           ),
         ),

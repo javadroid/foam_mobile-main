@@ -15,6 +15,13 @@ class AuthProvider extends ChangeNotifier {
   String addressPostalCode = '';
   String addressCountry = '';
 
+  String role = 'USER';
+  String businessName = '';
+  String vendorStatus = 'PENDING';
+  String? vendorRejectionReason;
+
+  bool get isVendor => role.toUpperCase() == 'VENDOR';
+
   Map<String, dynamic> user = {};
 
   bool initDone = false;
@@ -42,6 +49,10 @@ class AuthProvider extends ChangeNotifier {
       'middleName': middleName,
       'phoneNumber': phoneNumber,
       'email': email,
+      'role': role,
+      'businessName': businessName,
+      'vendorStatus': vendorStatus,
+      'vendorRejectionReason': vendorRejectionReason,
       'addressStreet': addressStreet,
       'addressCity': addressCity,
       'addressPostalCode': addressPostalCode,
@@ -57,6 +68,10 @@ class AuthProvider extends ChangeNotifier {
     phoneNumber = '';
     email = '';
     password = '';
+    role = 'USER';
+    businessName = '';
+    vendorStatus = 'PENDING';
+    vendorRejectionReason = null;
     addressStreet = '';
     addressCity = '';
     addressPostalCode = '';
@@ -70,13 +85,29 @@ class AuthProvider extends ChangeNotifier {
     String userLastName,
     String? userMiddleName,
     String userEmail,
-    String userPhoneNumber,
-  ) {
+    String userPhoneNumber, {
+    String? role,
+    String? businessName,
+    String? vendorStatus,
+    String? vendorRejectionReason,
+  }) {
     firstName = userFirstName;
     lastName = userLastName;
     middleName = userMiddleName ?? '';
     email = userEmail;
     phoneNumber = userPhoneNumber;
+    if (role != null) this.role = role;
+    if (businessName != null) this.businessName = businessName;
+    if (vendorStatus != null) this.vendorStatus = vendorStatus;
+    if (vendorRejectionReason != null) {
+      this.vendorRejectionReason = vendorRejectionReason;
+    }
+    notifyListeners();
+  }
+
+  void setVendorStatus(String status, {String? reason}) {
+    vendorStatus = status;
+    vendorRejectionReason = reason;
     notifyListeners();
   }
 
@@ -93,3 +124,4 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
+
