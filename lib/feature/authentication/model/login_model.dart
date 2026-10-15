@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
@@ -19,6 +18,7 @@ import 'package:foam_mobile/core/services/socket_service.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/widgets/app_fullscreen_loader.dart';
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
@@ -29,7 +29,12 @@ class LoginClass {
     } else if (password.isEmpty) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Please Input a password");
     } else {
-      log("email $email password $password");
+      debugPrint("email $email password $password");
+      AppFullScreenLoader.show(
+        context,
+        message: 'Signing you in...',
+        subtitle: 'Preparing your workspace',
+      );
       try {
         http.Response res = await http.post(
           Uri.parse(
@@ -48,7 +53,7 @@ class LoginClass {
         );
         var response = json.decode(res.body);
 
-        log(response.toString());
+        debugPrint(response.toString());
 
         if (res.statusCode == 200) {
           // if status code is 200 show the message
@@ -59,10 +64,12 @@ class LoginClass {
           );
           getProfile(context, scaffoldKey, isSignup: isSignup);
         } else {
+          AppFullScreenLoader.hide(context);
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
-      } catch (e, stackTrace) {
-        log('Login Error: $e', stackTrace: stackTrace);
+      } catch (e) {
+        AppFullScreenLoader.hide(context);
+        debugPrint('Login Error: $e');
         MyMessageHandler.showSnackBar(scaffoldKey,
             "Unable to connect to server. Please check your internet connection.");
       }
@@ -89,7 +96,7 @@ class LoginClass {
 
     if (res.statusCode == 200 || res.statusCode == 201) {
       var authProvider = Provider.of<AuthProvider>(context, listen: false);
-      log(res.body);
+      debugPrint(res.body);
       var user = response["user"];
       authProvider.fillAuth(
         user["firstName"] ?? '',
@@ -105,10 +112,8 @@ class LoginClass {
 
       // Register user with OneSignal using their Foam userId as external_id & connect live socket
       if (user["id"] != null) {
-        final int userId = user["id"] is int
-            ? user["id"]
-            : int.tryParse(user["id"].toString()) ?? 0;
-        if (userId > 0) {
+        final String userId = user["id"].toString();
+        if (userId.isNotEmpty) {
           debugPrint("FOAM_ID $userId");
           NotificationService.registerUser(userId);
           SocketService.connect();
@@ -116,6 +121,7 @@ class LoginClass {
       }
 
       if (authProvider.isVendor) {
+        AppFullScreenLoader.hide(context);
         if (authProvider.vendorStatus == 'APPROVED') {
           Navigator.of(context).pushNamedAndRemoveUntil(
             VendorMainScreen.id,
@@ -137,12 +143,13 @@ class LoginClass {
 
       getAddress(context, scaffoldKey, isSignup: isSignup);
 
-      // return log(message)(message)(response);
+      // returndebugPrint(message)(message)(response);
     } else {
-      log(res.reasonPhrase.toString());
-      log(res.statusCode.toString());
-      log(res.headers.toString());
-      log(res.body);
+      AppFullScreenLoader.hide(context);
+      debugPrint(res.reasonPhrase.toString());
+      debugPrint(res.statusCode.toString());
+      debugPrint(res.headers.toString());
+      debugPrint(res.body);
       MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load profile");
     }
   }
@@ -185,10 +192,12 @@ class LoginClass {
             address["postalCode"],
             address["country"],
           );
-          log(authProvider.user.toString());
+          debugPrint(authProvider.user.toString());
 
           // Reload all data to be sure
           await SplashFunction.init(context);
+
+          AppFullScreenLoader.hide(context);
 
           // If it's not a signup, go to main screen
           if (!isSignup) {
@@ -209,6 +218,7 @@ class LoginClass {
           }
         } else {
           debugPrint("No address found, going to address page");
+          AppFullScreenLoader.hide(context);
           // No address found, go to add address screen
           Navigator.push(
             context,
@@ -217,12 +227,13 @@ class LoginClass {
             ),
           );
         }
-        return log(response);
+        return debugPrint(response.toString());
       } else {
-        log(res.reasonPhrase.toString());
-        log(res.statusCode.toString());
-        log(res.headers.toString());
-        log(res.body);
+        AppFullScreenLoader.hide(context);
+        debugPrint(res.reasonPhrase.toString());
+        debugPrint(res.statusCode.toString());
+        debugPrint(res.headers.toString());
+        debugPrint(res.body);
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load address");
         // Fallback to MainScreen if address fetch fails but status code is not 200 and it's not a signup
         if (!isSignup) {
@@ -241,6 +252,7 @@ class LoginClass {
         }
       }
     } catch (e, stackTrace) {
+      AppFullScreenLoader.hide(context);
       debugPrint("Error in getAddress: $e");
       debugPrint("Stack trace: $stackTrace");
       MyMessageHandler.showSnackBar(scaffoldKey, "Address not fetched");

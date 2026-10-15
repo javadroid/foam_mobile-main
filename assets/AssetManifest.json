@@ -1,0 +1,10 @@
+{
+  "assets/fonts/DMSans-Regular.ttf": ["assets/fonts/DMSans-Regular.ttf"],
+  "assets/fonts/DMSans-Medium.ttf": ["assets/fonts/DMSans-Medium.ttf"],
+  "assets/fonts/DMSans-SemiBold.ttf": ["assets/fonts/DMSans-SemiBold.ttf"],
+  "assets/fonts/DMSans-Bold.ttf": ["assets/fonts/DMSans-Bold.ttf"],
+  "google_fonts/DMSans-Regular.ttf": ["assets/fonts/DMSans-Regular.ttf"],
+  "google_fonts/DMSans-Medium.ttf": ["assets/fonts/DMSans-Medium.ttf"],
+  "google_fonts/DMSans-SemiBold.ttf": ["assets/fonts/DMSans-SemiBold.ttf"],
+  "google_fonts/DMSans-Bold.ttf": ["assets/fonts/DMSans-Bold.ttf"]
+}

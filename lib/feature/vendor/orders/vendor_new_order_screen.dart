@@ -52,20 +52,24 @@ class VendorNewOrderScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  ...reasons.map((r) {
-                    return RadioListTile<String>(
-                      value: r,
-                      groupValue: selectedReason,
-                      activeColor: VendorColors.primary,
-                      title: Text(
-                        r,
-                        style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
-                      ),
-                      onChanged: (val) {
-                        if (val != null) setSheetState(() => selectedReason = val);
-                      },
-                    );
-                  }),
+                  RadioGroup<String>(
+                    groupValue: selectedReason,
+                    onChanged: (val) {
+                      if (val != null) setSheetState(() => selectedReason = val);
+                    },
+                    child: Column(
+                      children: reasons.map((r) {
+                        return RadioListTile<String>(
+                          value: r,
+                          activeColor: VendorColors.primary,
+                          title: Text(
+                            r,
+                            style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ),
                   const SizedBox(height: 16),
                   VendorButton(
                     text: 'Confirm Decline',

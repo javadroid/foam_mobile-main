@@ -14,6 +14,16 @@ class VendorReviewLiveScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final vendorProvider = Provider.of<VendorProvider>(context);
     final store = vendorProvider.currentStore;
+    final initials = store.name.trim().isNotEmpty
+        ? (store.name.trim().split(' ').length > 1
+            ? '${store.name.trim().split(' ')[0][0]}${store.name.trim().split(' ')[1][0]}'.toUpperCase()
+            : store.name.substring(0, store.name.length >= 2 ? 2 : 1).toUpperCase())
+        : 'ST';
+
+    final laundryPriced = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding').length +
+        vendorProvider.getItemPrices(store.id, 'Laundry', 'Non-folding').length;
+    final dryCleaningPriced = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Folding').length +
+        vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Non-folding').length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -67,10 +77,10 @@ class VendorReviewLiveScreen extends StatelessWidget {
                         color: VendorColors.primary,
                         shape: BoxShape.circle,
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'BW',
-                          style: TextStyle(
+                          initials,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                             fontSize: 16,
@@ -108,13 +118,13 @@ class VendorReviewLiveScreen extends StatelessWidget {
               const SizedBox(height: 24),
 
               // Checklist
-              _buildCheckItem('Address & map pin', '14 Admiralty Way geocoded'),
+              _buildCheckItem('Address & map pin', '${store.address.isNotEmpty ? store.address : "Store address"} geocoded'),
               const SizedBox(height: 12),
               _buildCheckItem('Operating hours', store.hoursMonFri),
               const SizedBox(height: 12),
-              _buildCheckItem('Laundry prices', '16 items configured'),
+              _buildCheckItem('Laundry prices', laundryPriced > 0 ? '$laundryPriced items configured' : 'Not configured'),
               const SizedBox(height: 12),
-              _buildCheckItem('Dry cleaning prices', '12 items configured'),
+              _buildCheckItem('Dry cleaning prices', dryCleaningPriced > 0 ? '$dryCleaningPriced items configured' : 'Not configured'),
 
               const SizedBox(height: 24),
 
@@ -124,7 +134,7 @@ class VendorReviewLiveScreen extends StatelessWidget {
                 decoration: BoxDecoration(
                   color: VendorColors.liveBg,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: VendorColors.liveText.withOpacity(0.2)),
+                  border: Border.all(color: VendorColors.liveText.withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [
@@ -147,7 +157,7 @@ class VendorReviewLiveScreen extends StatelessWidget {
                             'Visible to customers nearby. You can pause anytime from store settings.',
                             style: GoogleFonts.dmSans(
                               fontSize: 12,
-                              color: VendorColors.liveText.withOpacity(0.85),
+                              color: VendorColors.liveText.withValues(alpha: 0.85),
                             ),
                           ),
                         ],

@@ -14,12 +14,19 @@ class VendorRevenueScreen extends StatefulWidget {
 
 class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
   int _selectedPeriod = 1; // 0: This week, 1: This month
-  String _selectedStoreFilter = 'All stores';
+  final String _selectedStoreFilter = 'All stores';
 
   @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat('#,###');
     final provider = Provider.of<VendorProvider>(context);
+    final now = DateTime.now();
+    final monthName = DateFormat('MMMM').format(now);
+
+    final netPayable = provider.availableBalance;
+    const commissionRate = 0.15;
+    final gross = netPayable > 0 ? (netPayable / (1 - commissionRate)) : 0.0;
+    final commission = gross - netPayable;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -84,7 +91,7 @@ class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
               ),
               const SizedBox(height: 20),
 
-              // Net Payable Card (Figma Screen 18)
+              // Net Payable Card
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(22),
@@ -96,16 +103,16 @@ class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Net payable · September',
+                      'Net payable · $monthName',
                       style: GoogleFonts.dmSans(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '₦413,270',
+                      '₦${currencyFormatter.format(netPayable.toInt())}',
                       style: GoogleFonts.dmSans(
                         color: Colors.white,
                         fontSize: 32,
@@ -125,13 +132,13 @@ class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
                             Text(
                               'Gross revenue',
                               style: GoogleFonts.dmSans(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '₦486,200',
+                              '₦${currencyFormatter.format(gross.toInt())}',
                               style: GoogleFonts.dmSans(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w700,
@@ -146,13 +153,13 @@ class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
                             Text(
                               'Foam commission (15%)',
                               style: GoogleFonts.dmSans(
-                                color: Colors.white.withOpacity(0.6),
+                                color: Colors.white.withValues(alpha: 0.6),
                                 fontSize: 12,
                               ),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '−₦72,930',
+                              '−₦${currencyFormatter.format(commission.toInt())}',
                               style: GoogleFonts.dmSans(
                                 color: const Color(0xFFFCA5A5),
                                 fontWeight: FontWeight.w700,
@@ -179,26 +186,31 @@ class _VendorRevenueScreenState extends State<VendorRevenueScreen> {
               ),
               const SizedBox(height: 14),
 
-              _buildStoreRevenueCard(
-                storeName: 'Lekki Phase 1',
-                ordersCount: '142 orders',
-                netAmount: '₦281,040',
-                isLive: true,
-              ),
-              const SizedBox(height: 12),
-              _buildStoreRevenueCard(
-                storeName: 'Yaba',
-                ordersCount: '71 orders',
-                netAmount: '₦132,230',
-                isLive: true,
-              ),
-              const SizedBox(height: 12),
-              _buildStoreRevenueCard(
-                storeName: 'Ikeja GRA',
-                ordersCount: 'Not live yet',
-                netAmount: '₦0',
-                isLive: false,
-              ),
+              if (provider.stores.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 24),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'No stores configured yet',
+                    style: GoogleFonts.dmSans(color: VendorColors.textMuted, fontSize: 14),
+                  ),
+                )
+              else
+                ...provider.stores.map((store) {
+                  final storeOrders = provider.doneOrders.where((o) => o.storeId == store.id).toList();
+                  final storeNet = storeOrders.fold(0.0, (sum, o) => sum + o.vendorEarnings);
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: _buildStoreRevenueCard(
+                      storeName: store.name,
+                      ordersCount: store.isLive
+                          ? '${storeOrders.length} ${storeOrders.length == 1 ? "order" : "orders"}'
+                          : 'Not live yet',
+                      netAmount: '₦${currencyFormatter.format(storeNet.toInt())}',
+                      isLive: store.isLive,
+                    ),
+                  );
+                }),
               const SizedBox(height: 24),
             ],
           ),

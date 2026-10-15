@@ -112,10 +112,13 @@ class VendorTransactionItem {
 class VendorKycStatus {
   bool cacUploaded;
   String cacFileName;
+  String? cacUrl;
   bool ownerIdUploaded;
   String ownerIdFileName;
+  String? ownerIdUrl;
   bool proofOfAddressUploaded;
   String proofOfAddressFileName;
+  String? proofOfAddressUrl;
 
   String bankName;
   String accountNumber;
@@ -127,14 +130,40 @@ class VendorKycStatus {
   VendorKycStatus({
     this.cacUploaded = false,
     this.cacFileName = '',
+    this.cacUrl,
     this.ownerIdUploaded = false,
     this.ownerIdFileName = '',
+    this.ownerIdUrl,
     this.proofOfAddressUploaded = false,
     this.proofOfAddressFileName = '',
+    this.proofOfAddressUrl,
     this.bankName = '',
     this.accountNumber = '',
     this.accountName = '',
     this.reviewStatus = 'PENDING',
     this.rejectionReason,
   });
+}
+
+class PaystackBankModel {
+  final int id;
+  final String name;
+  final String code;
+  final String slug;
+
+  PaystackBankModel({
+    required this.id,
+    required this.name,
+    required this.code,
+    required this.slug,
+  });
+
+  factory PaystackBankModel.fromJson(Map<String, dynamic> json) {
+    return PaystackBankModel(
+      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      name: json['name'] ?? '',
+      code: json['code']?.toString() ?? '',
+      slug: json['slug'] ?? '',
+    );
+  }
 }

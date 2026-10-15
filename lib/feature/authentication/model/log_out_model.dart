@@ -25,7 +25,7 @@ class LogoutClass {
       );
 
       var response = json.decode(res.body);
-      log(jsonEncode(response));
+      debugPrint(jsonEncode(response));
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(
@@ -48,10 +48,10 @@ class LogoutClass {
       } else {
         MyMessageHandler.showSnackBar(
             scaffoldKey, response["error"]?.toString() ?? "Logout failed");
-        log(response["error"]?.toString() ?? "Unknown error");
+        debugPrint(response["error"]?.toString() ?? "Unknown error");
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
     }
   }

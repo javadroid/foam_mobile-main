@@ -55,5 +55,9 @@
 	<string>Foam Laundry uses your location to auto-detect pickup and delivery addresses and ensure we service your area.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Foam Laundry uses your location for delivery address detection and tracking.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 </dict>
 </plist>

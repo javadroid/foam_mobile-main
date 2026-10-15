@@ -64,9 +64,9 @@ class VendorRejectedScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(18),
                 decoration: BoxDecoration(
-                  color: VendorColors.urgentBg.withOpacity(0.5),
+                  color: VendorColors.urgentBg.withValues(alpha: 0.5),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: VendorColors.urgentText.withOpacity(0.2)),
+                  border: Border.all(color: VendorColors.urgentText.withValues(alpha: 0.2)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

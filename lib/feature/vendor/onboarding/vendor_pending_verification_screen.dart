@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 
 class VendorPendingVerificationScreen extends StatelessWidget {
   static const String id = '/vendor_pending_verification';
@@ -13,9 +11,6 @@ class VendorPendingVerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final vendorProvider = Provider.of<VendorProvider>(context);
-    final kyc = vendorProvider.kycStatus;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(

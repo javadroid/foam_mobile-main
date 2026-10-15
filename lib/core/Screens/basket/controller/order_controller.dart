@@ -57,14 +57,19 @@ class OrderClass {
       final dynamic body = jsonDecode(res.body);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Order created & paid from in-app wallet successfully: ${res.body}");
+        debugPrint(
+            "Order created & paid from in-app wallet successfully: ${res.body}");
         // Refresh wallet balance
-        final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+        final walletProvider =
+            Provider.of<WalletProvider>(context, listen: false);
         await walletProvider.fetchWallet();
         return OrderCreationResult(success: true, message: body['message']);
-      } else if (res.statusCode == 402 || body['error'] == 'INSUFFICIENT_WALLET_BALANCE') {
-        final double requiredAmount = (body['required'] as num?)?.toDouble() ?? 0.0;
-        final double currentBalance = (body['currentBalance'] as num?)?.toDouble() ?? 0.0;
+      } else if (res.statusCode == 402 ||
+          body['error'] == 'INSUFFICIENT_WALLET_BALANCE') {
+        final double requiredAmount =
+            (body['required'] as num?)?.toDouble() ?? 0.0;
+        final double currentBalance =
+            (body['currentBalance'] as num?)?.toDouble() ?? 0.0;
         return OrderCreationResult(
           success: false,
           insufficientBalance: true,
@@ -74,13 +79,14 @@ class OrderClass {
         );
       } else {
         final String errorMsg = body['error'] ?? 'Failed to create order';
-        log("Failed to create order (${res.statusCode}): $errorMsg");
+        debugPrint("Failed to create order (${res.statusCode}): $errorMsg");
         MyMessageHandler.showSnackBar(scaffoldKey, errorMsg);
         return OrderCreationResult(success: false, message: errorMsg);
       }
     } catch (e) {
-      log("Exception creating order: $e");
-      MyMessageHandler.showSnackBar(scaffoldKey, "Error creating order: ${e.toString()}");
+      debugPrint("Exception creating order: $e");
+      MyMessageHandler.showSnackBar(
+          scaffoldKey, "Error creating order: ${e.toString()}");
       return OrderCreationResult(success: false, message: e.toString());
     }
   }
@@ -101,7 +107,8 @@ class PayStackOrderClass {
     // 1. Initialize deposit securely via backend
     final initData = await walletProvider.initializeDeposit(depositAmount);
     if (initData == null || initData['reference'] == null) {
-      MyMessageHandler.showSnackBar(scaffoldKey, "Failed to initialize wallet deposit");
+      MyMessageHandler.showSnackBar(
+          scaffoldKey, "Failed to initialize wallet deposit");
       return false;
     }
 
@@ -112,7 +119,9 @@ class PayStackOrderClass {
     final request = PaystackTransactionRequest(
       reference: reference,
       secretKey: '', // No secret key exposed on client!
-      email: authProvider.email.isNotEmpty ? authProvider.email : 'customer@foamlaundryapp.com',
+      email: authProvider.email.isNotEmpty
+          ? authProvider.email
+          : 'customer@foamlaundryapp.com',
       amount: depositAmount * 100,
       currency: PaystackCurrency.ngn,
       channel: [

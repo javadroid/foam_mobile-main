@@ -35,23 +35,25 @@ class BasketClass {
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Basket quote: ${res.body}");
+        debugPrint("Basket quote: ${res.body}");
         return basketQuoteFromJson(res.body);
       } else {
-        log("Failed to get quote: ${res.statusCode} ${res.body}");
+        debugPrint("Failed to get quote: ${res.statusCode} ${res.body}");
         if (scaffoldKey != null) {
-          MyMessageHandler.showSnackBar(scaffoldKey, "Failed to calculate quote");
+          MyMessageHandler.showSnackBar(
+              scaffoldKey, "Failed to calculate quote");
         }
         return null;
       }
     } catch (e) {
-      log("Error fetching quote: $e");
+      debugPrint("Error fetching quote: $e");
       if (scaffoldKey != null) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to calculate quote");
       }
       return null;
     }
   }
+
   static Future<List<BasketList>?> getServices(
       GlobalKey<ScaffoldMessengerState> scaffoldKey,
       [BuildContext? context]) async {
@@ -76,18 +78,18 @@ class BasketClass {
       var response = res.body;
       if (res.statusCode == 200 || res.statusCode == 201) {
         // MyMessageHandler.showSnackBar(scaffoldKey, "Basket loaded");
-        log(response.toString());
+        debugPrint(response.toString());
         return basketListFromJson(response);
       } else {
-        log(res.reasonPhrase.toString());
-        log(res.statusCode.toString());
-        log(res.headers.toString());
-        log(res.body);
+        debugPrint(res.reasonPhrase.toString());
+        debugPrint(res.statusCode.toString());
+        debugPrint(res.headers.toString());
+        debugPrint(res.body);
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Basket");
         return null;
       }
     } catch (e) {
-      log(e.toString());
+      debugPrint(e.toString());
       MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Basket");
       return [];
     }
@@ -113,13 +115,13 @@ class BasketClass {
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Quantity updated: ${res.body}");
+        debugPrint("Quantity updated: ${res.body}");
       } else {
-        log("Failed to update quantity: ${res.statusCode}");
+        debugPrint("Failed to update quantity: ${res.statusCode}");
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to update quantity");
       }
     } catch (e) {
-      log("Error updating quantity: $e");
+      debugPrint("Error updating quantity: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Error updating quantity");
     }
   }
@@ -144,11 +146,11 @@ class BasketClass {
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(scaffoldKey, "Basket cleared");
       } else {
-        log("Failed to clear basket: ${res.statusCode}");
+        debugPrint("Failed to clear basket: ${res.statusCode}");
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to clear basket");
       }
     } catch (e) {
-      log("Error clearing basket: $e");
+      debugPrint("Error clearing basket: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Error clearing basket");
     }
   }

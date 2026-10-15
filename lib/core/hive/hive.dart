@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
 class HiveClass {
@@ -8,7 +9,7 @@ class HiveClass {
 
   // inserting the token
   static void insertToken(String token) {
-    log(token);
+    debugPrint(token);
     foamBox.put('token', token);
   }
 
@@ -31,7 +32,7 @@ class HiveClass {
 
   // inserting the token
   static void insertPic(String picture) {
-    log(picture);
+    debugPrint(picture);
     foamBox.put('picture', picture);
   }
 

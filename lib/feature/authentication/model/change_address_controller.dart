@@ -41,7 +41,7 @@ class ChangeAddressController {
           "longitude": longitude,
         }),
       );
-      
+
       if (res.statusCode == 401) {
         LogoutClass.logOut2(context);
         return;
@@ -49,7 +49,7 @@ class ChangeAddressController {
 
       var response = json.decode(res.body);
 
-      log(jsonEncode(response)); // Convert Map to String
+      debugPrint(jsonEncode(response)); // Convert Map to String
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(
@@ -57,11 +57,11 @@ class ChangeAddressController {
       } else {
         MyMessageHandler.showSnackBar(
             scaffoldKey, response["error"] ?? "An unknown error occurred");
-        log("@@@@@@ERROR");
-        log(response["error"].toString()); // Ensure it's a String
+        debugPrint("@@@@@@ERROR");
+        debugPrint(response["error"].toString()); // Ensure it's a String
       }
     } catch (e) {
-      log(e.toString());
+      debugPrint(e.toString());
       MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
     }
   }

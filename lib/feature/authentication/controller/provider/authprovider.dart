@@ -33,13 +33,13 @@ class AuthProvider extends ChangeNotifier {
   void updateDone(bool done) {
     initDone = done;
     notifyListeners();
-    log('init done $initDone');
+    debugPrint('init done $initDone');
   }
 
   void updateError(bool error) {
     _initError = error;
     notifyListeners();
-    log('init error $initError');
+    debugPrint('init error $initError');
   }
 
   Map<String, dynamic> getUser() {
@@ -124,4 +124,3 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 }
-

@@ -4,6 +4,7 @@ import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
 import 'package:foam_mobile/core/Screens/history/order_details_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:foam_mobile/widgets/history_widget.dart';
 import 'package:intl/intl.dart';
 
@@ -142,7 +143,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   ),
                   AppSpaces.verticalSpace20,
                   isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? AppSkeletonLoader.list(
+                          count: 4,
+                          padding: EdgeInsets.zero,
+                          itemBuilder: (_, __) => AppSkeletonLoader.orderCard(),
+                        )
                       : filteredOrders.isEmpty
                           ? Center(
                               child: Column(

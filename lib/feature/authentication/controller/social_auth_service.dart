@@ -116,11 +116,11 @@ class SocialAuthService {
       if (errStr.contains('canceled') ||
           errStr.contains('cancelled') ||
           errStr.contains('sign_in_canceled')) {
-        log('Google Sign-In cancelled by user');
+        debugPrint('Google Sign-In cancelled by user');
         return;
       }
       debugPrint('Google Sign In Error: $e');
-      log('Google Sign In Error: $e', stackTrace: stackTrace);
+      debugPrint('Google Sign In Error: $e');
       _showError(scaffoldKey, 'Unable to sign in with Google.');
     }
   }
@@ -147,7 +147,8 @@ class SocialAuthService {
       );
 
       final dynamic regBody = jsonDecode(regRes.body);
-      log('Google register status: ${regRes.statusCode}, body: $regBody');
+      debugPrint(
+          'Google register status: ${regRes.statusCode}, body: $regBody');
 
       if (regRes.statusCode == 200 || regRes.statusCode == 201) {
         final String token = regBody['token'];
@@ -163,7 +164,7 @@ class SocialAuthService {
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
-      log('Google Register Error: $e');
+      debugPrint('Google Register Error: $e');
       _showError(scaffoldKey,
           'Unable to complete registration. Please check your connection and try again.');
     }
@@ -212,7 +213,8 @@ class SocialAuthService {
       final String? firstName = credential.givenName;
       final String? lastName = credential.familyName;
 
-      log('Apple Sign-In successful. User: ${credential.userIdentifier}, email: $appleEmail');
+      debugPrint(
+          'Apple Sign-In successful. User: ${credential.userIdentifier}, email: $appleEmail');
 
       // 1. Try logging in first
       final http.Response loginRes = await http.get(
@@ -225,7 +227,8 @@ class SocialAuthService {
       );
 
       final dynamic loginBody = jsonDecode(loginRes.body);
-      log('Apple login status: ${loginRes.statusCode}, body: $loginBody');
+      debugPrint(
+          'Apple login status: ${loginRes.statusCode}, body: $loginBody');
 
       if (loginRes.statusCode == 200) {
         final String token = loginBody['token'];
@@ -270,7 +273,7 @@ class SocialAuthService {
           'Apple sign in could not be completed. Please try again.';
       _showError(scaffoldKey, errorMsg);
     } on SignInWithAppleAuthorizationException catch (e, stackTrace) {
-      log('Apple Auth Exception: ${e.code}', stackTrace: stackTrace);
+      debugPrint('Apple Auth Exception: ${e.code}');
       if (e.code == AuthorizationErrorCode.canceled) {
         // User cancelled Apple sign in dialog
         return;
@@ -278,7 +281,7 @@ class SocialAuthService {
       _showError(scaffoldKey,
           'Apple Sign-In was cancelled or could not be completed.');
     } catch (e, stackTrace) {
-      log('Apple Sign In Error: $e', stackTrace: stackTrace);
+      debugPrint('Apple Sign In Error: $e');
       _showError(scaffoldKey,
           'Apple Sign-In is unavailable on this device. Please use Google or Email.');
     }
@@ -312,7 +315,7 @@ class SocialAuthService {
       );
 
       final dynamic regBody = jsonDecode(regRes.body);
-      log('Apple register status: ${regRes.statusCode}, body: $regBody');
+      debugPrint('Apple register status: ${regRes.statusCode}, body: $regBody');
 
       if (regRes.statusCode == 200 || regRes.statusCode == 201) {
         final String token = regBody['token'];
@@ -328,7 +331,7 @@ class SocialAuthService {
         _showError(scaffoldKey, errorMsg);
       }
     } catch (e) {
-      log('Apple Register Error: $e');
+      debugPrint('Apple Register Error: $e');
       _showError(scaffoldKey,
           'Unable to complete registration. Please check your connection and try again.');
     }

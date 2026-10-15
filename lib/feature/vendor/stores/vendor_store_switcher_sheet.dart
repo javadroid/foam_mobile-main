@@ -54,58 +54,71 @@ class VendorStoreSwitcherSheet extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          ...stores.map((store) {
-            final isSelected = store.id == currentStore.id;
-            return Container(
-              margin: const EdgeInsets.only(bottom: 10),
-              decoration: BoxDecoration(
-                color: isSelected ? VendorColors.draftBg : VendorColors.lightBg,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: isSelected
-                      ? VendorColors.primary
-                      : VendorColors.border,
-                  width: isSelected ? 1.5 : 1.0,
+          if (stores.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Center(
+                child: Text(
+                  'No stores added yet',
+                  style: GoogleFonts.dmSans(color: VendorColors.textMuted, fontSize: 14),
                 ),
               ),
-              child: ListTile(
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                onTap: () {
-                  vendorProvider.switchStore(store.id);
-                  Navigator.pop(context);
-                },
-                title: Text(
-                  store.name,
-                  style: GoogleFonts.dmSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                    color: VendorColors.textMain,
+            )
+          else
+            ...stores.map((store) {
+              final isSelected = store.id == currentStore.id;
+              final newCount = vendorProvider.getNewOrdersCount(store.id);
+              final activeCount = vendorProvider.getActiveOrdersCount(store.id);
+              return Container(
+                margin: const EdgeInsets.only(bottom: 10),
+                decoration: BoxDecoration(
+                  color: isSelected ? VendorColors.draftBg : VendorColors.lightBg,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: isSelected
+                        ? VendorColors.primary
+                        : VendorColors.border,
+                    width: isSelected ? 1.5 : 1.0,
                   ),
                 ),
-                subtitle: Text(
-                  store.isLive
-                      ? '2 new · 5 active'
-                      : store.isPaused
-                          ? '1 active'
-                          : 'Pricing incomplete',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    color: VendorColors.textMuted,
+                child: ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  onTap: () {
+                    vendorProvider.switchStore(store.id);
+                    Navigator.pop(context);
+                  },
+                  title: Text(
+                    store.name,
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
+                      color: VendorColors.textMain,
+                    ),
                   ),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    VendorStatusPill(status: store.status),
-                    if (isSelected) ...[
-                      const SizedBox(width: 8),
-                      const Icon(Icons.check, color: VendorColors.primary, size: 20),
+                  subtitle: Text(
+                    store.isLive
+                        ? '$newCount new · $activeCount active'
+                        : store.isPaused
+                            ? '$activeCount active'
+                            : 'Store in draft',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      color: VendorColors.textMuted,
+                    ),
+                  ),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      VendorStatusPill(status: store.status),
+                      if (isSelected) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check, color: VendorColors.primary, size: 20),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-            );
-          }),
+              );
+            }),
 
           const SizedBox(height: 8),
           InkWell(

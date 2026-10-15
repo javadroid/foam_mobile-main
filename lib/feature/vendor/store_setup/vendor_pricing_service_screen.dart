@@ -14,7 +14,13 @@ class VendorPricingServiceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final vendorProvider = Provider.of<VendorProvider>(context);
-    final storeName = vendorProvider.currentStore.name;
+    final store = vendorProvider.currentStore;
+    final storeName = store.name;
+
+    final laundryCount = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding').length +
+        vendorProvider.getItemPrices(store.id, 'Laundry', 'Non-folding').length;
+    final dryCleaningCount = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Folding').length +
+        vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Non-folding').length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -64,8 +70,8 @@ class VendorPricingServiceScreen extends StatelessWidget {
               _buildServiceCard(
                 title: 'Laundry',
                 subtitle: 'Wash & fold or wash & hang',
-                statusText: '8 of 16 items priced',
-                isConfigured: true,
+                statusText: laundryCount > 0 ? '$laundryCount items priced' : 'Not started',
+                isConfigured: laundryCount > 0,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -83,8 +89,8 @@ class VendorPricingServiceScreen extends StatelessWidget {
               _buildServiceCard(
                 title: 'Dry cleaning',
                 subtitle: 'Suits, evening wear, delicate fabrics',
-                statusText: 'Not started · 12 items',
-                isConfigured: false,
+                statusText: dryCleaningCount > 0 ? '$dryCleaningCount items priced' : 'Not started',
+                isConfigured: dryCleaningCount > 0,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -159,7 +165,7 @@ class VendorPricingServiceScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isConfigured
-                ? VendorColors.primary.withOpacity(0.4)
+                ? VendorColors.primary.withValues(alpha: 0.4)
                 : VendorColors.border,
           ),
         ),

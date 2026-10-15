@@ -1,217 +1,58 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
+import 'package:foam_mobile/utils/values.dart';
+import 'package:http/http.dart' as http;
 
 class VendorProvider extends ChangeNotifier {
   Timer? _countdownTimer;
 
+  bool _isLoading = false;
+  bool get isLoading => _isLoading;
+  void setLoading(bool val) {
+    _isLoading = val;
+    notifyListeners();
+  }
+
+  // Paystack Banks
+  List<PaystackBankModel> _paystackBanks = [];
+  bool _isLoadingBanks = false;
+  List<PaystackBankModel> get paystackBanks => _paystackBanks;
+  bool get isLoadingBanks => _isLoadingBanks;
+
   // Active Store and Stores List
   String? _selectedStoreId;
-  final List<VendorStore> _stores = [
-    VendorStore(
-      id: 'store_1',
-      name: 'Lekki Phase 1',
-      address: '14 Admiralty Way, Lekki Phase 1',
-      status: 'LIVE',
-      rating: 4.7,
-      itemsPricedCount: 28,
-      totalItems: 28,
-      hoursMonFri: '7:00 AM – 7:00 PM',
-      hoursSat: '8:00 AM – 5:00 PM',
-      hoursSun: 'Closed',
-      latitude: 6.4474,
-      longitude: 3.4723,
-    ),
-    VendorStore(
-      id: 'store_2',
-      name: 'Yaba',
-      address: '22 Herbert Macaulay Way',
-      status: 'PAUSED',
-      rating: 4.5,
-      itemsPricedCount: 28,
-      totalItems: 28,
-      hoursMonFri: '7:30 AM – 6:30 PM',
-      hoursSat: '8:00 AM – 4:00 PM',
-      hoursSun: 'Closed',
-      latitude: 6.5059,
-      longitude: 3.3782,
-    ),
-    VendorStore(
-      id: 'store_3',
-      name: 'Ikeja GRA',
-      address: '5 Isaac John St',
-      status: 'DRAFT',
-      rating: 5.0,
-      itemsPricedCount: 12,
-      totalItems: 28,
-      hoursMonFri: '8:00 AM – 7:00 PM',
-      hoursSat: '9:00 AM – 5:00 PM',
-      hoursSun: 'Closed',
-      latitude: 6.5905,
-      longitude: 3.3587,
-    ),
-  ];
+  final List<VendorStore> _stores = [];
 
   // KYC Onboarding state
   final VendorKycStatus _kycStatus = VendorKycStatus(
-    cacUploaded: true,
-    cacFileName: 'cac-certificate.pdf · 1.2 MB',
-    ownerIdUploaded: true,
-    ownerIdFileName: 'NIN slip · front.jpg',
+    cacUploaded: false,
+    cacFileName: '',
+    ownerIdUploaded: false,
+    ownerIdFileName: '',
     proofOfAddressUploaded: false,
     proofOfAddressFileName: '',
-    bankName: 'GTBank',
-    accountNumber: '0123454821',
-    accountName: 'BRIGHT WASH LIMITED',
-    reviewStatus: 'APPROVED',
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
+    reviewStatus: 'NOT_STARTED',
   );
 
   // Orders List
-  final List<VendorOrder> _orders = [
-    VendorOrder(
-      id: '#FM-2041',
-      storeId: 'store_1',
-      customerName: 'Tunde Bakare',
-      serviceType: 'Laundry · Folding',
-      itemCount: 7,
-      pickupSlot: 'Pickup today, 3:00 PM',
-      subtotal: 6900.0,
-      commission: 1035.0,
-      vendorEarnings: 5865.0,
-      status: 'NEW',
-      secondsRemaining: 522, // 08:42
-      items: [
-        VendorOrderItem(name: 'Shirt', quantity: 4, totalPrice: 2000),
-        VendorOrderItem(name: 'Trouser', quantity: 2, totalPrice: 1400),
-        VendorOrderItem(name: 'Duvet', quantity: 1, totalPrice: 3500),
-      ],
-    ),
-    VendorOrder(
-      id: '#FM-2043',
-      storeId: 'store_1',
-      customerName: 'Amina Bello',
-      serviceType: 'Dry cleaning · 3 items',
-      itemCount: 3,
-      pickupSlot: 'Pickup today, 4:30 PM',
-      subtotal: 11000.0,
-      commission: 1650.0,
-      vendorEarnings: 9350.0,
-      status: 'NEW',
-      secondsRemaining: 595, // 09:55
-      items: [
-        VendorOrderItem(name: 'Suit 2-Piece', quantity: 1, totalPrice: 5000),
-        VendorOrderItem(name: 'Silk Dress', quantity: 2, totalPrice: 6000),
-      ],
-    ),
-    VendorOrder(
-      id: '#FM-2038',
-      storeId: 'store_1',
-      customerName: 'Chioma O.',
-      serviceType: 'Laundry · Non-folding',
-      itemCount: 6,
-      pickupSlot: 'Dropped off by rider · 10:20 AM',
-      subtotal: 5200.0,
-      commission: 780.0,
-      vendorEarnings: 4420.0,
-      status: 'WASHING',
-      receivedAt: '10:20 AM',
-      washingStartedAt: '10:45 AM',
-      items: [
-        VendorOrderItem(name: 'Shirt', quantity: 3, totalPrice: 1350),
-        VendorOrderItem(name: 'T-shirt', quantity: 2, totalPrice: 700),
-        VendorOrderItem(name: 'Jeans', quantity: 1, totalPrice: 700),
-      ],
-    ),
-    VendorOrder(
-      id: '#FM-2036',
-      storeId: 'store_1',
-      customerName: 'Emeka N.',
-      serviceType: 'Laundry · Folding',
-      itemCount: 8,
-      pickupSlot: 'Completed · Today 11:30 AM',
-      subtotal: 6165.0,
-      commission: 925.0,
-      vendorEarnings: 5240.0,
-      status: 'COMPLETED',
-      items: [
-        VendorOrderItem(name: 'Shirt', quantity: 4, totalPrice: 2000),
-        VendorOrderItem(name: 'Trouser', quantity: 4, totalPrice: 2800),
-      ],
-    ),
-  ];
+  final List<VendorOrder> _orders = [];
 
   // Pricing Matrix: StoreId -> ServiceType -> FoldType -> ItemName -> Price
-  final Map<String, Map<String, double>> _pricingMap = {
-    'store_1_Laundry_Non-folding': {
-      'Shirt': 450.0,
-      'T-shirt': 350.0,
-      'Trouser': 600.0,
-      'Jeans': 700.0,
-      'Bedsheet': 1000.0,
-      'Duvet': 3000.0,
-      'Towel': 800.0,
-      'Native (agbada)': 1500.0,
-    },
-    'store_1_Laundry_Folding': {
-      'Shirt': 500.0,
-      'T-shirt': 400.0,
-      'Trouser': 700.0,
-      'Jeans': 800.0,
-      'Bedsheet': 1200.0,
-      'Duvet': 3500.0,
-      'Towel': 900.0,
-      'Native (agbada)': 1800.0,
-    },
-  };
+  final Map<String, Map<String, double>> _pricingMap = {};
 
   // Wallet
-  double _availableBalance = 112300.0;
-  final double _onHoldBalance = 16150.0;
-  final List<VendorTransactionItem> _transactions = [
-    VendorTransactionItem(
-      id: 'tx_1',
-      title: 'Order #FM-2036',
-      subtitle: 'Lekki Phase 1 · Today',
-      amount: 5240.0,
-      isCredit: true,
-      dateString: 'Today',
-    ),
-    VendorTransactionItem(
-      id: 'tx_2',
-      title: 'Order #FM-2031',
-      subtitle: 'Yaba · Today',
-      amount: 3910.0,
-      isCredit: true,
-      dateString: 'Today',
-    ),
-    VendorTransactionItem(
-      id: 'tx_3',
-      title: 'Withdrawal',
-      subtitle: 'GTBank •••• 4821 · Sep 28',
-      amount: 150000.0,
-      isCredit: false,
-      dateString: 'Sep 28',
-    ),
-    VendorTransactionItem(
-      id: 'tx_4',
-      title: 'Order #FM-2024',
-      subtitle: 'Lekki Phase 1 · Sep 27',
-      amount: 7480.0,
-      isCredit: true,
-      dateString: 'Sep 27',
-    ),
-    VendorTransactionItem(
-      id: 'tx_5',
-      title: 'Order #FM-2019',
-      subtitle: 'Lekki Phase 1 · Sep 27',
-      amount: 2890.0,
-      isCredit: true,
-      dateString: 'Sep 27',
-    ),
-  ];
+  double _availableBalance = 0.0;
+  final double _onHoldBalance = 0.0;
+  final List<VendorTransactionItem> _transactions = [];
 
   VendorProvider() {
-    _selectedStoreId = _stores.first.id;
+    _selectedStoreId = _stores.isNotEmpty ? _stores.first.id : null;
     _startCountdownTimer();
   }
 
@@ -245,11 +86,33 @@ class VendorProvider extends ChangeNotifier {
   List<VendorTransactionItem> get transactions => _transactions;
 
   VendorStore get currentStore {
+    if (_stores.isEmpty) {
+      return VendorStore(
+        id: 'store_default',
+        name: 'My Store',
+        address: 'No address set',
+        status: 'DRAFT',
+        rating: 0.0,
+        itemsPricedCount: 0,
+        totalItems: 0,
+        hoursMonFri: '8:00 AM – 6:00 PM',
+        hoursSat: '9:00 AM – 5:00 PM',
+        hoursSun: 'Closed',
+      );
+    }
     if (_selectedStoreId == null) return _stores.first;
     return _stores.firstWhere(
       (s) => s.id == _selectedStoreId,
       orElse: () => _stores.first,
     );
+  }
+
+  int getNewOrdersCount(String storeId) {
+    return _orders.where((o) => o.isNew && o.storeId == storeId).length;
+  }
+
+  int getActiveOrdersCount(String storeId) {
+    return _orders.where((o) => o.isActive && o.storeId == storeId).length;
   }
 
   List<VendorOrder> get newOrders =>
@@ -280,8 +143,22 @@ class VendorProvider extends ChangeNotifier {
     if (idx != -1) {
       final store = _stores[idx];
       store.status = store.isLive ? 'PAUSED' : 'LIVE';
-      notifyListeners();
+    } else {
+      _stores.add(VendorStore(
+        id: storeId,
+        name: 'Main Store',
+        address: 'No address set',
+        status: 'LIVE',
+        rating: 0.0,
+        itemsPricedCount: 0,
+        totalItems: 0,
+        hoursMonFri: '8:00 AM – 6:00 PM',
+        hoursSat: '9:00 AM – 5:00 PM',
+        hoursSun: 'Closed',
+      ));
+      _selectedStoreId = storeId;
     }
+    notifyListeners();
   }
 
   void updateStoreHours({
@@ -295,8 +172,22 @@ class VendorProvider extends ChangeNotifier {
       _stores[idx].hoursMonFri = monFri;
       _stores[idx].hoursSat = sat;
       _stores[idx].hoursSun = sun;
-      notifyListeners();
+    } else {
+      _stores.add(VendorStore(
+        id: storeId,
+        name: 'Main Store',
+        address: 'No address set',
+        status: 'DRAFT',
+        rating: 0.0,
+        itemsPricedCount: 0,
+        totalItems: 0,
+        hoursMonFri: monFri,
+        hoursSat: sat,
+        hoursSun: sun,
+      ));
+      _selectedStoreId = storeId;
     }
+    notifyListeners();
   }
 
   void updateStoreAddress({
@@ -304,12 +195,13 @@ class VendorProvider extends ChangeNotifier {
     required String address,
     required double lat,
     required double lng,
+    String? name,
   }) {
     final idx = _stores.indexWhere((s) => s.id == storeId);
     if (idx != -1) {
       _stores[idx] = VendorStore(
         id: _stores[idx].id,
-        name: _stores[idx].name,
+        name: name ?? _stores[idx].name,
         address: address,
         status: _stores[idx].status,
         rating: _stores[idx].rating,
@@ -321,8 +213,24 @@ class VendorProvider extends ChangeNotifier {
         latitude: lat,
         longitude: lng,
       );
-      notifyListeners();
+    } else {
+      _stores.add(VendorStore(
+        id: storeId,
+        name: name ?? 'Main Store',
+        address: address,
+        status: 'DRAFT',
+        rating: 0.0,
+        itemsPricedCount: 0,
+        totalItems: 0,
+        hoursMonFri: '8:00 AM – 6:00 PM',
+        hoursSat: '9:00 AM – 5:00 PM',
+        hoursSun: 'Closed',
+        latitude: lat,
+        longitude: lng,
+      ));
+      _selectedStoreId = storeId;
     }
+    notifyListeners();
   }
 
   void acceptOrder(String orderId) {
@@ -380,14 +288,17 @@ class VendorProvider extends ChangeNotifier {
   }
 
   bool withdraw(double amount, String ref) {
-    if (amount <= _availableBalance) {
+    if (amount > 0 && amount <= _availableBalance) {
       _availableBalance -= amount;
+      final bank = _kycStatus.bankName.isNotEmpty ? _kycStatus.bankName : 'Bank';
+      final acc = _kycStatus.accountNumber;
+      final last4 = acc.length >= 4 ? acc.substring(acc.length - 4) : '••••';
       _transactions.insert(
         0,
         VendorTransactionItem(
           id: ref,
           title: 'Withdrawal',
-          subtitle: '${_kycStatus.bankName} •••• ${_kycStatus.accountNumber.substring(_kycStatus.accountNumber.length - 4)} · Today',
+          subtitle: '$bank •••• $last4 · Today',
           amount: amount,
           isCredit: false,
           dateString: 'Today',
@@ -399,18 +310,70 @@ class VendorProvider extends ChangeNotifier {
     return false;
   }
 
-  void setKycDocument(String docType, String fileName) {
+  void setKycDocument(String docType, String fileName, {String? url}) {
     if (docType == 'CAC') {
       _kycStatus.cacUploaded = true;
       _kycStatus.cacFileName = fileName;
+      if (url != null) _kycStatus.cacUrl = url;
     } else if (docType == 'OWNER_ID') {
       _kycStatus.ownerIdUploaded = true;
       _kycStatus.ownerIdFileName = fileName;
+      if (url != null) _kycStatus.ownerIdUrl = url;
     } else if (docType == 'ADDRESS') {
       _kycStatus.proofOfAddressUploaded = true;
       _kycStatus.proofOfAddressFileName = fileName;
+      if (url != null) _kycStatus.proofOfAddressUrl = url;
     }
     notifyListeners();
+  }
+
+  void removeKycDocument(String docType) {
+    if (docType == 'CAC') {
+      _kycStatus.cacUploaded = false;
+      _kycStatus.cacFileName = '';
+      _kycStatus.cacUrl = null;
+    } else if (docType == 'OWNER_ID') {
+      _kycStatus.ownerIdUploaded = false;
+      _kycStatus.ownerIdFileName = '';
+      _kycStatus.ownerIdUrl = null;
+    } else if (docType == 'ADDRESS') {
+      _kycStatus.proofOfAddressUploaded = false;
+      _kycStatus.proofOfAddressFileName = '';
+      _kycStatus.proofOfAddressUrl = null;
+    }
+    notifyListeners();
+  }
+
+  /// Submit KYC documents to backend
+  Future<bool> submitKyc({String? businessName}) async {
+    try {
+      final token = HiveClass.getToken();
+      final res = await http.post(
+        Uri.parse('${Constants.url}/api/vendor/kyc'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'businessName': businessName,
+          'cacDocUrl': _kycStatus.cacUrl,
+          'ownerIdDocUrl': _kycStatus.ownerIdUrl,
+          'proofOfAddressDocUrl': _kycStatus.proofOfAddressUrl,
+        }),
+      );
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        _kycStatus.reviewStatus = 'PENDING';
+        notifyListeners();
+        return true;
+      } else {
+        debugPrint('Submit KYC failed (${res.statusCode}): ${res.body}');
+      }
+    } catch (e) {
+      debugPrint('Error submitting KYC: $e');
+    }
+    return false;
   }
 
   void setKycBank({
@@ -423,5 +386,104 @@ class VendorProvider extends ChangeNotifier {
     _kycStatus.accountName = accountName;
     _kycStatus.reviewStatus = 'PENDING';
     notifyListeners();
+  }
+
+  /// Fetch Nigerian banks from Paystack API
+  Future<List<PaystackBankModel>> fetchPaystackBanks() async {
+    if (_paystackBanks.isNotEmpty) return _paystackBanks;
+    _isLoadingBanks = true;
+    notifyListeners();
+
+    try {
+      final res = await http.get(
+        Uri.parse('${Constants.url}/api/payment/banks'),
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['banks'] is List) {
+          _paystackBanks = (data['banks'] as List)
+              .map((b) => PaystackBankModel.fromJson(b))
+              .toList();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching Paystack banks: $e');
+    } finally {
+      _isLoadingBanks = false;
+      notifyListeners();
+    }
+    return _paystackBanks;
+  }
+
+  /// Resolve and verify account number with bank code via Paystack
+  Future<String?> resolvePaystackAccount({
+    required String accountNumber,
+    required String bankCode,
+  }) async {
+    try {
+      final uri = Uri.parse(
+        '${Constants.url}/api/payment/resolve-account?account_number=${accountNumber.trim()}&bank_code=${bankCode.trim()}',
+      );
+      final res = await http.get(
+        uri,
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 200 && data['status'] == true) {
+        return data['accountName'] as String?;
+      } else {
+        debugPrint('Paystack resolve response: ${data['error'] ?? data['message']}');
+      }
+    } catch (e) {
+      debugPrint('Error resolving Paystack account: $e');
+    }
+    return null;
+  }
+
+  /// Persist payout bank to backend database
+  Future<bool> savePayoutBank({
+    required String bankName,
+    required String bankCode,
+    required String accountNumber,
+    required String accountName,
+  }) async {
+    try {
+      final token = HiveClass.getToken();
+      final res = await http.patch(
+        Uri.parse('${Constants.url}/api/vendor/payout-bank'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'bankName': bankName,
+          'bankCode': bankCode,
+          'bankAccountNumber': accountNumber,
+          'bankAccountName': accountName,
+        }),
+      );
+
+      if (res.statusCode == 200) {
+        _kycStatus.bankName = bankName;
+        _kycStatus.accountNumber = accountNumber;
+        _kycStatus.accountName = accountName;
+        _kycStatus.reviewStatus = 'PENDING';
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error saving payout bank: $e');
+    }
+    return false;
   }
 }

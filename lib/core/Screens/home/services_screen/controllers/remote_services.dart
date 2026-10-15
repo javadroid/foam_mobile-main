@@ -26,21 +26,21 @@ class ServicesClass {
           'Content-Type': 'application/json'
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return null;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log(jsonEncode(json.decode(res.body)));
+        debugPrint(jsonEncode(json.decode(res.body)));
         return categoryListFromJson(res.body);
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Categories");
         return null;
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Categories");
       return null;
     }
@@ -57,31 +57,31 @@ class ServicesClass {
           'Content-Type': 'application/json'
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return null;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log(jsonEncode(json.decode(res.body))); // Properly log response
+        debugPrint(jsonEncode(json.decode(res.body))); // Properly log response
         return servicesListFromJson(res.body);
       } else {
-        log("Error: ${res.statusCode} - ${res.reasonPhrase}");
-        log("Headers: ${jsonEncode(res.headers)}");
-        log("Body: ${res.body}");
+        debugPrint("Error: ${res.statusCode} - ${res.reasonPhrase}");
+        debugPrint("Headers: ${jsonEncode(res.headers)}");
+        debugPrint("Body: ${res.body}");
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Services");
         return null;
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Services");
       return null; // Return null for consistency
     }
   }
 
-  static Future<void> updateQuantity(
-      int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey,
+  static Future<void> updateQuantity(int categoryId, int quantity,
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
       [BuildContext? context]) async {
     try {
       final res = await http.put(
@@ -93,19 +93,19 @@ class ServicesClass {
         },
         body: jsonEncode({"quantity": quantity}),
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Item updated successfully");
+        debugPrint("Item updated successfully");
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to update quantity");
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
     }
   }
 
@@ -121,19 +121,19 @@ class ServicesClass {
           'Authorization': 'Bearer ${HiveClass.getToken()}',
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log("Item removed from basket successfully");
+        debugPrint("Item removed from basket successfully");
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to remove item");
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
     }
   }
 
@@ -156,7 +156,7 @@ class ServicesClass {
           "quantity": quantity,
         }),
       );
-      
+
       if (res.statusCode == 401) {
         LogoutClass.logOut2(context);
         return;
@@ -168,7 +168,7 @@ class ServicesClass {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to add to basket");
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "An error occurred");
     }
   }
@@ -185,21 +185,21 @@ class ServicesClass {
           'Authorization': 'Bearer ${HiveClass.getToken()}',
         },
       );
-      
+
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
         return null;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        log(jsonEncode(json.decode(res.body)));
+        debugPrint(jsonEncode(json.decode(res.body)));
         return OrderResponse.fromJson(json.decode(res.body)).orders;
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Orders");
         return null;
       }
     } catch (e) {
-      log("Exception: $e");
+      debugPrint("Exception: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Failed to load Orders");
       return null;
     }

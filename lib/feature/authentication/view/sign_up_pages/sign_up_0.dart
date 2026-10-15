@@ -397,47 +397,53 @@ class _SignUpPage0State extends State<SignUpPage0> {
 
                     const SizedBox(height: 20),
 
-                    // Social Buttons
+                    // Social Buttons in a Row
                     Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: Column(
+                      child: Row(
                         children: [
-                          LoginWithButton(
-                            text: 'Google',
-                            isLoading: _isGoogleLoading,
-                            onTap: () async {
-                              setState(() {
-                                _isGoogleLoading = true;
-                              });
-                              await SocialAuthService.handleGoogleSignIn(
-                                context,
-                                _scaffoldKey,
-                              );
-                              if (mounted) {
+                          Expanded(
+                            child: LoginWithButton(
+                              text: 'Google',
+                              shortLabel: true,
+                              isLoading: _isGoogleLoading,
+                              onTap: () async {
                                 setState(() {
-                                  _isGoogleLoading = false;
+                                  _isGoogleLoading = true;
                                 });
-                              }
-                            },
+                                await SocialAuthService.handleGoogleSignIn(
+                                  context,
+                                  _scaffoldKey,
+                                );
+                                if (mounted) {
+                                  setState(() {
+                                    _isGoogleLoading = false;
+                                  });
+                                }
+                              },
+                            ),
                           ),
-                          const SizedBox(height: 12),
-                          LoginWithButton(
-                            text: 'Apple',
-                            isLoading: _isAppleLoading,
-                            onTap: () async {
-                              setState(() {
-                                _isAppleLoading = true;
-                              });
-                              await SocialAuthService.handleAppleSignIn(
-                                context,
-                                _scaffoldKey,
-                              );
-                              if (mounted) {
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: LoginWithButton(
+                              text: 'Apple',
+                              shortLabel: true,
+                              isLoading: _isAppleLoading,
+                              onTap: () async {
                                 setState(() {
-                                  _isAppleLoading = false;
+                                  _isAppleLoading = true;
                                 });
-                              }
-                            },
+                                await SocialAuthService.handleAppleSignIn(
+                                  context,
+                                  _scaffoldKey,
+                                );
+                                if (mounted) {
+                                  setState(() {
+                                    _isAppleLoading = false;
+                                  });
+                                }
+                              },
+                            ),
                           ),
                         ],
                       ),

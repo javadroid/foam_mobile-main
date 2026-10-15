@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_withdraw_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -51,7 +52,7 @@ class VendorWalletScreen extends StatelessWidget {
                     Text(
                       'Available to withdraw',
                       style: GoogleFonts.dmSans(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                       ),
@@ -72,18 +73,18 @@ class VendorWalletScreen extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.lock_outline, size: 14, color: Colors.white.withOpacity(0.8)),
+                          Icon(Icons.lock_outline, size: 14, color: Colors.white.withValues(alpha: 0.8)),
                           const SizedBox(width: 6),
                           Text(
                             '₦${currencyFormatter.format(onHold.toInt())} on hold · released after 48 hrs',
                             style: GoogleFonts.dmSans(
-                              color: Colors.white.withOpacity(0.8),
+                              color: Colors.white.withValues(alpha: 0.8),
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
                             ),
@@ -139,70 +140,97 @@ class VendorWalletScreen extends StatelessWidget {
               ),
               const SizedBox(height: 14),
 
-              ListView.separated(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                itemCount: transactions.length,
-                separatorBuilder: (ctx, i) => const Divider(
-                  height: 16,
-                  color: VendorColors.border,
+              if (provider.isLoading)
+                Column(
+                  children: List.generate(
+                    4,
+                    (_) => AppSkeletonLoader.transactionItem(),
+                  ),
+                )
+              else if (transactions.isEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(vertical: 40),
+                  alignment: Alignment.center,
+                  child: Column(
+                    children: [
+                      Icon(Icons.receipt_long_outlined, size: 48, color: VendorColors.textMuted.withValues(alpha: 0.4)),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No transactions yet',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: VendorColors.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: transactions.length,
+                  separatorBuilder: (ctx, i) => const Divider(
+                    height: 16,
+                    color: VendorColors.border,
+                  ),
+                  itemBuilder: (ctx, i) {
+                    final tx = transactions[i];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: tx.isCredit ? VendorColors.liveBg : VendorColors.lightBg,
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                              color: tx.isCredit ? VendorColors.liveText : VendorColors.textMain,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  tx.title,
+                                  style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 15,
+                                    color: VendorColors.textMain,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  tx.subtitle,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 12,
+                                    color: VendorColors.textMuted,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Text(
+                            '${tx.isCredit ? '+' : '−'}₦${currencyFormatter.format(tx.amount.toInt())}',
+                            style: GoogleFonts.dmSans(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 15,
+                              color: tx.isCredit ? VendorColors.liveText : VendorColors.textMain,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
                 ),
-                itemBuilder: (ctx, i) {
-                  final tx = transactions[i];
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 4.0),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: tx.isCredit ? VendorColors.liveBg : VendorColors.lightBg,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: tx.isCredit ? VendorColors.liveText : VendorColors.textMain,
-                            size: 18,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                tx.title,
-                                style: GoogleFonts.dmSans(
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 15,
-                                  color: VendorColors.textMain,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                tx.subtitle,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 12,
-                                  color: VendorColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          '${tx.isCredit ? '+' : '−'}₦${currencyFormatter.format(tx.amount.toInt())}',
-                          style: GoogleFonts.dmSans(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 15,
-                            color: tx.isCredit ? VendorColors.liveText : VendorColors.textMain,
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
               const SizedBox(height: 24),
             ],
           ),

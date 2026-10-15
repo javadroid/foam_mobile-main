@@ -31,25 +31,25 @@ class ChangePasswordModel {
           },
         ),
       );
-      
+
       if (res.statusCode == 401) {
         LogoutClass.logOut2(context);
         return;
       }
-      
+
       var response = json.decode(res.body);
 
-      log(response);
+      debugPrint(response);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         // if status code is 200 show the message
         MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
-        log(response["error"]);
+        debugPrint(response["error"]);
       }
     } catch (e) {
-      log(e.toString());
+      debugPrint(e.toString());
       MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
     }
   }

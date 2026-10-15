@@ -11,8 +11,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
-
 
 class OnBoardingScreen extends StatefulWidget {
   const OnBoardingScreen({super.key});
@@ -82,8 +82,52 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
           child: Column(
             children: [
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Image.asset('assets/images/foam.png'),
+                  InkWell(
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                      VendorSignUpScreen.id,
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryAccentColor.withValues(
+                          alpha: 0.1,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: AppColors.primaryAccentColor.withValues(
+                            alpha: 0.3,
+                          ),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.store_mall_directory_outlined,
+                            size: 14,
+                            color: AppColors.primaryAccentColor,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Vendor Setup',
+                            style: GoogleFonts.dmSans(
+                              color: AppColors.primaryAccentColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
               Expanded(
@@ -166,7 +210,37 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  // const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                      VendorSignUpScreen.id,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.store_mall_directory_outlined,
+                            size: 16,
+                            color: AppColors.blackAccentColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Own a Laundry Service? Partner with us',
+                            style: GoogleFonts.dmSans(
+                              decoration: TextDecoration.underline,
+                              color: AppColors.blackAccentColor,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
                   InkWell(
                     onTap: () =>
                         Navigator.of(context, rootNavigator: true).pushNamed(
@@ -198,7 +272,6 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                   const SizedBox(height: 16),
                 ],
               ),
-
             ],
           ),
         ),

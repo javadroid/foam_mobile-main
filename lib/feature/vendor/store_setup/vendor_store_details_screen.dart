@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_service_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
@@ -15,13 +16,21 @@ class VendorStoreDetailsScreen extends StatefulWidget {
 }
 
 class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
-  final _storeNameController = TextEditingController(text: 'Bright Wash · Lekki Phase 1');
-  final _addressController =
-      TextEditingController(text: '14 Admiralty Way, Lekki Phase 1');
+  late final TextEditingController _storeNameController;
+  final _addressController = TextEditingController();
 
-  String _hoursMonFri = '7:00 AM – 7:00 PM';
-  String _hoursSat = '8:00 AM – 5:00 PM';
+  String _hoursMonFri = '8:00 AM – 6:00 PM';
+  String _hoursSat = '9:00 AM – 5:00 PM';
   String _hoursSun = 'Closed';
+
+  @override
+  void initState() {
+    super.initState();
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    _storeNameController = TextEditingController(
+      text: auth.businessName.isNotEmpty ? auth.businessName : '',
+    );
+  }
 
   @override
   void dispose() {
@@ -126,9 +135,11 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                     fontSize: 15,
                     color: VendorColors.textMain,
                   ),
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
+                    hintText: 'e.g. Clean Express',
+                    hintStyle: GoogleFonts.dmSans(color: VendorColors.textMuted, fontWeight: FontWeight.normal),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ),
@@ -155,10 +166,12 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                     fontSize: 15,
                     color: VendorColors.textMain,
                   ),
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.location_on_outlined, color: VendorColors.primary),
+                  decoration: InputDecoration(
+                    hintText: 'e.g. 14 Admiralty Way, Lekki Phase 1',
+                    hintStyle: GoogleFonts.dmSans(color: VendorColors.textMuted),
+                    prefixIcon: const Icon(Icons.location_on_outlined, color: VendorColors.primary),
                     border: InputBorder.none,
-                    contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   ),
                 ),
               ),
@@ -170,7 +183,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                 decoration: BoxDecoration(
                   color: const Color(0xFFE5F7F8),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: VendorColors.primary.withOpacity(0.3)),
+                  border: Border.all(color: VendorColors.primary.withValues(alpha: 0.3)),
                 ),
                 child: Stack(
                   children: [
@@ -205,7 +218,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.9),
+                          color: Colors.white.withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -276,16 +289,36 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
               VendorButton(
                 text: 'Save & set prices',
                 onPressed: () {
+                  final storeName = _storeNameController.text.trim();
+                  final address = _addressController.text.trim();
+
+                  if (storeName.isEmpty || address.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          'Please enter your store name and physical address',
+                          style: GoogleFonts.dmSans(fontWeight: FontWeight.w500),
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                        backgroundColor: Colors.black87,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    );
+                    return;
+                  }
+
                   final vendorProvider = Provider.of<VendorProvider>(context, listen: false);
+                  final storeId = vendorProvider.currentStore.id;
                   vendorProvider.updateStoreHours(
-                    storeId: vendorProvider.currentStore.id,
+                    storeId: storeId,
                     monFri: _hoursMonFri,
                     sat: _hoursSat,
                     sun: _hoursSun,
                   );
                   vendorProvider.updateStoreAddress(
-                    storeId: vendorProvider.currentStore.id,
-                    address: _addressController.text,
+                    storeId: storeId,
+                    name: storeName,
+                    address: address,
                     lat: 6.4474,
                     lng: 3.4723,
                   );

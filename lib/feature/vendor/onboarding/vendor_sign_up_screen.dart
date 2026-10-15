@@ -1,10 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
-import 'package:foam_mobile/feature/authentication/model/login_model.dart';
 import 'package:foam_mobile/feature/authentication/view/login_pages/log_in.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_documents_screen.dart';
-import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,23 +50,28 @@ class _VendorSignUpScreenState extends State<VendorSignUpScreen> {
     final password = _passwordController.text;
 
     if (businessName.isEmpty) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Please enter your business name");
+      MyMessageHandler.showSnackBar(
+          _scaffoldKey, "Please enter your business name");
       return;
     }
     if (ownerName.isEmpty) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Please enter the owner's full name");
+      MyMessageHandler.showSnackBar(
+          _scaffoldKey, "Please enter the owner's full name");
       return;
     }
     if (email.isEmpty || !email.contains('@')) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Please enter a valid email address");
+      MyMessageHandler.showSnackBar(
+          _scaffoldKey, "Please enter a valid email address");
       return;
     }
     if (phone.isEmpty) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Please enter your phone number");
+      MyMessageHandler.showSnackBar(
+          _scaffoldKey, "Please enter your phone number");
       return;
     }
     if (password.length < 6) {
-      MyMessageHandler.showSnackBar(_scaffoldKey, "Password must be at least 6 characters");
+      MyMessageHandler.showSnackBar(
+          _scaffoldKey, "Password must be at least 6 characters");
       return;
     }
 
@@ -78,31 +82,39 @@ class _VendorSignUpScreenState extends State<VendorSignUpScreen> {
       final firstName = names.first;
       final lastName = names.length > 1 ? names.sublist(1).join(' ') : 'Vendor';
 
-      // Call the existing backend registration endpoint with role: VENDOR
-      final response = await http.post(
-        Uri.parse("${Constants.url}/api/auth/register"),
-        headers: {
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        },
-        body: jsonEncode({
-          "firstName": firstName,
-          "lastName": lastName,
-          "email": email,
-          "phone": phone.startsWith('+234')
-              ? phone
-              : phone.startsWith('0')
-                  ? '+234${phone.substring(1)}'
-                  : '+234$phone',
-          "password": password,
-          "businessName": businessName,
-          "role": "VENDOR",
-        }),
-      ).timeout(const Duration(seconds: 10));
+      // Call the backend registration endpoint with role: VENDOR
+      final res = await http
+          .post(
+            Uri.parse("${Constants.url}/api/auth/register"),
+            headers: {
+              "Accept": "application/json",
+              "Content-Type": "application/json",
+            },
+            body: jsonEncode({
+              "firstName": firstName,
+              "lastName": lastName,
+              "email": email,
+              "phone": phone.startsWith('+234')
+                  ? phone
+                  : phone.startsWith('0')
+                      ? '+234${phone.substring(1)}'
+                      : '+234$phone',
+              "password": password,
+              "businessName": businessName,
+              "role": "VENDOR",
+            }),
+          )
+          .timeout(const Duration(seconds: 15));
 
-      final data = json.decode(response.body);
+      final data = jsonDecode(res.body);
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (data['token'] != null) {
+          HiveClass.insertToken(data['token']);
+        }
+
+        if (!mounted) return;
+
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         authProvider.fillAuth(
           firstName,
@@ -115,59 +127,25 @@ class _VendorSignUpScreenState extends State<VendorSignUpScreen> {
           vendorStatus: 'PENDING',
         );
 
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const VendorDocumentsScreen(),
-            ),
-          );
-        }
-      } else {
-        // Even if server returns existing user or demo mode, proceed smoothly for UX
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        authProvider.fillAuth(
-          firstName,
-          lastName,
-          '',
-          email,
-          phone,
-          role: 'VENDOR',
-          businessName: businessName,
-          vendorStatus: 'PENDING',
-        );
-
-        if (mounted) {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const VendorDocumentsScreen(),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // Local fallback for offline/development test
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      authProvider.fillAuth(
-        ownerName,
-        'Owner',
-        '',
-        email,
-        phone,
-        role: 'VENDOR',
-        businessName: businessName,
-        vendorStatus: 'PENDING',
-      );
-
-      if (mounted) {
         Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const VendorDocumentsScreen(),
           ),
         );
+      } else {
+        final errorMsg = data['error'] ??
+            data['message'] ??
+            'Registration failed. Please check your details.';
+        if (!mounted) return;
+        MyMessageHandler.showSnackBar(_scaffoldKey, errorMsg.toString());
       }
+    } catch (e) {
+      if (!mounted) return;
+      MyMessageHandler.showSnackBar(
+        _scaffoldKey,
+        "Unable to connect to the server. Please check your internet connection.",
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -180,259 +158,311 @@ class _VendorSignUpScreenState extends State<VendorSignUpScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 12),
-                Text(
-                  'FOAM FOR BUSINESS',
-                  style: GoogleFonts.dmSans(
-                    color: VendorColors.primary,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.2,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16.0,
+                  vertical: 24.0,
+                ),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight - 48.0,
                   ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Create vendor account',
-                  style: GoogleFonts.dmSans(
-                    color: VendorColors.textMain,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  "Run your laundry stores on Foam. We'll verify your business in 48 hours.",
-                  style: GoogleFonts.dmSans(
-                    color: VendorColors.textMuted,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-
-                // Business Name
-                _buildField(
-                  label: 'Business name',
-                  hint: 'e.g. Bright Wash Laundry',
-                  controller: _businessNameController,
-                ),
-                const SizedBox(height: 16),
-
-                // Owner's full name
-                _buildField(
-                  label: "Owner's full name",
-                  hint: 'e.g. Tunde Bakare',
-                  controller: _ownerNameController,
-                ),
-                const SizedBox(height: 16),
-
-                // Email address
-                _buildField(
-                  label: 'Email address',
-                  hint: 'vendor@brightwash.ng',
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                ),
-                const SizedBox(height: 16),
-
-                // Phone number
-                Text(
-                  'Phone number',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: VendorColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  decoration: BoxDecoration(
-                    color: VendorColors.lightBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: VendorColors.border),
-                  ),
-                  child: Row(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 14.0),
-                        child: Text(
-                          '+234',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: VendorColors.textMain,
-                          ),
-                        ),
-                      ),
-                      Container(
-                        width: 1,
-                        height: 24,
-                        color: VendorColors.border,
-                      ),
-                      Expanded(
-                        child: TextField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          decoration: InputDecoration(
-                            hintText: '801 234 5678',
-                            hintStyle: GoogleFonts.dmSans(
-                              color: VendorColors.textMuted.withOpacity(0.6),
-                              fontSize: 15,
+                  child: IntrinsicHeight(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (Navigator.canPop(context)) ...[
+                          IconButton(
+                            icon: const Icon(
+                              Icons.arrow_back,
+                              color: Color(0xFF212828),
                             ),
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 14,
-                            ),
+                            padding: EdgeInsets.zero,
+                            alignment: Alignment.centerLeft,
+                            constraints: const BoxConstraints(),
+                            onPressed: () => Navigator.pop(context),
                           ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Password
-                Text(
-                  'Password',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: VendorColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  decoration: BoxDecoration(
-                    color: VendorColors.lightBg,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: VendorColors.border),
-                  ),
-                  child: TextField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      hintText: '••••••••',
-                      hintStyle: GoogleFonts.dmSans(
-                        color: VendorColors.textMuted.withOpacity(0.6),
-                      ),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _obscurePassword
-                              ? Icons.visibility_off_outlined
-                              : Icons.visibility_outlined,
-                          color: VendorColors.textMuted,
-                          size: 20,
-                        ),
-                        onPressed: () =>
-                            setState(() => _obscurePassword = !_obscurePassword),
-                      ),
-                      border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // Continue button
-                VendorButton(
-                  text: 'Continue',
-                  isLoading: _isLoading,
-                  onPressed: _handleSignUp,
-                ),
-                const SizedBox(height: 18),
-
-                // Already a vendor? Log in
-                Center(
-                  child: GestureDetector(
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const LoginPage(),
-                        ),
-                      );
-                    },
-                    child: RichText(
-                      text: TextSpan(
-                        text: 'Already a vendor? ',
-                        style: GoogleFonts.dmSans(
-                          color: VendorColors.textMuted,
-                          fontSize: 14,
-                        ),
-                        children: [
-                          TextSpan(
-                            text: 'Log in',
-                            style: GoogleFonts.dmSans(
-                              color: VendorColors.primary,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
+                          const SizedBox(height: 16),
                         ],
-                      ),
+                        // Header
+                        Text(
+                          'FOAM FOR BUSINESS',
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFF00AABC),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            letterSpacing: 1.12,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Create vendor account',
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFF212828),
+                            fontSize: 31,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          "Run your laundry stores on Foam. We'll verify your business before you go live.",
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFF5E5E5E),
+                            fontSize: 15,
+                            height: 21 / 15,
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Form Inputs
+                        // 1. Business name
+                        _buildInputField(
+                          hint: 'Business name',
+                          controller: _businessNameController,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 2. Owner's full name
+                        _buildInputField(
+                          hint: "Owner's full name",
+                          controller: _ownerNameController,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 3. Email address
+                        _buildInputField(
+                          hint: 'Email address',
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 4. Phone number with +234 prefix
+                        Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE4E4E4),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Text(
+                                '+234',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.normal,
+                                  color: const Color(0xFF212828),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Container(
+                                width: 1,
+                                height: 24,
+                                color: const Color(0xFF777777),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: TextField(
+                                  controller: _phoneController,
+                                  keyboardType: TextInputType.phone,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 16,
+                                    color: const Color(0xFF212828),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Phone number',
+                                    hintStyle: GoogleFonts.dmSans(
+                                      fontSize: 16,
+                                      color: const Color(0xFF212828)
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // 5. Password
+                        Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE4E4E4),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: TextField(
+                                  controller: _passwordController,
+                                  obscureText: _obscurePassword,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 16,
+                                    color: const Color(0xFF212828),
+                                  ),
+                                  decoration: InputDecoration(
+                                    hintText: 'Password',
+                                    hintStyle: GoogleFonts.dmSans(
+                                      fontSize: 16,
+                                      color: const Color(0xFF212828)
+                                          .withValues(alpha: 0.8),
+                                    ),
+                                    border: InputBorder.none,
+                                    isDense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  ),
+                                ),
+                              ),
+                              IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off_outlined
+                                      : Icons.visibility_outlined,
+                                  color: const Color(0xFF212828)
+                                      .withValues(alpha: 0.6),
+                                  size: 20,
+                                ),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const Spacer(),
+                        const SizedBox(height: 32),
+
+                        // Continue Button
+                        GestureDetector(
+                          onTap: _isLoading ? null : _handleSignUp,
+                          child: Container(
+                            height: 53,
+                            width: double.infinity,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(8),
+                              gradient: const LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xFFC5EFF3),
+                                  Color(0xFF00AABC),
+                                ],
+                                stops: [0.0, 0.68],
+                              ),
+                            ),
+                            alignment: Alignment.center,
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
+                                    ),
+                                  )
+                                : Text(
+                                    'Continue',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 1.44,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Already a vendor? Log in
+                        Center(
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const LoginPage(),
+                                ),
+                              );
+                            },
+                            child: RichText(
+                              text: TextSpan(
+                                text: 'Already a vendor? ',
+                                style: GoogleFonts.dmSans(
+                                  color: const Color(0xFF212828),
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.normal,
+                                ),
+                                children: [
+                                  TextSpan(
+                                    text: 'Log in',
+                                    style: GoogleFonts.dmSans(
+                                      color: const Color(0xFF00AABC),
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
     );
   }
 
-  Widget _buildField({
-    required String label,
+  Widget _buildInputField({
     required String hint,
     required TextEditingController controller,
     TextInputType keyboardType = TextInputType.text,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: VendorColors.textMain,
-          ),
+    return Container(
+      height: 56,
+      decoration: BoxDecoration(
+        color: const Color(0xFFE4E4E4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      alignment: Alignment.centerLeft,
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        style: GoogleFonts.dmSans(
+          fontSize: 16,
+          color: const Color(0xFF212828),
         ),
-        const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: VendorColors.lightBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: VendorColors.border),
+        decoration: InputDecoration(
+          hintText: hint,
+          hintStyle: GoogleFonts.dmSans(
+            fontSize: 16,
+            color: const Color(0xFF212828).withValues(alpha: 0.8),
           ),
-          child: TextField(
-            controller: controller,
-            keyboardType: keyboardType,
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.dmSans(
-                color: VendorColors.textMuted.withOpacity(0.6),
-                fontSize: 15,
-              ),
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 14,
-              ),
-            ),
-          ),
+          border: InputBorder.none,
+          isDense: true,
+          contentPadding: EdgeInsets.zero,
         ),
-      ],
+      ),
     );
   }
 }

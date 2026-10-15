@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
-import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_manage_store_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -54,11 +54,42 @@ class VendorStoresListScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-          itemCount: stores.length,
-          itemBuilder: (ctx, i) {
-            final store = stores[i];
+        child: provider.isLoading
+            ? AppSkeletonLoader.list(
+                count: 3,
+                itemBuilder: (_, __) => AppSkeletonLoader.storeCard(),
+              )
+            : stores.isEmpty
+                ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.storefront_outlined, size: 54, color: VendorColors.textMuted.withValues(alpha: 0.4)),
+                    const SizedBox(height: 14),
+                    Text(
+                      'No stores yet',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                        color: VendorColors.textMain,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Tap "Add" in the top right to create your first store',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        color: VendorColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+                itemCount: stores.length,
+                itemBuilder: (ctx, i) {
+                  final store = stores[i];
             return Container(
               margin: const EdgeInsets.only(bottom: 14),
               decoration: BoxDecoration(
@@ -98,7 +129,7 @@ class VendorStoresListScreen extends StatelessWidget {
                       const SizedBox(height: 6),
                       Text(
                         store.isLive
-                            ? '${store.address} · Open until 7 PM'
+                            ? '${store.address}${store.hoursMonFri.isNotEmpty ? " · ${store.hoursMonFri}" : ""}'
                             : store.isPaused
                                 ? '${store.address} · Hidden from customers'
                                 : store.address,

@@ -18,7 +18,7 @@ class OrderResponse {
 
 class Order {
   final int id;
-  final int userId;
+  final String userId;
   final String status;
   final DateTime? pickupDate;
   final DateTime? deliveryDate;
@@ -56,7 +56,7 @@ class Order {
 
     return Order(
       id: json['id'] ?? 0,
-      userId: json['userId'] ?? 0,
+      userId: json['userId']?.toString() ?? '',
       status: json['status'] ?? '',
       pickupDate: json['pickupDate'] != null
           ? DateTime.tryParse(json['pickupDate'])

@@ -29,17 +29,21 @@ class VerifyClass {
         ),
       );
       var response = json.decode(res.body);
-      log(res.body);
+      debugPrint(res.body);
 
       if (res.statusCode == 200 || res.statusCode == 201) {
-        MyMessageHandler.showSnackBar(scaffoldKey, response["message"] ?? "Verification successful");
+        MyMessageHandler.showSnackBar(
+            scaffoldKey, response["message"] ?? "Verification successful");
         // After successful verification, login the user and indicate it's a signup
-        LoginClass.login(context, authProvider.email, authProvider.password, scaffoldKey, isSignup: true);
+        LoginClass.login(
+            context, authProvider.email, authProvider.password, scaffoldKey,
+            isSignup: true);
       } else {
-        MyMessageHandler.showSnackBar(scaffoldKey, response["error"] ?? "Wrong code");
+        MyMessageHandler.showSnackBar(
+            scaffoldKey, response["error"] ?? "Wrong code");
       }
     } catch (e) {
-      log(e.toString());
+      debugPrint(e.toString());
       MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
     }
   }
@@ -61,7 +65,7 @@ class VerifyClass {
       );
       var response = json.decode(res.body);
       if (response["status"]) {
-        log(response);
+        debugPrint(response);
         Navigator.pushNamed(context, CreateNewPassword.id);
       } else {
         MyMessageHandler.showSnackBar(scaffoldKey, "Wrong code");

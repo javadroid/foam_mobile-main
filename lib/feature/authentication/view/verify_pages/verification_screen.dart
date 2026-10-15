@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/create_new_password.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_0.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/custom_digit_field.dart';

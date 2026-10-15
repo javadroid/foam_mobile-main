@@ -14,6 +14,8 @@ class VendorPricingFoldScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final vendorProvider = Provider.of<VendorProvider>(context);
     final store = vendorProvider.currentStore;
+    final foldingCount = vendorProvider.getItemPrices(store.id, serviceType, 'Folding').length;
+    final nonFoldingCount = vendorProvider.getItemPrices(store.id, serviceType, 'Non-folding').length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -73,8 +75,8 @@ class VendorPricingFoldScreen extends StatelessWidget {
               _buildFoldCard(
                 title: 'Folding',
                 subtitle: 'Items washed, dried, ironed, and folded in Foam packaging',
-                status: '✓ 8 of 8 priced',
-                isPriced: true,
+                status: foldingCount > 0 ? '✓ $foldingCount items priced' : 'Not priced',
+                isPriced: foldingCount > 0,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -93,8 +95,8 @@ class VendorPricingFoldScreen extends StatelessWidget {
               _buildFoldCard(
                 title: 'Non-folding',
                 subtitle: 'Items washed, dried, ironed, and returned on hangers',
-                status: '8 of 8 priced',
-                isPriced: true,
+                status: nonFoldingCount > 0 ? '✓ $nonFoldingCount items priced' : 'Not priced',
+                isPriced: nonFoldingCount > 0,
                 onTap: () {
                   Navigator.push(
                     context,
@@ -139,7 +141,7 @@ class VendorPricingFoldScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: isPriced
-                ? VendorColors.primary.withOpacity(0.3)
+                ? VendorColors.primary.withValues(alpha: 0.3)
                 : VendorColors.border,
           ),
         ),

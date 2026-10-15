@@ -10,7 +10,7 @@ class Constants {
       "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69";
 
   // OneSignal App ID
-  static String oneSignalAppId = " b3f03235-0ed2-4afa-8818-e38f36a453d8";
+  static String oneSignalAppId = "b3f03235-0ed2-4afa-8818-e38f36a453d8";
 
   // Google API key
   static const String googleAPIKey = 'AIzaSyA7hyiwzU6LHTHhtntU36tAPRi46DXrygo';

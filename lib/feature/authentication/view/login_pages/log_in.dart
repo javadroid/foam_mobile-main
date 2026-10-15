@@ -56,48 +56,60 @@ class _LoginPageState extends State<LoginPage> {
           child: Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 12.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
+                constraints: const BoxConstraints(maxWidth: 440),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 12),
 
-                    // Foam Logo
+                    // Foam Brand Logo
                     Center(
-                      child: Image.asset(
-                        'assets/images/foam.png',
-                        height: 56,
-                        fit: BoxFit.contain,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          shape: BoxShape.circle,
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          height: 48,
+                          width: 48,
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            'assets/images/foam.png',
+                            height: 48,
+                          ),
+                        ),
                       ),
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 28),
 
-                    // Welcome Headline
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+                    // Hero Headline
+                    Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Welcome Back 👋',
+                            'Welcome Back',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               color: const Color(0xFF0F172A),
-                              fontSize: 26,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.5,
+                              fontSize: 28,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
                             ),
                           ),
-                          const SizedBox(height: 6),
+                          const SizedBox(height: 8),
                           Text(
-                            'Sign in to manage your laundry pickups and track orders effortlessly.',
+                            'Sign in to manage pickups, schedule laundry, and track orders in real-time.',
+                            textAlign: TextAlign.center,
                             style: GoogleFonts.dmSans(
                               color: const Color(0xFF64748B),
                               fontSize: 14,
                               fontWeight: FontWeight.w400,
-                              height: 1.4,
+                              height: 1.45,
                             ),
                           ),
                         ],
@@ -110,7 +122,7 @@ class _LoginPageState extends State<LoginPage> {
                     MyTextField(
                       controller: _emailController,
                       labelText: 'Email Address or Phone',
-                      hinText: 'e.g. name@example.com or 08012345678',
+                      hinText: 'name@example.com or 08012345678',
                       keyboardType: TextInputType.emailAddress,
                       textInputAction: TextInputAction.next,
                       obscureText: false,
@@ -142,113 +154,109 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 10),
 
                     // Forgot Password Link
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () => LoginClass.forgotPassword(context),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8.0,
-                              vertical: 4.0,
-                            ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: () => LoginClass.forgotPassword(context),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0,
+                            vertical: 6.0,
                           ),
                           child: Text(
-                            'Forgot password?',
+                            'Forgot Password?',
                             style: GoogleFonts.dmSans(
                               color: AppColors.primaryAccentColor,
-                              fontSize: 13.5,
-                              fontWeight: FontWeight.w600,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ),
                       ),
                     ),
 
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
 
                     // Sign In Button
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: GradientButton(
-                        isLoading: _loading,
-                        onPressed: () async {
-                          final email = _emailController.text.trim();
-                          final password = _passwordController.text;
-                          if (email.isEmpty || password.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please enter your email and password'),
-                                backgroundColor: Colors.redAccent,
+                    GradientButton(
+                      isLoading: _loading,
+                      onPressed: () async {
+                        final email = _emailController.text.trim();
+                        final password = _passwordController.text;
+                        if (email.isEmpty || password.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Please enter your email and password',
+                                style: GoogleFonts.dmSans(fontWeight: FontWeight.w500),
                               ),
-                            );
-                            return;
-                          }
-                          setState(() {
-                            _loading = true;
-                          });
-                          await LoginClass.login(
-                            context,
-                            email,
-                            password,
-                            _scaffoldKey,
+                              backgroundColor: Colors.redAccent,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
                           );
-                          if (mounted) {
-                            setState(() {
-                              _loading = false;
-                            });
-                          }
-                        },
-                        text: 'Log In',
-                      ),
+                          return;
+                        }
+                        setState(() {
+                          _loading = true;
+                        });
+                        await LoginClass.login(
+                          context,
+                          email,
+                          password,
+                          _scaffoldKey,
+                        );
+                        if (mounted) {
+                          setState(() {
+                            _loading = false;
+                          });
+                        }
+                      },
+                      text: 'Sign In',
                     ),
 
                     const SizedBox(height: 28),
 
                     // "OR CONTINUE WITH" Divider
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 22.0),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Divider(
-                              color: Color(0xFFE2E8F0),
-                              thickness: 1,
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Divider(
+                            color: Color(0xFFE2E8F0),
+                            thickness: 1,
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14.0),
+                          child: Text(
+                            'or continue with',
+                            style: GoogleFonts.dmSans(
+                              color: const Color(0xFF94A3B8),
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
-                            child: Text(
-                              'or continue with',
-                              style: GoogleFonts.dmSans(
-                                color: const Color(0xFF94A3B8),
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
+                        ),
+                        const Expanded(
+                          child: Divider(
+                            color: Color(0xFFE2E8F0),
+                            thickness: 1,
                           ),
-                          const Expanded(
-                            child: Divider(
-                              color: Color(0xFFE2E8F0),
-                              thickness: 1,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 22),
 
-                    // Social Auth Buttons
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: Column(
-                        children: [
-                          LoginWithButton(
+                    // Social Auth Buttons in a Horizontal Row
+                    Row(
+                      children: [
+                        Expanded(
+                          child: LoginWithButton(
                             text: 'Google',
+                            shortLabel: true,
                             isLoading: _isGoogleLoading,
                             onTap: () async {
                               setState(() {
@@ -265,9 +273,12 @@ class _LoginPageState extends State<LoginPage> {
                               }
                             },
                           ),
-                          const SizedBox(height: 12),
-                          LoginWithButton(
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: LoginWithButton(
                             text: 'Apple',
+                            shortLabel: true,
                             isLoading: _isAppleLoading,
                             onTap: () async {
                               setState(() {
@@ -284,8 +295,8 @@ class _LoginPageState extends State<LoginPage> {
                               }
                             },
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
 
                     const SizedBox(height: 32),

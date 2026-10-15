@@ -14,7 +14,7 @@ class VendorWithdrawScreen extends StatefulWidget {
 }
 
 class _VendorWithdrawScreenState extends State<VendorWithdrawScreen> {
-  final TextEditingController _amountController = TextEditingController(text: '100000');
+  final TextEditingController _amountController = TextEditingController();
   final currencyFormatter = NumberFormat('#,###');
 
   @override

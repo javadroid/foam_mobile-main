@@ -32,7 +32,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     init(context);
-    log('Splash token check: ${HiveClass.getToken()}');
+    debugPrint('Splash token check: ${HiveClass.getToken()}');
   }
 
   init(BuildContext context) async {
@@ -50,7 +50,8 @@ class _SplashScreenState extends State<SplashScreen> {
     // User has a token -> validate with backend
     bool hasAddress = false;
     try {
-      hasAddress = await SplashFunction.init(context).timeout(const Duration(seconds: 6));
+      hasAddress = await SplashFunction.init(context)
+          .timeout(const Duration(seconds: 6));
     } catch (e) {
       debugPrint('Splash init error: $e');
     }
@@ -66,7 +67,8 @@ class _SplashScreenState extends State<SplashScreen> {
         } else if (authProvider.vendorStatus == 'REJECTED') {
           Navigator.pushReplacementNamed(context, VendorRejectedScreen.id);
         } else {
-          Navigator.pushReplacementNamed(context, VendorPendingVerificationScreen.id);
+          Navigator.pushReplacementNamed(
+              context, VendorPendingVerificationScreen.id);
         }
       } else {
         // Customer routing
@@ -80,7 +82,6 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       }
     } else {
-
       if (authProvider.initError) {
         setState(() {
           loadScreen = true;
@@ -151,7 +152,8 @@ class _LoadingState extends State<Loading> {
               debugPrint("onTap ${authProvider.initError}");
               authProvider.updateError(false);
               SplashFunction.init(context);
-            }, logout: true,
+            },
+            logout: true,
           )
         : Scaffold(
             body: Center(

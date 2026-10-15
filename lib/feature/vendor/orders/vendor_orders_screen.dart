@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/feature/vendor/orders/vendor_active_order_screen.dart';
 import 'package:foam_mobile/feature/vendor/orders/vendor_new_order_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_store_switcher_sheet.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -23,7 +25,14 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat('#,###');
     final provider = Provider.of<VendorProvider>(context);
+    final auth = Provider.of<AuthProvider>(context);
     final currentStore = provider.currentStore;
+    final businessName = auth.businessName.isNotEmpty ? auth.businessName : 'Vendor';
+    final initials = businessName.trim().isNotEmpty
+        ? (businessName.trim().split(' ').length > 1
+            ? '${businessName.trim().split(' ')[0][0]}${businessName.trim().split(' ')[1][0]}'.toUpperCase()
+            : businessName.substring(0, businessName.length >= 2 ? 2 : 1).toUpperCase())
+        : 'VD';
 
     final newOrders = provider.newOrders;
     final activeOrders = provider.activeOrders;
@@ -46,10 +55,10 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
                       color: VendorColors.darkBg,
                       shape: BoxShape.circle,
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
-                        'BW',
-                        style: TextStyle(
+                        initials,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -87,7 +96,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
                               ],
                             ),
                             Text(
-                              'Bright Wash · ${provider.stores.length} stores',
+                              '$businessName · ${provider.stores.length} ${provider.stores.length == 1 ? "store" : "stores"}',
                               style: GoogleFonts.dmSans(
                                 fontSize: 12,
                                 color: VendorColors.textMuted,
@@ -207,6 +216,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
                         ? activeOrders
                         : doneOrders,
                 isNewTab: _selectedTab == 0,
+                isLoading: provider.isLoading,
               ),
             ),
           ],
@@ -228,7 +238,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
             boxShadow: isSelected
                 ? [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 4,
                       offset: const Offset(0, 2),
                     ),
@@ -250,13 +260,20 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
     );
   }
 
-  Widget _buildOrdersList(List<VendorOrder> orders, {bool isNewTab = false}) {
+  Widget _buildOrdersList(List<VendorOrder> orders, {bool isNewTab = false, bool isLoading = false}) {
+    if (isLoading) {
+      return AppSkeletonLoader.list(
+        count: 4,
+        itemBuilder: (_, __) => AppSkeletonLoader.orderCard(),
+      );
+    }
+
     if (orders.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: VendorColors.textMuted.withOpacity(0.5)),
+            Icon(Icons.inbox_outlined, size: 48, color: VendorColors.textMuted.withValues(alpha: 0.5)),
             const SizedBox(height: 12),
             Text(
               'No orders in this queue',

@@ -42,7 +42,7 @@ class WalletProvider extends ChangeNotifier {
         _currency = data['currency'] ?? 'NGN';
       }
     } catch (e) {
-      log("Error fetching wallet: $e");
+      debugPrint("Error fetching wallet: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -63,7 +63,7 @@ class WalletProvider extends ChangeNotifier {
         notifyListeners();
       }
     } catch (e) {
-      log("Error fetching ledger: $e");
+      debugPrint("Error fetching ledger: $e");
     }
   }
 
@@ -78,10 +78,10 @@ class WalletProvider extends ChangeNotifier {
       if (res.statusCode == 200) {
         return jsonDecode(res.body);
       }
-      log("Initialize deposit failed: ${res.body}");
+      debugPrint("Initialize deposit failed: ${res.body}");
       return null;
     } catch (e) {
-      log("Error initializing deposit: $e");
+      debugPrint("Error initializing deposit: $e");
       return null;
     }
   }
@@ -103,7 +103,7 @@ class WalletProvider extends ChangeNotifier {
       }
       return false;
     } catch (e) {
-      log("Error verifying deposit: $e");
+      debugPrint("Error verifying deposit: $e");
       return false;
     }
   }

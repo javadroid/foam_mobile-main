@@ -17,14 +17,12 @@ class VendorApprovedScreen extends StatelessWidget {
     final vendorProvider = Provider.of<VendorProvider>(context);
     final businessName = authProvider.businessName.isNotEmpty
         ? authProvider.businessName
-        : 'Bright Wash';
+        : 'Your business';
     final bankName = vendorProvider.kycStatus.bankName.isNotEmpty
         ? vendorProvider.kycStatus.bankName
-        : 'GTBank';
-    final accNum = vendorProvider.kycStatus.accountNumber.isNotEmpty
-        ? vendorProvider.kycStatus.accountNumber
-        : '4821';
-    final last4 = accNum.length >= 4 ? accNum.substring(accNum.length - 4) : accNum;
+        : 'your payout bank';
+    final accNum = vendorProvider.kycStatus.accountNumber;
+    final last4 = accNum.length >= 4 ? accNum.substring(accNum.length - 4) : '';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -60,7 +58,7 @@ class VendorApprovedScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Your wallet is ready and payouts go to $bankName •••• $last4.',
+                'Your wallet is ready and payouts go to $bankName${last4.isNotEmpty ? " •••• $last4" : ""}.',
                 style: GoogleFonts.dmSans(
                   color: VendorColors.textMuted,
                   fontSize: 14,

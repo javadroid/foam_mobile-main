@@ -7,12 +7,14 @@ class LoginWithButton extends StatelessWidget {
   final String text;
   final VoidCallback? onTap;
   final bool isLoading;
+  final bool shortLabel;
 
   const LoginWithButton({
     super.key,
     required this.text,
     this.onTap,
     this.isLoading = false,
+    this.shortLabel = false,
   });
 
   @override
@@ -23,9 +25,8 @@ class LoginWithButton extends StatelessWidget {
         onTap: isLoading ? null : onTap,
         borderRadius: BorderRadius.circular(16.0),
         child: Container(
-          width: double.infinity,
           height: 52,
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16.0),
@@ -64,13 +65,14 @@ class LoginWithButton extends StatelessWidget {
                       height: 22,
                       width: 22,
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Text(
-                      'Continue with $text',
+                      shortLabel ? text : 'Continue with $text',
                       style: GoogleFonts.dmSans(
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF1E293B),
                         fontSize: 15,
+                        letterSpacing: -0.2,
                       ),
                     ),
                   ],
@@ -80,4 +82,3 @@ class LoginWithButton extends StatelessWidget {
     );
   }
 }
-

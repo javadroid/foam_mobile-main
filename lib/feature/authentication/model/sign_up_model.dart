@@ -146,16 +146,16 @@ class SignUpModel {
   }
 
   static Future<void> getInputAddress(
-      BuildContext context,
-      String street,
-      String city,
-      String postalCode,
-      String country,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey, {
-      String? state,
-      String? lga,
-      double? latitude,
-      double? longitude,
+    BuildContext context,
+    String street,
+    String city,
+    String postalCode,
+    String country,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    String? state,
+    String? lga,
+    double? latitude,
+    double? longitude,
   }) async {
     if (street.isEmpty) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Input Street Name");
@@ -188,7 +188,7 @@ class SignUpModel {
         );
 
         var response = json.decode(res.body);
-        log(res.body);
+        debugPrint(res.body);
 
         if (res.statusCode == 201 || res.statusCode == 200) {
           // Reload all data before navigating to home
@@ -201,8 +201,9 @@ class SignUpModel {
           MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
         }
       } catch (e, stackTrace) {
-        log('Address save error: $e', stackTrace: stackTrace);
-        MyMessageHandler.showSnackBar(scaffoldKey, "Unable to save address. Please check your internet connection.");
+        debugPrint('Address save error: $e');
+        MyMessageHandler.showSnackBar(scaffoldKey,
+            "Unable to save address. Please check your internet connection.");
       }
     }
   }
