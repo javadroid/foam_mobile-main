@@ -4,6 +4,7 @@ import 'package:foam_mobile/core/Screens/profile/profile_image/controller/profil
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/routes/app_router.dart';
+import 'package:foam_mobile/core/splash_screen.dart';
 import 'package:foam_mobile/core/services/notification_service.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';

@@ -2,17 +2,15 @@ part of '../values.dart';
 
 class Constants {
   // URL
-  // static String url = "http://10.50.125.52:8081";
-  // static String url = "http://10.0.2.2:8081";
-  static String url = "https://foamlaundryapp.com";
+  static String url = "http://10.0.2.2:8081";
+  // static String url = "https://foamlaundryapp.com";
 
   // PayStack public key
   static String payStackPublicKey =
       "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69";
 
   // OneSignal App ID
-  static String oneSignalAppId = "your-onesignal-app-id";
-
+  static String oneSignalAppId = " b3f03235-0ed2-4afa-8818-e38f36a453d8";
 
   // Google API key
   static const String googleAPIKey = 'AIzaSyA7hyiwzU6LHTHhtntU36tAPRi46DXrygo';

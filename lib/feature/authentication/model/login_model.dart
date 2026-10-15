@@ -13,6 +13,7 @@ import 'dart:convert';
 import 'package:provider/provider.dart';
 
 import 'package:foam_mobile/core/splash_function.dart';
+import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
 import 'package:foam_mobile/core/services/notification_service.dart';
 import 'package:foam_mobile/core/services/socket_service.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
@@ -21,7 +22,8 @@ import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool isSignup = false}) async {
+      GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      {bool isSignup = false}) async {
     if (!email.trim().isValidEmail()) {
       MyMessageHandler.showSnackBar(scaffoldKey, "Please input a valid email");
     } else if (password.isEmpty) {
@@ -61,7 +63,8 @@ class LoginClass {
         }
       } catch (e, stackTrace) {
         log('Login Error: $e', stackTrace: stackTrace);
-        MyMessageHandler.showSnackBar(scaffoldKey, "Unable to connect to server. Please check your internet connection.");
+        MyMessageHandler.showSnackBar(scaffoldKey,
+            "Unable to connect to server. Please check your internet connection.");
       }
     }
   }
@@ -102,8 +105,11 @@ class LoginClass {
 
       // Register user with OneSignal using their Foam userId as external_id & connect live socket
       if (user["id"] != null) {
-        final int userId = user["id"] is int ? user["id"] : int.tryParse(user["id"].toString()) ?? 0;
+        final int userId = user["id"] is int
+            ? user["id"]
+            : int.tryParse(user["id"].toString()) ?? 0;
         if (userId > 0) {
+          debugPrint("FOAM_ID $userId");
           NotificationService.registerUser(userId);
           SocketService.connect();
         }
@@ -141,8 +147,9 @@ class LoginClass {
     }
   }
 
-  static Future<void> getAddress(BuildContext context,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool isSignup = false}) async {
+  static Future<void> getAddress(
+      BuildContext context, GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      {bool isSignup = false}) async {
     try {
       final res = await http.get(
         Uri.parse(
@@ -159,16 +166,18 @@ class LoginClass {
       debugPrint("Address API status code: ${res.statusCode}");
       debugPrint("Address API response: $response");
       debugPrint("Is signup: $isSignup");
-      
+
       if (res.statusCode == 200 || res.statusCode == 201) {
         var authProvider = Provider.of<AuthProvider>(context, listen: false);
         debugPrint("Response address: ${response["address"]}");
         debugPrint("Address is list: ${response["address"] is List}");
         if (response["address"] is List) {
-          debugPrint("Address list length: ${(response["address"] as List).length}");
+          debugPrint(
+              "Address list length: ${(response["address"] as List).length}");
         }
-        
-        if (response["address"] != null && (response["address"] as List).isNotEmpty) {
+
+        if (response["address"] != null &&
+            (response["address"] as List).isNotEmpty) {
           var address = response["address"][0];
           authProvider.fillAddress(
             address["street"],
