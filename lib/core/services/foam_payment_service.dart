@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -48,24 +47,79 @@ class FoamPaymentService {
         "Content-Type": "application/json",
       };
 
+  static const String _googlePayConfigJson = '''{
+  "provider": "google_pay",
+  "data": {
+    "environment": "TEST",
+    "apiVersion": 2,
+    "apiVersionMinor": 0,
+    "allowedPaymentMethods": [
+      {
+        "type": "CARD",
+        "tokenizationSpecification": {
+          "type": "PAYMENT_GATEWAY",
+          "parameters": {
+            "gateway": "paystack",
+            "gatewayMerchantId": "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69"
+          }
+        },
+        "parameters": {
+          "allowedCardNetworks": ["VISA", "MASTERCARD"],
+          "allowedAuthMethods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+          "billingAddressRequired": false
+        }
+      }
+    ],
+    "merchantInfo": {
+      "merchantId": "BCR2DN6TXQ27EXAMPLE",
+      "merchantName": "Foam Laundry"
+    },
+    "transactionInfo": {
+      "countryCode": "NG",
+      "currencyCode": "NGN"
+    }
+  }
+}''';
+
+  static const String _applePayConfigJson = '''{
+  "provider": "apple_pay",
+  "data": {
+    "merchantIdentifier": "merchant.com.foamlaundryapp",
+    "displayName": "Foam Laundry",
+    "merchantCapabilities": ["3DS", "debit", "credit"],
+    "supportedNetworks": ["amex", "visa", "discover", "masterCard"],
+    "countryCode": "NG",
+    "currencyCode": "NGN",
+    "requiredBillingContactFields": ["emailAddress", "name", "phoneNumber"]
+  }
+}''';
+
   static Pay? _payClient;
 
-  /// Lazy loads and initializes the native Pay client with Google Pay & Apple Pay profiles
+  /// Initializes the native Pay client with Google Pay & Apple Pay profiles
   static Future<Pay> _getPayClient() async {
     if (_payClient != null) return _payClient!;
     try {
-      final googleConfig = await PaymentConfiguration.fromAsset(
-          'assets/payment/default_google_pay_config.json');
-      final appleConfig = await PaymentConfiguration.fromAsset(
-          'assets/payment/default_apple_pay_config.json');
+      final googleConfig =
+          PaymentConfiguration.fromJsonString(_googlePayConfigJson);
+      final appleConfig =
+          PaymentConfiguration.fromJsonString(_applePayConfigJson);
       _payClient = Pay({
         PayProvider.google_pay: googleConfig,
         PayProvider.apple_pay: appleConfig,
       });
       return _payClient!;
     } catch (e) {
-      debugPrint('Error loading Pay configurations: $e');
-      rethrow;
+      debugPrint('Error initializing in-memory Pay configurations: $e');
+      final googleConfig = await PaymentConfiguration.fromAsset(
+          'payment/default_google_pay_config.json');
+      final appleConfig = await PaymentConfiguration.fromAsset(
+          'payment/default_apple_pay_config.json');
+      _payClient = Pay({
+        PayProvider.google_pay: googleConfig,
+        PayProvider.apple_pay: appleConfig,
+      });
+      return _payClient!;
     }
   }
 
@@ -85,7 +139,8 @@ class FoamPaymentService {
 
     // A. FOAM WALLET (For supported accounts)
     if (method == FoamPaymentMethod.wallet) {
-      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+      final walletProvider =
+          Provider.of<WalletProvider>(context, listen: false);
       await walletProvider.fetchWallet();
       final currentBalance = walletProvider.balance;
 
@@ -161,8 +216,7 @@ class FoamPaymentService {
         if (authUrl == null || authUrl.isEmpty) {
           return PaymentProcessResult(
             success: false,
-            message:
-                'Paystack authorization URL was not received from server.',
+            message: 'Paystack authorization URL was not received from server.',
           );
         }
 
@@ -245,8 +299,7 @@ class FoamPaymentService {
           ],
         );
 
-        final reference =
-            'sub_gpay_${DateTime.now().millisecondsSinceEpoch}';
+        final reference = 'sub_gpay_${DateTime.now().millisecondsSinceEpoch}';
 
         final res = await http.post(
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
@@ -313,8 +366,7 @@ class FoamPaymentService {
           ],
         );
 
-        final reference =
-            'sub_apay_${DateTime.now().millisecondsSinceEpoch}';
+        final reference = 'sub_apay_${DateTime.now().millisecondsSinceEpoch}';
 
         final res = await http.post(
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
@@ -374,7 +426,8 @@ class FoamPaymentService {
   }) async {
     // A. WALLET
     if (method == FoamPaymentMethod.wallet) {
-      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+      final walletProvider =
+          Provider.of<WalletProvider>(context, listen: false);
       await walletProvider.fetchWallet();
 
       if (walletProvider.balance < totalPrice) {
@@ -580,8 +633,7 @@ class FoamPaymentService {
     required double amount,
     required FoamPaymentMethod method,
   }) async {
-    final walletProvider =
-        Provider.of<WalletProvider>(context, listen: false);
+    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
 
     // Paystack Top-Up
     if (method == FoamPaymentMethod.paystack) {
@@ -764,8 +816,7 @@ class FoamPaymentService {
                 'No valid Paystack checkout URL was provided by the payment server.'),
             actions: [
               TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('OK')),
+                  onPressed: () => Navigator.pop(ctx), child: const Text('OK')),
             ],
           ),
         );
@@ -904,8 +955,7 @@ class _PaystackCheckoutModalState extends State<PaystackCheckoutModal> {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0098A6)
-                              .withValues(alpha: 0.1),
+                          color: const Color(0xFF0098A6).withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(Icons.lock_rounded,

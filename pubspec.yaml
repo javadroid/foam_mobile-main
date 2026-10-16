@@ -57,6 +57,7 @@ dependencies:
   onesignal_flutter: 5.5.2
   socket_io_client: ^3.0.2
   pay: ^3.3.0
+  webview_flutter: ^4.10.0
 
 
 flutter_launcher_icons:
