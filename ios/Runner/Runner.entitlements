@@ -8,5 +8,9 @@
 	<array>
 		<string>group.com.example.foamMobile.onesignal</string>
 	</array>
+	<key>com.apple.developer.in-app-payments</key>
+	<array>
+		<string>merchant.com.foamlaundryapp</string>
+	</array>
 </dict>
 </plist>
