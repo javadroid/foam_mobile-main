@@ -82,52 +82,9 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
           child: Column(
             children: [
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Image.asset('assets/images/foam.png'),
-                  InkWell(
-                    onTap: () =>
-                        Navigator.of(context, rootNavigator: true).pushNamed(
-                      VendorSignUpScreen.id,
-                    ),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryAccentColor.withValues(
-                          alpha: 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: AppColors.primaryAccentColor.withValues(
-                            alpha: 0.3,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.store_mall_directory_outlined,
-                            size: 14,
-                            color: AppColors.primaryAccentColor,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Vendor Setup',
-                            style: GoogleFonts.dmSans(
-                              color: AppColors.primaryAccentColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                 ],
               ),
               Expanded(

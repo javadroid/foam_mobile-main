@@ -33,7 +33,7 @@ class LoginClass {
       AppFullScreenLoader.show(
         context,
         message: 'Signing you in...',
-        subtitle: 'Preparing your workspace',
+        subtitle: 'Welcome back, checking your informations...',
       );
       try {
         http.Response res = await http.post(
