@@ -7,13 +7,18 @@ import 'package:foam_mobile/feature/authentication/controller/provider/authprovi
 import 'package:foam_mobile/feature/authentication/model/change_password_model.dart';
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
+import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
-import 'package:foam_mobile/widgets/profile_tile.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
+import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
+import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
+import 'package:foam_mobile/core/services/foam_payment_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? toHome;
@@ -65,6 +70,195 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _showEditProfileModal(AuthProvider auth) {
+    final TextEditingController firstNameCtrl =
+        TextEditingController(text: auth.firstName);
+    final TextEditingController lastNameCtrl =
+        TextEditingController(text: auth.lastName);
+    final TextEditingController phoneCtrl =
+        TextEditingController(text: auth.phoneNumber);
+    bool isSaving = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (modalCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return Container(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 24,
+                bottom: MediaQuery.of(modalCtx).viewInsets.bottom + 24,
+              ),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFCBD5E1),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Edit Profile',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w700,
+                            color: const Color(0xFF0F172A),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close_rounded,
+                              color: Color(0xFF64748B)),
+                          onPressed: () => Navigator.pop(modalCtx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: firstNameCtrl,
+                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: 'First Name',
+                        labelStyle: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.secondaryBackgroundColor, width: 1.8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: lastNameCtrl,
+                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: 'Last Name',
+                        labelStyle: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.secondaryBackgroundColor, width: 1.8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                      decoration: InputDecoration(
+                        labelText: 'Phone Number',
+                        labelStyle: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: AppColors.secondaryBackgroundColor, width: 1.8),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondaryBackgroundColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: isSaving
+                            ? null
+                            : () async {
+                                final fName = firstNameCtrl.text.trim();
+                                final lName = lastNameCtrl.text.trim();
+                                final phone = phoneCtrl.text.trim();
+
+                                if (fName.isEmpty || lName.isEmpty) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('Please enter your first and last name'),
+                                      backgroundColor: Color(0xFFEF4444),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                setModalState(() => isSaving = true);
+                                auth.fillAuth(
+                                  fName,
+                                  lName,
+                                  null,
+                                  auth.email,
+                                  phone,
+                                );
+                                Navigator.pop(modalCtx);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Profile updated successfully',
+                                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w500),
+                                    ),
+                                    backgroundColor: const Color(0xFF10B981),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                );
+                              },
+                        child: isSaving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : Text(
+                                'Save Changes',
+                                style: GoogleFonts.dmSans(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _showChangePasswordModal() {
     final TextEditingController oldPasswordController = TextEditingController();
     final TextEditingController newPasswordController = TextEditingController();
@@ -93,7 +287,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Top Drag handle
                     Center(
                       child: Container(
                         width: 40,
@@ -138,102 +331,67 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       hinText: 'Enter current password',
                       obscureText: true,
                       isPassword: true,
-                      prefixIcon: const Icon(
-                        Icons.lock_outline_rounded,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
-                      ),
                     ),
-                    const SizedBox(height: 14),
-
+                    const SizedBox(height: 16),
                     MyTextField(
                       controller: newPasswordController,
                       labelText: 'New Password',
-                      hinText: 'At least 8 characters',
+                      hinText: 'At least 6 characters',
                       obscureText: true,
                       isPassword: true,
-                      prefixIcon: const Icon(
-                        Icons.lock_reset_rounded,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
-                      ),
                     ),
-                    const SizedBox(height: 14),
-
+                    const SizedBox(height: 16),
                     MyTextField(
                       controller: confirmPasswordController,
                       labelText: 'Confirm New Password',
                       hinText: 'Re-enter new password',
                       obscureText: true,
                       isPassword: true,
-                      prefixIcon: const Icon(
-                        Icons.lock_reset_rounded,
-                        color: Color(0xFF94A3B8),
-                        size: 20,
-                      ),
                     ),
                     const SizedBox(height: 24),
 
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                      child: GradientButton(
-                        text: 'Save New Password',
-                        isLoading: _isPasswordChanging,
-                        onPressed: () async {
-                          final oldPass = oldPasswordController.text;
-                          final newPass = newPasswordController.text;
-                          final confirmPass = confirmPasswordController.text;
+                    GradientButton(
+                      text: 'Update Password',
+                      isLoading: _isPasswordChanging,
+                      onPressed: () async {
+                        final String oldPass = oldPasswordController.text.trim();
+                        final String newPass = newPasswordController.text.trim();
+                        final String confirmPass = confirmPasswordController.text.trim();
 
-                          if (oldPass.isEmpty || newPass.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Please fill all password fields'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                            return;
-                          }
-                          if (newPass.length < 8) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('New password must be at least 8 characters'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                            return;
-                          }
-                          if (newPass != confirmPass) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('New passwords do not match'),
-                                backgroundColor: Colors.redAccent,
-                              ),
-                            );
-                            return;
-                          }
-
-                          setModalState(() {
-                            _isPasswordChanging = true;
-                          });
-
-                          Navigator.pop(modalContext);
-
-                          await ChangePasswordModel.changePassword(
-                            context,
-                            scaffoldKey,
-                            oldPass,
-                            newPass,
+                        if (oldPass.isEmpty || newPass.isEmpty || confirmPass.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Please fill all password fields')),
                           );
+                          return;
+                        }
 
-                          if (mounted) {
-                            setState(() {
-                              _isPasswordChanging = false;
-                            });
-                          }
-                        },
-                      ),
+                        if (newPass.length < 6) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('New password must be at least 6 characters')),
+                          );
+                          return;
+                        }
+
+                        if (newPass != confirmPass) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('New passwords do not match')),
+                          );
+                          return;
+                        }
+
+                        setModalState(() => _isPasswordChanging = true);
+                        await ChangePasswordModel.changePassword(
+                          context,
+                          scaffoldKey,
+                          oldPass,
+                          newPass,
+                        );
+                        setModalState(() => _isPasswordChanging = false);
+
+                        if (!modalContext.mounted) return;
+                        Navigator.pop(modalContext);
+                      },
                     ),
-                    const SizedBox(height: 12),
                   ],
                 ),
               ),
@@ -348,6 +506,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     fetchAddress();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<WalletProvider>(context, listen: false).fetchWallet();
+      }
+    });
+  }
+
+  void _showTopUpDialog(BuildContext ctx) async {
+    final amountCtrl = TextEditingController(text: '5000');
+    final amount = await showDialog<double>(
+      context: ctx,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+        title: Text(
+          'Top-Up In-App Wallet',
+          style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Enter amount to fund using Paystack, Google Pay, or Apple Pay:',
+              style: GoogleFonts.dmSans(fontSize: 13, color: const Color(0xFF64748B)),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: amountCtrl,
+              keyboardType: TextInputType.number,
+              autofocus: true,
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 18),
+              decoration: InputDecoration(
+                prefixText: '₦ ',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel', style: GoogleFonts.dmSans(color: const Color(0xFF64748B))),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF0098A6),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () {
+              final val = double.tryParse(amountCtrl.text.trim()) ?? 0;
+              if (val >= 100) {
+                Navigator.pop(dialogCtx, val);
+              }
+            },
+            child: Text('Proceed', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (amount == null || !mounted) return;
+
+    final result = await FoamPaymentSheet.show(
+      context: context,
+      title: 'Wallet Deposit',
+      itemTitle: 'Fund In-App Wallet',
+      itemSubtitle: 'Deposit ₦${amount.toStringAsFixed(0)} to your balance',
+      amount: amount,
+      purpose: FoamPaymentPurpose.walletDeposit,
+    );
+
+    if (result != null && result.success) {
+      if (!mounted) return;
+      final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+      await walletProvider.fetchWallet();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.message), backgroundColor: Colors.green.shade700),
+      );
+    }
   }
 
   @override
@@ -378,10 +616,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
             style: GoogleFonts.dmSans(
               color: const Color(0xFF0F172A),
               fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontWeight: FontWeight.w800,
             ),
           ),
           centerTitle: true,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
+              tooltip: 'Log Out',
+              onPressed: _showLogoutConfirmation,
+            ),
+          ],
         ),
         body: Consumer<AuthProvider>(
           builder: (context, authProvider, child) {
@@ -391,6 +636,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final String email = authProvider.email;
             final String address = authProvider.addressStreet;
             final String city = authProvider.addressCity;
+            final bool isVendor = authProvider.role == 'VENDOR' || authProvider.businessName.isNotEmpty;
 
             final String initials = (firstName.isNotEmpty && lastName.isNotEmpty)
                 ? '${firstName[0]}${lastName[0]}'.toUpperCase()
@@ -402,41 +648,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             return ListView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
               children: [
-                // 1. User Hero Card
+                // 1. Natural Profile Header Card
                 Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 18.0),
-                  padding: const EdgeInsets.all(20.0),
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 20.0),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(24.0),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                    border: Border.all(color: const Color(0xFFF1F5F9)),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                        blurRadius: 20,
+                        offset: const Offset(0, 6),
                       ),
                     ],
                   ),
                   child: Column(
                     children: [
-                      ProfileImage(
-                        radius: 44,
-                        initials: initials,
+                      Stack(
+                        alignment: Alignment.bottomRight,
+                        children: [
+                          Container(
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryAccentColor.withValues(alpha: 0.18),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: ProfileImage(
+                              radius: 46,
+                              initials: initials,
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _showEditProfileModal(authProvider),
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryAccentColor,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2.5),
+                              ),
+                              child: const Icon(
+                                Icons.edit_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 14),
                       Text(
                         displayName,
                         style: GoogleFonts.dmSans(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
+                          fontSize: 21,
+                          fontWeight: FontWeight.w800,
                           color: const Color(0xFF0F172A),
+                          letterSpacing: -0.4,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      if (email.isNotEmpty)
+                      if (email.isNotEmpty) ...[
+                        const SizedBox(height: 4),
                         Text(
                           email,
                           style: GoogleFonts.dmSans(
@@ -445,19 +726,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             fontWeight: FontWeight.w400,
                           ),
                         ),
-                      const SizedBox(height: 12),
+                      ],
+                      const SizedBox(height: 14),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                        padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 5.0),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFFBBF7D0)),
+                          border: Border.all(color: const Color(0xFFDCFCE7)),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.verified_rounded, size: 14, color: Color(0xFF16A34A)),
-                            const SizedBox(width: 6),
+                            const Icon(Icons.check_circle_rounded, size: 14, color: Color(0xFF16A34A)),
+                            const SizedBox(width: 5),
                             Text(
                               'Verified Customer',
                               style: GoogleFonts.dmSans(
@@ -473,166 +755,307 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                 ),
 
-                const SizedBox(height: 24),
+                const SizedBox(height: 20),
 
-                // 2. Personal Information Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 6.0),
-                  child: Text(
-                    'PERSONAL DETAILS',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF94A3B8),
-                      letterSpacing: 0.8,
+                // If user is also a vendor, show quick switch card
+                if (isVendor) ...[
+                  InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(context, VendorMainScreen.id);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0F172A).withValues(alpha: 0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.storefront_rounded, color: Colors.white, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Vendor Dashboard',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Manage stores, pricing, orders & payouts',
+                                  style: GoogleFonts.dmSans(
+                                    color: const Color(0xFF94A3B8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Switch',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 11),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                ProfileTile(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Full Name',
-                  label: displayName,
-                ),
-                ProfileTile(
-                  icon: Icons.phone_outlined,
-                  title: 'Phone Number',
-                  label: phone.isNotEmpty ? phone : 'Not set',
-                ),
-                ProfileTile(
-                  icon: Icons.mail_outline_rounded,
-                  title: 'Email Address',
-                  label: email.isNotEmpty ? email : 'Not set',
-                ),
+                  const SizedBox(height: 20),
+                ],
+
+                // 2. Personal Information Section
+                _buildSectionHeader('Personal Details'),
+                const SizedBox(height: 8),
+                _buildSectionCard([
+                  _buildDetailTile(
+                    icon: Icons.person_rounded,
+                    iconBgColor: const Color(0xFFE0F2FE),
+                    iconColor: const Color(0xFF0284C7),
+                    title: 'Full Name',
+                    value: displayName,
+                    onTap: () => _showEditProfileModal(authProvider),
+                  ),
+                  _buildCardDivider(),
+                  _buildDetailTile(
+                    icon: Icons.phone_rounded,
+                    iconBgColor: const Color(0xFFCCFBF1),
+                    iconColor: const Color(0xFF0D9488),
+                    title: 'Phone Number',
+                    value: phone.isNotEmpty ? phone : 'Add phone number',
+                    onTap: () => _showEditProfileModal(authProvider),
+                  ),
+                  _buildCardDivider(),
+                  _buildDetailTile(
+                    icon: Icons.mail_rounded,
+                    iconBgColor: const Color(0xFFEDE9FE),
+                    iconColor: const Color(0xFF7C3AED),
+                    title: 'Email Address',
+                    value: email.isNotEmpty ? email : 'Add email address',
+                  ),
+                ]),
 
                 const SizedBox(height: 20),
 
-                // 3. Saved Address Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 6.0),
-                  child: Text(
-                    'DELIVERY LOCATION',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF94A3B8),
-                      letterSpacing: 0.8,
-                    ),
-                  ),
-                ),
-                ProfileTile(
-                  icon: Icons.location_on_outlined,
-                  title: 'Default Pickup Address',
-                  label: address.isNotEmpty
-                      ? (city.isNotEmpty ? '$address, $city' : address)
-                      : 'No address set yet',
-                  trailing: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.fadeBlueAccentColor,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.edit_location_alt_rounded, size: 14, color: AppColors.primaryAccentColor),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Update',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryAccentColor,
+                // Wallet & Subscriptions Section
+                _buildSectionHeader('Wallet & Subscriptions'),
+                const SizedBox(height: 8),
+                Consumer<WalletProvider>(
+                  builder: (ctx, walletProvider, _) {
+                    return _buildSectionCard([
+                      _buildDetailTile(
+                        icon: Icons.account_balance_wallet_rounded,
+                        iconBgColor: const Color(0xFFE0F2FE),
+                        iconColor: const Color(0xFF0284C7),
+                        title: 'Foam Wallet Balance',
+                        value: '₦${NumberFormat('#,###').format(walletProvider.balance)}',
+                        trailingWidget: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0098A6),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '+ Top Up',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const SignUpPage1(),
+                        onTap: () => _showTopUpDialog(context),
                       ),
-                    );
+                      _buildCardDivider(),
+                      _buildDetailTile(
+                        icon: Icons.card_membership_rounded,
+                        iconBgColor: const Color(0xFFDCFCE7),
+                        iconColor: const Color(0xFF16A34A),
+                        title: 'Billing & Subscriptions',
+                        value: 'Manage monthly plans & billing history',
+                        trailingWidget: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF1F5F9),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Manage',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF334155),
+                            ),
+                          ),
+                        ),
+                        onTap: () => Navigator.pushNamed(context, BillingScreen.id),
+                      ),
+                    ]);
                   },
                 ),
 
                 const SizedBox(height: 20),
 
-                // 4. Security Section
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 6.0),
-                  child: Text(
-                    'SECURITY',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 11.5,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF94A3B8),
-                      letterSpacing: 0.8,
+                // 3. Saved Address Section
+                _buildSectionHeader('Saved Address'),
+                const SizedBox(height: 8),
+                _buildSectionCard([
+                  _buildDetailTile(
+                    icon: Icons.location_on_rounded,
+                    iconBgColor: const Color(0xFFFFEDD5),
+                    iconColor: const Color(0xFFEA580C),
+                    title: 'Default Pickup Address',
+                    value: address.isNotEmpty
+                        ? (city.isNotEmpty ? '$address, $city' : address)
+                        : 'No pickup address saved yet',
+                    trailingWidget: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE0F2FE),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Change',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0284C7),
+                        ),
+                      ),
                     ),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const SignUpPage1(),
+                        ),
+                      );
+                    },
                   ),
-                ),
-                ProfileTile(
-                  icon: Icons.lock_outline_rounded,
-                  title: 'Password',
-                  label: '••••••••••••',
-                  onTap: _showChangePasswordModal,
-                ),
+                ]),
+
+                const SizedBox(height: 20),
+
+                // 4. Security & Preferences
+                _buildSectionHeader('Security & Preferences'),
+                const SizedBox(height: 8),
+                _buildSectionCard([
+                  _buildDetailTile(
+                    icon: Icons.lock_rounded,
+                    iconBgColor: const Color(0xFFFEF3C7),
+                    iconColor: const Color(0xFFD97706),
+                    title: 'Account Password',
+                    value: '••••••••••••',
+                    trailingWidget: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Update',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    onTap: _showChangePasswordModal,
+                  ),
+                ]),
 
                 const SizedBox(height: 28),
 
-                // 5. Account Actions / Danger Zone
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 18.0),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: _showLogoutConfirmation,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.logout_rounded, color: Color(0xFF475569), size: 20),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Log Out',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF1E293B),
-                              ),
+                // 5. Account Actions / Logout Button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: _showLogoutConfirmation,
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 15, horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFFECACA)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.logout_rounded, color: Color(0xFFEF4444), size: 19),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Log Out',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFEF4444),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 14),
 
                 Center(
                   child: TextButton(
                     onPressed: _showDeleteAccountConfirmation,
                     child: Text(
-                      'Delete Account',
+                      'Delete Account Permanently',
                       style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFFEF4444),
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF94A3B8),
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
               ],
             );
           },
@@ -640,5 +1063,117 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-}
 
+  Widget _buildSectionHeader(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 6.0),
+      child: Text(
+        title,
+        style: GoogleFonts.dmSans(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: const Color(0xFF475569),
+          letterSpacing: -0.2,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionCard(List<Widget> children) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20),
+        child: Column(
+          children: children,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardDivider() {
+    return const Divider(
+      height: 1,
+      thickness: 0.6,
+      color: Color(0xFFF1F5F9),
+      indent: 62,
+      endIndent: 16,
+    );
+  }
+
+  Widget _buildDetailTile({
+    required IconData icon,
+    required Color iconBgColor,
+    required Color iconColor,
+    required String title,
+    required String value,
+    VoidCallback? onTap,
+    Widget? trailingWidget,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: iconBgColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: iconColor, size: 20),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF0F172A),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (trailingWidget != null)
+                trailingWidget
+              else if (onTap != null)
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 13,
+                  color: Color(0xFF94A3B8),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

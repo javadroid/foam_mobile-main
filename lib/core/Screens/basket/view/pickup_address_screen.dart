@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/core/Screens/basket/controller/order_controller.dart';
-import 'package:foam_mobile/core/Screens/basket/controller/remote_basket.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
@@ -11,6 +9,8 @@ import 'package:foam_mobile/widgets/click_button.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
+import 'package:foam_mobile/core/services/foam_payment_service.dart';
 
 class PickupAddressScreen extends StatefulWidget {
   final int totalAmount;
@@ -563,72 +563,30 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     setState(() {
                       isLoading = true;
                     });
+                    final nav = Navigator.of(context);
                     try {
-                      // Attempt payment directly with in-app wallet
-                      final orderResult = await OrderClass.createOrder(
+                      final double orderAmount = widget.totalAmount > 0
+                          ? widget.totalAmount.toDouble()
+                          : basketProvider.totalPrice.toDouble();
+
+                      final result = await FoamPaymentSheet.show(
                         context: context,
-                        scaffoldKey: scaffoldKey,
+                        title: 'Complete Order Payment',
+                        itemTitle: '${basketProvider.totalItems} Laundry Items',
+                        itemSubtitle: widget.noFolding
+                            ? 'No Folding Service'
+                            : 'Standard Folding Included',
+                        amount: orderAmount,
+                        purpose: FoamPaymentPurpose.order,
                         noFolding: widget.noFolding,
                       );
 
-                      if (!mounted) return;
-
-                      if (orderResult.success) {
+                      if (result != null && result.success) {
                         await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
-                        MyMessageHandler.showSnackBar(scaffoldKey, "Order placed & paid successfully via in-app wallet!");
-                        Navigator.pushNamedAndRemoveUntil(
-                          context,
+                        MyMessageHandler.showSnackBar(scaffoldKey, result.message);
+                        nav.pushNamedAndRemoveUntil(
                           MainScreen.id,
                           (route) => false,
-                        );
-                      } else if (orderResult.insufficientBalance) {
-                        // Prompt user to top-up wallet
-                        final double shortfall = orderResult.requiredAmount - orderResult.currentBalance;
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text('Top-Up In-App Wallet', style: TextStyle(fontWeight: FontWeight.bold)),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Order Total: ₦${orderResult.requiredAmount.toStringAsFixed(0)}'),
-                                const SizedBox(height: 6),
-                                Text('Wallet Balance: ₦${orderResult.currentBalance.toStringAsFixed(0)}', style: const TextStyle(color: Colors.grey)),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Top up ₦${shortfall.toStringAsFixed(0)} to complete this order with your in-app wallet.',
-                                  style: const TextStyle(fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-                              ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryAccentColor),
-                                onPressed: () async {
-                                  Navigator.pop(ctx);
-                                  setState(() => isLoading = true);
-                                  final toppedUpAndPaid = await PayStackOrderClass.topUpWalletAndPay(
-                                    context: context,
-                                    scaffoldKey: scaffoldKey,
-                                    depositAmount: shortfall > 500 ? shortfall : 500,
-                                    noFolding: widget.noFolding,
-                                  );
-                                  if (toppedUpAndPaid && mounted) {
-                                    await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
-                                    Navigator.pushNamedAndRemoveUntil(context, MainScreen.id, (route) => false);
-                                  }
-                                  if (mounted) setState(() => isLoading = false);
-                                },
-                                child: const Text('Top-Up & Pay', style: TextStyle(color: Colors.white)),
-                              ),
-                            ],
-                          ),
                         );
                       }
                     } finally {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/orders/vendor_orders_screen.dart';
+import 'package:foam_mobile/feature/vendor/profile/vendor_profile_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_stores_list_screen.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_revenue_screen.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_wallet_screen.dart';
@@ -25,6 +26,7 @@ class _VendorMainScreenState extends State<VendorMainScreen> {
     VendorStoresListScreen(),
     VendorRevenueScreen(),
     VendorWalletScreen(),
+    VendorProfileScreen(),
   ];
 
   @override
@@ -54,11 +56,11 @@ class _VendorMainScreenState extends State<VendorMainScreen> {
           unselectedItemColor: VendorColors.textMuted,
           selectedLabelStyle: GoogleFonts.dmSans(
             fontWeight: FontWeight.w700,
-            fontSize: 12,
+            fontSize: 11.5,
           ),
           unselectedLabelStyle: GoogleFonts.dmSans(
             fontWeight: FontWeight.w600,
-            fontSize: 12,
+            fontSize: 11.5,
           ),
           elevation: 0,
           items: const [
@@ -81,6 +83,11 @@ class _VendorMainScreenState extends State<VendorMainScreen> {
               icon: Icon(Icons.account_balance_wallet_outlined),
               activeIcon: Icon(Icons.account_balance_wallet),
               label: 'Wallet',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.person_outline_rounded),
+              activeIcon: Icon(Icons.person_rounded),
+              label: 'Profile',
             ),
           ],
         ),

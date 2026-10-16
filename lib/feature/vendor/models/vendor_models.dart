@@ -9,8 +9,9 @@ class VendorStore {
   String hoursMonFri;
   String hoursSat;
   String hoursSun;
-  double latitude;
-  double longitude;
+  double? latitude;
+  double? longitude;
+  String? photoUrl;
 
   VendorStore({
     required this.id,
@@ -23,8 +24,9 @@ class VendorStore {
     this.hoursMonFri = '7:00 AM – 7:00 PM',
     this.hoursSat = '8:00 AM – 5:00 PM',
     this.hoursSun = 'Closed',
-    this.latitude = 6.4474,
-    this.longitude = 3.4723,
+    this.latitude,
+    this.longitude,
+    this.photoUrl,
   });
 
   bool get isLive => status.toUpperCase() == 'LIVE';
@@ -54,7 +56,8 @@ class VendorOrder {
   final double subtotal;
   final double commission;
   final double vendorEarnings;
-  String status; // 'NEW', 'ACCEPTED', 'RECEIVED_AT_STORE', 'WASHING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED'
+  String
+      status; // 'NEW', 'ACCEPTED', 'RECEIVED_AT_STORE', 'WASHING', 'READY', 'OUT_FOR_DELIVERY', 'COMPLETED'
   int secondsRemaining;
   String? receivedAt;
   String? washingStartedAt;
@@ -80,8 +83,13 @@ class VendorOrder {
   });
 
   bool get isNew => status == 'NEW';
-  bool get isActive =>
-      ['ACCEPTED', 'RECEIVED_AT_STORE', 'WASHING', 'READY', 'OUT_FOR_DELIVERY'].contains(status);
+  bool get isActive => [
+        'ACCEPTED',
+        'RECEIVED_AT_STORE',
+        'WASHING',
+        'READY',
+        'OUT_FOR_DELIVERY'
+      ].contains(status);
   bool get isDone => status == 'COMPLETED';
 
   String get formattedCountdown {
@@ -160,7 +168,9 @@ class PaystackBankModel {
 
   factory PaystackBankModel.fromJson(Map<String, dynamic> json) {
     return PaystackBankModel(
-      id: json['id'] is int ? json['id'] : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id'] is int
+          ? json['id']
+          : int.tryParse(json['id'].toString()) ?? 0,
       name: json['name'] ?? '',
       code: json['code']?.toString() ?? '',
       slug: json['slug'] ?? '',

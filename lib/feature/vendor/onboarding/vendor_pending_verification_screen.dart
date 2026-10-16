@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -80,60 +78,60 @@ class VendorPendingVerificationScreen extends StatelessWidget {
               const Spacer(),
 
               // Quick simulation helpers for review
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: VendorColors.lightBg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: VendorColors.border),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Preview States (Figma Flows)',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: VendorColors.textMuted,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: VendorButton(
-                            text: 'View Approved',
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const VendorApprovedScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: VendorButton(
-                            text: 'View Rejected',
-                            isSecondary: true,
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const VendorRejectedScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
+              // Container(
+              //   padding: const EdgeInsets.all(12),
+              //   decoration: BoxDecoration(
+              //     color: VendorColors.lightBg,
+              //     borderRadius: BorderRadius.circular(12),
+              //     border: Border.all(color: VendorColors.border),
+              //   ),
+              //   child: Column(
+              //     children: [
+              //       Text(
+              //         'Preview States (Figma Flows)',
+              //         style: GoogleFonts.dmSans(
+              //           fontSize: 12,
+              //           fontWeight: FontWeight.w700,
+              //           color: VendorColors.textMuted,
+              //         ),
+              //       ),
+              //       const SizedBox(height: 8),
+              //       Row(
+              //         children: [
+              //           Expanded(
+              //             child: VendorButton(
+              //               text: 'View Approved',
+              //               onPressed: () {
+              //                 Navigator.push(
+              //                   context,
+              //                   MaterialPageRoute(
+              //                     builder: (context) => const VendorApprovedScreen(),
+              //                   ),
+              //                 );
+              //               },
+              //             ),
+              //           ),
+              //           const SizedBox(width: 8),
+              //           Expanded(
+              //             child: VendorButton(
+              //               text: 'View Rejected',
+              //               isSecondary: true,
+              //               onPressed: () {
+              //                 Navigator.push(
+              //                   context,
+              //                   MaterialPageRoute(
+              //                     builder: (context) => const VendorRejectedScreen(),
+              //                   ),
+              //                 );
+              //               },
+              //             ),
+              //           ),
+              //         ],
+              //       ),
+              //     ],
+              //   ),
+              // ),
+              // const SizedBox(height: 16),
             ],
           ),
         ),
@@ -174,7 +172,8 @@ class VendorPendingVerificationScreen extends StatelessWidget {
               ),
               child: Center(
                 child: isCompleted
-                    ? const Icon(Icons.check, size: 16, color: VendorColors.liveText)
+                    ? const Icon(Icons.check,
+                        size: 16, color: VendorColors.liveText)
                     : isActive
                         ? Container(
                             width: 8,
@@ -191,7 +190,8 @@ class VendorPendingVerificationScreen extends StatelessWidget {
               Container(
                 width: 2,
                 height: 48,
-                color: isCompleted ? VendorColors.liveText : VendorColors.border,
+                color:
+                    isCompleted ? VendorColors.liveText : VendorColors.border,
               ),
           ],
         ),

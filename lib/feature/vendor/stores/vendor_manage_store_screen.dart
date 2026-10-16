@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
-import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_fold_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_items_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -11,6 +11,21 @@ class VendorManageStoreScreen extends StatelessWidget {
   final VendorStore store;
 
   const VendorManageStoreScreen({super.key, required this.store});
+
+  String _getPriceSummary(
+    VendorProvider provider,
+    String storeId,
+    String serviceType,
+    String foldType,
+  ) {
+    final prices = provider.getItemPrices(storeId, serviceType, foldType);
+    if (prices.isEmpty) {
+      return 'Not set yet · Tap to set prices';
+    }
+    final count = prices.length;
+    final minPrice = prices.values.reduce((a, b) => a < b ? a : b);
+    return '$count ${count == 1 ? "item" : "items"} · from ₦${minPrice.toInt()}';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,6 +49,20 @@ class VendorManageStoreScreen extends StatelessWidget {
           ),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit_location_alt_outlined, color: VendorColors.primary),
+            tooltip: 'Edit Store Profile',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => VendorStoreDetailsScreen(store: store),
+                ),
+              );
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -149,13 +178,14 @@ class VendorManageStoreScreen extends StatelessWidget {
 
               _buildManagePriceRow(
                 title: 'Laundry · Folding',
-                subtitle: '8 items · from ₦400',
+                subtitle: _getPriceSummary(provider, store.id, 'Laundry', 'Folding'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Laundry',
+                        foldType: 'Folding',
                       ),
                     ),
                   );
@@ -164,13 +194,14 @@ class VendorManageStoreScreen extends StatelessWidget {
               const Divider(height: 16, color: VendorColors.border),
               _buildManagePriceRow(
                 title: 'Laundry · Non-folding',
-                subtitle: '8 items · from ₦350',
+                subtitle: _getPriceSummary(provider, store.id, 'Laundry', 'Non-folding'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Laundry',
+                        foldType: 'Non-folding',
                       ),
                     ),
                   );
@@ -179,13 +210,14 @@ class VendorManageStoreScreen extends StatelessWidget {
               const Divider(height: 16, color: VendorColors.border),
               _buildManagePriceRow(
                 title: 'Dry cleaning · Folding',
-                subtitle: '6 items · from ₦1,200',
+                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Folding'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
+                        foldType: 'Folding',
                       ),
                     ),
                   );
@@ -194,13 +226,14 @@ class VendorManageStoreScreen extends StatelessWidget {
               const Divider(height: 16, color: VendorColors.border),
               _buildManagePriceRow(
                 title: 'Dry cleaning · Non-folding',
-                subtitle: '6 items · from ₦1,000',
+                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Non-folding'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
+                        foldType: 'Non-folding',
                       ),
                     ),
                   );

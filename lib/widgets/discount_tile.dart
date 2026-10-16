@@ -38,10 +38,10 @@ class _DiscountSliderState extends State<DiscountSlider> {
           Container(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage(
-                  widget.imageAsset,
-                ),
-                fit: BoxFit.fill,
+                image: widget.imageAsset.startsWith('http')
+                    ? NetworkImage(widget.imageAsset) as ImageProvider
+                    : AssetImage(widget.imageAsset),
+                fit: BoxFit.cover,
               ),
               borderRadius: BorderRadius.circular(16),
             ),
@@ -49,7 +49,7 @@ class _DiscountSliderState extends State<DiscountSlider> {
           //color gradient
           Container(
             decoration: BoxDecoration(
-              color: AppColors.primaryAccentColor.withOpacity(0.24),
+              color: AppColors.primaryAccentColor.withValues(alpha: 0.24),
               borderRadius: BorderRadius.circular(16),
             ),
           ),

@@ -76,7 +76,7 @@ class _SignUpPage1State extends State<SignUpPage1> {
     });
   }
 
-  void _selectSuggestion(AddressSuggestion suggestion) {
+  Future<void> _selectSuggestion(AddressSuggestion suggestion) async {
     setState(() {
       _isAddressSelected = true;
       addressController.text = suggestion.title;
@@ -97,6 +97,16 @@ class _SignUpPage1State extends State<SignUpPage1> {
       _isSearchingSuggestions = false;
     });
     FocusScope.of(context).unfocus();
+
+    if (suggestion.details.latitude == 0.0) {
+      final resolved = await LocationService.resolveSuggestionDetails(suggestion);
+      if (mounted && resolved.latitude != 0.0) {
+        setState(() {
+          latitude = resolved.latitude;
+          longitude = resolved.longitude;
+        });
+      }
+    }
   }
 
   void _showLocationPermissionModal({String? message}) {
@@ -111,7 +121,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
           elevation: 10,
           backgroundColor: Colors.white,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 24.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 22.0, vertical: 24.0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -218,10 +229,18 @@ class _SignUpPage1State extends State<SignUpPage1> {
       final details = await LocationService.autoDetectLocation();
       if (details != null) {
         setState(() {
-          if (details.street.isNotEmpty) addressController.text = details.street;
-          if (details.city.isNotEmpty) cityController.text = details.city;
-          if (details.state.isNotEmpty) stateController.text = details.state;
-          if (details.lga.isNotEmpty) lgaController.text = details.lga;
+          if (details.street.isNotEmpty) {
+            addressController.text = details.street;
+          }
+          if (details.city.isNotEmpty) {
+            cityController.text = details.city;
+          }
+          if (details.state.isNotEmpty) {
+            stateController.text = details.state;
+          }
+          if (details.lga.isNotEmpty) {
+            lgaController.text = details.lga;
+          }
           latitude = details.latitude;
           longitude = details.longitude;
         });
@@ -234,7 +253,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
       }
     } catch (e) {
       _showLocationPermissionModal(
-        message: 'Could not access device location ($e). Please grant location permission in settings or enter your address manually.',
+        message:
+            'Could not access device location ($e). Please grant location permission in settings or enter your address manually.',
       );
     } finally {
       if (mounted) {
@@ -268,13 +288,15 @@ class _SignUpPage1State extends State<SignUpPage1> {
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Color(0xFF0F172A), size: 20),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                color: Color(0xFF0F172A), size: 20),
             onPressed: () => Navigator.maybePop(context),
           ),
           actions: [
             Container(
               margin: const EdgeInsets.symmetric(vertical: 12.0),
-              padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
               decoration: BoxDecoration(
                 color: AppColors.fadeBlueAccentColor,
                 borderRadius: BorderRadius.circular(20.0),
@@ -307,7 +329,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
           child: Center(
             child: SingleChildScrollView(
               physics: const BouncingScrollPhysics(),
-              padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 6.0, vertical: 8.0),
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 480),
                 child: Column(
@@ -368,7 +391,9 @@ class _SignUpPage1State extends State<SignUpPage1> {
                       child: Material(
                         color: Colors.transparent,
                         child: InkWell(
-                          onTap: isDetectingLocation ? null : _handleAutoDetectLocation,
+                          onTap: isDetectingLocation
+                              ? null
+                              : _handleAutoDetectLocation,
                           borderRadius: BorderRadius.circular(18),
                           child: Container(
                             padding: const EdgeInsets.all(16),
@@ -383,12 +408,14 @@ class _SignUpPage1State extends State<SignUpPage1> {
                               ),
                               borderRadius: BorderRadius.circular(18),
                               border: Border.all(
-                                color: AppColors.primaryAccentColor.withValues(alpha: 0.35),
+                                color: AppColors.primaryAccentColor
+                                    .withValues(alpha: 0.35),
                                 width: 1.4,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryAccentColor.withValues(alpha: 0.06),
+                                  color: AppColors.primaryAccentColor
+                                      .withValues(alpha: 0.06),
                                   blurRadius: 14,
                                   offset: const Offset(0, 4),
                                 ),
@@ -411,7 +438,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                                     shape: BoxShape.circle,
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.primaryAccentColor.withValues(alpha: 0.25),
+                                        color: AppColors.primaryAccentColor
+                                            .withValues(alpha: 0.25),
                                         blurRadius: 8,
                                         offset: const Offset(0, 3),
                                       ),
@@ -424,7 +452,9 @@ class _SignUpPage1State extends State<SignUpPage1> {
                                             height: 20,
                                             child: CircularProgressIndicator(
                                               strokeWidth: 2.2,
-                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.white),
                                             ),
                                           ),
                                         )
@@ -437,7 +467,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         isDetectingLocation
@@ -481,9 +512,11 @@ class _SignUpPage1State extends State<SignUpPage1> {
                       padding: const EdgeInsets.symmetric(horizontal: 22.0),
                       child: Row(
                         children: [
-                          const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                          const Expanded(
+                              child: Divider(color: Color(0xFFE2E8F0))),
                           Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 12.0),
                             child: Text(
                               'OR ENTER / SEARCH ADDRESS',
                               style: GoogleFonts.dmSans(
@@ -494,7 +527,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                               ),
                             ),
                           ),
-                          const Expanded(child: Divider(color: Color(0xFFE2E8F0))),
+                          const Expanded(
+                              child: Divider(color: Color(0xFFE2E8F0))),
                         ],
                       ),
                     ),
@@ -520,13 +554,15 @@ class _SignUpPage1State extends State<SignUpPage1> {
                     // Live search loading indicator
                     if (_isSearchingSuggestions) ...[
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 4.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 22.0, vertical: 4.0),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(2),
                           child: LinearProgressIndicator(
                             minHeight: 2,
                             backgroundColor: const Color(0xFFE2E8F0),
-                            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryAccentColor),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                                AppColors.primaryAccentColor),
                           ),
                         ),
                       ),
@@ -535,7 +571,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                     // Suggestions Dropdown Card
                     if (_addressSuggestions.isNotEmpty) ...[
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 6.0),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 18.0, vertical: 6.0),
                         child: Container(
                           decoration: BoxDecoration(
                             color: Colors.white,
@@ -553,9 +590,11 @@ class _SignUpPage1State extends State<SignUpPage1> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Padding(
-                                padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 14.0, vertical: 10.0),
                                 child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
                                       'Suggested Locations',
@@ -568,25 +607,31 @@ class _SignUpPage1State extends State<SignUpPage1> {
                                     GestureDetector(
                                       onTap: () {
                                         setState(() {
-                                          _addressSuggestions = <AddressSuggestion>[];
+                                          _addressSuggestions =
+                                              <AddressSuggestion>[];
                                         });
                                       },
-                                      child: const Icon(Icons.close_rounded, size: 16, color: Color(0xFF94A3B8)),
+                                      child: const Icon(Icons.close_rounded,
+                                          size: 16, color: Color(0xFF94A3B8)),
                                     ),
                                   ],
                                 ),
                               ),
-                              const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                              const Divider(
+                                  height: 1, color: Color(0xFFF1F5F9)),
                               ListView.separated(
                                 shrinkWrap: true,
                                 physics: const NeverScrollableScrollPhysics(),
                                 itemCount: _addressSuggestions.length,
-                                separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFF1F5F9)),
+                                separatorBuilder: (_, __) => const Divider(
+                                    height: 1, color: Color(0xFFF1F5F9)),
                                 itemBuilder: (BuildContext context, int index) {
-                                  final AddressSuggestion suggestion = _addressSuggestions[index];
+                                  final AddressSuggestion suggestion =
+                                      _addressSuggestions[index];
                                   return ListTile(
                                     dense: true,
-                                    contentPadding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 2.0),
+                                    contentPadding: const EdgeInsets.symmetric(
+                                        horizontal: 14.0, vertical: 2.0),
                                     leading: Container(
                                       padding: const EdgeInsets.all(6),
                                       decoration: BoxDecoration(
@@ -704,7 +749,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18.0),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0, vertical: 8.0),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF0FDF4),
                             borderRadius: BorderRadius.circular(10),
@@ -712,7 +758,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                              const Icon(Icons.check_circle_rounded,
+                                  size: 16, color: Color(0xFF16A34A)),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
@@ -744,7 +791,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                           if (street.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('Please enter your street address'),
+                                content:
+                                    Text('Please enter your street address'),
                                 backgroundColor: Colors.redAccent,
                               ),
                             );
@@ -773,8 +821,8 @@ class _SignUpPage1State extends State<SignUpPage1> {
                             _scaffoldKey,
                             state: stateController.text.trim(),
                             lga: lgaController.text.trim(),
-                            latitude: latitude,
-                            longitude: longitude,
+                            latitude: latitude ?? 0,
+                            longitude: longitude ?? 0,
                           );
 
                           if (mounted) {
@@ -798,4 +846,3 @@ class _SignUpPage1State extends State<SignUpPage1> {
     );
   }
 }
-

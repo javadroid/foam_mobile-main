@@ -4,6 +4,7 @@ import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/feature/vendor/orders/vendor_active_order_screen.dart';
 import 'package:foam_mobile/feature/vendor/orders/vendor_new_order_screen.dart';
+import 'package:foam_mobile/feature/vendor/profile/vendor_profile_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_store_switcher_sheet.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
@@ -48,20 +49,31 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
               child: Row(
                 children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: const BoxDecoration(
-                      color: VendorColors.darkBg,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Center(
-                      child: Text(
-                        initials,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VendorProfileScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(22),
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: const BoxDecoration(
+                        color: VendorColors.darkBg,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Text(
+                          initials,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -79,12 +91,16 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(
-                                  currentStore.name,
-                                  style: GoogleFonts.dmSans(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 17,
-                                    color: VendorColors.textMain,
+                                Flexible(
+                                  child: Text(
+                                    currentStore.name,
+                                    style: GoogleFonts.dmSans(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 17,
+                                      color: VendorColors.textMain,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
                                 const SizedBox(width: 4),
@@ -101,13 +117,32 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
                                 fontSize: 12,
                                 color: VendorColors.textMuted,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
                     ),
                   ),
+                  const SizedBox(width: 8),
                   VendorStatusPill(status: currentStore.status),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: const Icon(Icons.person_outline_rounded,
+                        color: VendorColors.textMain, size: 22),
+                    tooltip: 'Vendor Profile & Logout',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const VendorProfileScreen(),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),

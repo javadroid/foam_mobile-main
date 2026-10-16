@@ -22,7 +22,11 @@ class VendorProvider extends ChangeNotifier {
   List<PaystackBankModel> get paystackBanks => _paystackBanks;
   bool get isLoadingBanks => _isLoadingBanks;
 
-  // Active Store and Stores List
+  // Active Store and Stores List (Max stores default 10, configurable by admin)
+  int _maxStores = 10;
+  int get maxStores => _maxStores;
+  bool get canAddStore => _stores.length < _maxStores;
+
   String? _selectedStoreId;
   final List<VendorStore> _stores = [];
 
@@ -54,6 +58,7 @@ class VendorProvider extends ChangeNotifier {
   VendorProvider() {
     _selectedStoreId = _stores.isNotEmpty ? _stores.first.id : null;
     _startCountdownTimer();
+    fetchStores();
   }
 
   void _startCountdownTimer() {
@@ -196,6 +201,7 @@ class VendorProvider extends ChangeNotifier {
     required double lat,
     required double lng,
     String? name,
+    String? photoUrl,
   }) {
     final idx = _stores.indexWhere((s) => s.id == storeId);
     if (idx != -1) {
@@ -212,6 +218,7 @@ class VendorProvider extends ChangeNotifier {
         hoursSun: _stores[idx].hoursSun,
         latitude: lat,
         longitude: lng,
+        photoUrl: photoUrl ?? _stores[idx].photoUrl,
       );
     } else {
       _stores.add(VendorStore(
@@ -227,6 +234,7 @@ class VendorProvider extends ChangeNotifier {
         hoursSun: 'Closed',
         latitude: lat,
         longitude: lng,
+        photoUrl: photoUrl,
       ));
       _selectedStoreId = storeId;
     }
@@ -284,6 +292,19 @@ class VendorProvider extends ChangeNotifier {
       _pricingMap[key] = {};
     }
     _pricingMap[key]![item] = price;
+
+    // Recalculate total items priced for this store
+    int totalPriced = 0;
+    for (final k in _pricingMap.keys) {
+      if (k.startsWith('${storeId}_')) {
+        totalPriced += _pricingMap[k]!.length;
+      }
+    }
+    final idx = _stores.indexWhere((s) => s.id == storeId);
+    if (idx != -1) {
+      _stores[idx].itemsPricedCount = totalPriced;
+    }
+
     notifyListeners();
   }
 
@@ -485,5 +506,239 @@ class VendorProvider extends ChangeNotifier {
       debugPrint('Error saving payout bank: $e');
     }
     return false;
+  }
+
+  VendorStore _parseStoreJson(Map<String, dynamic> json) {
+    String monFri = '8:00 AM – 6:00 PM';
+    String sat = '9:00 AM – 5:00 PM';
+    String sun = 'Closed';
+
+    if (json['operatingHours'] != null) {
+      if (json['operatingHours'] is Map) {
+        monFri = json['operatingHours']['monFri']?.toString() ?? monFri;
+        sat = json['operatingHours']['sat']?.toString() ?? sat;
+        sun = json['operatingHours']['sun']?.toString() ?? sun;
+      } else if (json['operatingHours'] is String) {
+        monFri = json['operatingHours'].toString();
+      }
+    }
+
+    int pricedCount = 0;
+    if (json['pricing'] is List) {
+      pricedCount = (json['pricing'] as List).length;
+    }
+
+    return VendorStore(
+      id: json['id']?.toString() ?? 'store_${DateTime.now().millisecondsSinceEpoch}',
+      name: json['name']?.toString() ?? 'Branch Store',
+      address: json['address']?.toString() ?? 'No address set',
+      status: json['status']?.toString() ?? 'LIVE',
+      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.8,
+      itemsPricedCount: pricedCount,
+      totalItems: 28,
+      hoursMonFri: monFri,
+      hoursSat: sat,
+      hoursSun: sun,
+      latitude: (json['latitude'] is num) ? (json['latitude'] as num).toDouble() : null,
+      longitude: (json['longitude'] is num) ? (json['longitude'] as num).toDouble() : null,
+      photoUrl: json['photoUrl']?.toString(),
+    );
+  }
+
+  /// Fetch stores belonging to vendor from backend, including maxStores limit
+  Future<void> fetchStores() async {
+    try {
+      final token = HiveClass.getToken();
+      if (token.isEmpty) return;
+
+      final res = await http.get(
+        Uri.parse('${Constants.url}/api/vendor/stores'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['maxStores'] is num) {
+          _maxStores = (data['maxStores'] as num).toInt();
+        }
+        if (data['stores'] is List) {
+          final List<dynamic> list = data['stores'];
+          _stores.clear();
+          for (final item in list) {
+            if (item is Map<String, dynamic>) {
+              _stores.add(_parseStoreJson(item));
+            }
+          }
+          if (_stores.isNotEmpty &&
+              (_selectedStoreId == null || !_stores.any((s) => s.id == _selectedStoreId))) {
+            _selectedStoreId = _stores.first.id;
+          }
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching stores: $e');
+    }
+  }
+
+  /// Create a new store (validating maxStores limit)
+  Future<Map<String, dynamic>> createStore({
+    required String name,
+    required String address,
+    required double lat,
+    required double lng,
+    String? photoUrl,
+    String monFri = '8:00 AM – 6:00 PM',
+    String sat = '9:00 AM – 5:00 PM',
+    String sun = 'Closed',
+  }) async {
+    if (!canAddStore) {
+      return {
+        'success': false,
+        'message':
+            'Store limit reached. You can have a maximum of $_maxStores stores. Contact admin to increase your store capacity.',
+      };
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = HiveClass.getToken();
+      final res = await http.post(
+        Uri.parse('${Constants.url}/api/vendor/stores'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'address': address,
+          'latitude': lat,
+          'longitude': lng,
+          'photoUrl': photoUrl,
+          'operatingHours': {
+            'monFri': monFri,
+            'sat': sat,
+            'sun': sun,
+          },
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 201 && data['store'] != null) {
+        final newStore = _parseStoreJson(data['store'] as Map<String, dynamic>);
+        _stores.add(newStore);
+        _selectedStoreId = newStore.id;
+        _isLoading = false;
+        notifyListeners();
+        return {'success': true, 'store': newStore};
+      } else {
+        _isLoading = false;
+        notifyListeners();
+        return {
+          'success': false,
+          'message': data['error'] ?? data['message'] ?? 'Failed to create store',
+        };
+      }
+    } catch (e) {
+      // Local fallback
+      final newStore = VendorStore(
+        id: 'store_${DateTime.now().millisecondsSinceEpoch}',
+        name: name,
+        address: address,
+        status: 'LIVE',
+        latitude: lat,
+        longitude: lng,
+        photoUrl: photoUrl,
+        hoursMonFri: monFri,
+        hoursSat: sat,
+        hoursSun: sun,
+      );
+      _stores.add(newStore);
+      _selectedStoreId = newStore.id;
+      _isLoading = false;
+      notifyListeners();
+      return {'success': true, 'store': newStore};
+    }
+  }
+
+  /// Update an existing store branch profile
+  Future<Map<String, dynamic>> updateStoreDetails({
+    required String storeId,
+    required String name,
+    required String address,
+    required double lat,
+    required double lng,
+    String? photoUrl,
+    String monFri = '8:00 AM – 6:00 PM',
+    String sat = '9:00 AM – 5:00 PM',
+    String sun = 'Closed',
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final token = HiveClass.getToken();
+      final res = await http.put(
+        Uri.parse('${Constants.url}/api/vendor/stores/$storeId'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'name': name,
+          'address': address,
+          'latitude': lat,
+          'longitude': lng,
+          'photoUrl': photoUrl,
+          'operatingHours': {
+            'monFri': monFri,
+            'sat': sat,
+            'sun': sun,
+          },
+        }),
+      );
+
+      final data = jsonDecode(res.body);
+      if (res.statusCode == 200 && data['store'] != null) {
+        final updatedStore = _parseStoreJson(data['store'] as Map<String, dynamic>);
+        final idx = _stores.indexWhere((s) => s.id == storeId);
+        if (idx != -1) {
+          _stores[idx] = updatedStore;
+        } else {
+          _stores.add(updatedStore);
+        }
+        _isLoading = false;
+        notifyListeners();
+        return {'success': true, 'store': updatedStore};
+      }
+    } catch (e) {
+      debugPrint('Error updating store via API: $e');
+    }
+
+    // Local update
+    updateStoreAddress(
+      storeId: storeId,
+      name: name,
+      address: address,
+      lat: lat,
+      lng: lng,
+      photoUrl: photoUrl,
+    );
+    updateStoreHours(
+      storeId: storeId,
+      monFri: monFri,
+      sat: sat,
+      sun: sun,
+    );
+    _isLoading = false;
+    notifyListeners();
+    return {'success': true, 'store': currentStore};
   }
 }
