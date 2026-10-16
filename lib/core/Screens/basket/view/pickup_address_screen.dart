@@ -581,13 +581,17 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                         noFolding: widget.noFolding,
                       );
 
-                      if (result != null && result.success) {
-                        await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
-                        MyMessageHandler.showSnackBar(scaffoldKey, result.message);
-                        nav.pushNamedAndRemoveUntil(
-                          MainScreen.id,
-                          (route) => false,
-                        );
+                      if (result != null) {
+                        if (result.success) {
+                          await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
+                          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
+                          nav.pushNamedAndRemoveUntil(
+                            MainScreen.id,
+                            (route) => false,
+                          );
+                        } else {
+                          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
+                        }
                       }
                     } finally {
                       if (mounted) {

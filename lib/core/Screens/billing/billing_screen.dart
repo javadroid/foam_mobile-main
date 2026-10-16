@@ -82,14 +82,42 @@ class _BillingScreenState extends State<BillingScreen> {
       plan: plan,
     );
 
-    if (result != null && result.success && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result.message),
-          backgroundColor: Colors.green.shade700,
-        ),
-      );
-      _fetchPlansAndStatus();
+    if (result != null && mounted) {
+      if (result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            backgroundColor: Colors.green.shade700,
+          ),
+        );
+        _fetchPlansAndStatus();
+      } else {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                Icon(Icons.error_outline_rounded,
+                    color: Colors.red.shade700, size: 24),
+                const SizedBox(width: 8),
+                const Text('Payment Failed'),
+              ],
+            ),
+            content: Text(
+              result.message,
+              style: const TextStyle(fontSize: 14, height: 1.4),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('OK'),
+              ),
+            ],
+          ),
+        );
+      }
     }
   }
 

@@ -1,0 +1,12 @@
+{
+  "provider": "apple_pay",
+  "data": {
+    "merchantIdentifier": "merchant.com.foamlaundryapp",
+    "displayName": "Foam Laundry",
+    "merchantCapabilities": ["3DS", "debit", "credit"],
+    "supportedNetworks": ["amex", "visa", "discover", "masterCard"],
+    "countryCode": "NG",
+    "currencyCode": "NGN",
+    "requiredBillingContactFields": ["emailAddress", "name", "phoneNumber"]
+  }
+}

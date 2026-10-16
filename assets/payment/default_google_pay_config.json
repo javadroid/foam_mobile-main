@@ -1,0 +1,33 @@
+{
+  "provider": "google_pay",
+  "data": {
+    "environment": "TEST",
+    "apiVersion": 2,
+    "apiVersionMinor": 0,
+    "allowedPaymentMethods": [
+      {
+        "type": "CARD",
+        "tokenizationSpecification": {
+          "type": "PAYMENT_GATEWAY",
+          "parameters": {
+            "gateway": "paystack",
+            "gatewayMerchantId": "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69"
+          }
+        },
+        "parameters": {
+          "allowedCardNetworks": ["VISA", "MASTERCARD"],
+          "allowedAuthMethods": ["PAN_ONLY", "CRYPTOGRAM_3DS"],
+          "billingAddressRequired": false
+        }
+      }
+    ],
+    "merchantInfo": {
+      "merchantId": "BCR2DN6TXQ27EXAMPLE",
+      "merchantName": "Foam Laundry"
+    },
+    "transactionInfo": {
+      "countryCode": "NG",
+      "currencyCode": "NGN"
+    }
+  }
+}

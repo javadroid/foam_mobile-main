@@ -1,8 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
-import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 
 class FoamPaymentSheet extends StatefulWidget {
@@ -71,11 +69,11 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
   void initState() {
     super.initState();
     // Default smart selection based on platform
-    if (widget.purpose == FoamPaymentPurpose.walletDeposit) {
-      _selectedMethod = Platform.isIOS ? FoamPaymentMethod.applePay : (Platform.isAndroid ? FoamPaymentMethod.googlePay : FoamPaymentMethod.paystack);
-    } else {
-      _selectedMethod = FoamPaymentMethod.wallet;
-    }
+    _selectedMethod = Platform.isIOS
+        ? FoamPaymentMethod.applePay
+        : (Platform.isAndroid
+            ? FoamPaymentMethod.googlePay
+            : FoamPaymentMethod.paystack);
   }
 
   String _getMethodName(FoamPaymentMethod method) {
@@ -118,46 +116,18 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
         );
       }
     } catch (e) {
-      result = PaymentProcessResult(success: false, message: 'Payment failed: $e');
+      result = PaymentProcessResult(
+          success: false, message: 'Payment processing error: $e');
     }
 
     if (mounted) {
       setState(() => _isProcessing = false);
-      if (result.success) {
-        Navigator.pop(context, result);
-      } else if (result.insufficientWallet) {
-        // Prompt user to switch to Paystack / GPay / Apple Pay
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.orange.shade800,
-            action: SnackBarAction(
-              label: 'Pay via Card',
-              textColor: Colors.white,
-              onPressed: () {
-                setState(() => _selectedMethod = FoamPaymentMethod.paystack);
-              },
-            ),
-          ),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.red.shade700,
-          ),
-        );
-      }
+      Navigator.pop(context, result);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final walletProvider = Provider.of<WalletProvider>(context);
-    final walletBalance = walletProvider.balance;
-    final hasSufficientWallet = walletBalance >= widget.amount;
-    final shortfall = widget.amount - walletBalance;
-
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
@@ -291,36 +261,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           ),
           const SizedBox(height: 12),
 
-          // 1. Foam Wallet (not shown for wallet deposit itself)
-          if (widget.purpose != FoamPaymentPurpose.walletDeposit)
-            _buildPaymentOptionTile(
-              method: FoamPaymentMethod.wallet,
-              title: 'Foam In-App Wallet',
-              subtitle: hasSufficientWallet
-                  ? 'Balance: ₦${walletBalance.toStringAsFixed(0)}'
-                  : 'Balance: ₦${walletBalance.toStringAsFixed(0)} (Shortfall: ₦${shortfall.toStringAsFixed(0)})',
-              icon: Icons.account_balance_wallet_rounded,
-              iconColor: const Color(0xFF0098A6),
-              iconBgColor: const Color(0xFFE0F7FA),
-              badgeText: hasSufficientWallet ? 'Instant' : 'Low Balance',
-              badgeColor: hasSufficientWallet ? const Color(0xFF16A34A) : const Color(0xFFEA580C),
-              badgeBgColor: hasSufficientWallet ? const Color(0xFFDCFCE7) : const Color(0xFFFFEDD5),
-            ),
-
-          // 2. Paystack
-          _buildPaymentOptionTile(
-            method: FoamPaymentMethod.paystack,
-            title: 'Paystack Checkout',
-            subtitle: 'Debit Cards (Visa, Verve, Mastercard), Bank & USSD',
-            icon: Icons.credit_card_rounded,
-            iconColor: const Color(0xFF0284C7),
-            iconBgColor: const Color(0xFFE0F2FE),
-            badgeText: 'Cards/Bank',
-            badgeColor: const Color(0xFF0369A1),
-            badgeBgColor: const Color(0xFFE0F2FE),
-          ),
-
-          // 3. Google Pay (highlighted on Android)
+          // 1. Google Pay (highlighted on Android)
           _buildPaymentOptionTile(
             method: FoamPaymentMethod.googlePay,
             title: 'Google Pay',
@@ -333,7 +274,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
             badgeBgColor: const Color(0xFFE8F0FE),
           ),
 
-          // 4. Apple Pay (highlighted on iOS)
+          // 2. Apple Pay (highlighted on iOS)
           _buildPaymentOptionTile(
             method: FoamPaymentMethod.applePay,
             title: 'Apple Pay',
@@ -344,6 +285,19 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
             badgeText: 'Pay',
             badgeColor: Colors.black87,
             badgeBgColor: Colors.grey.shade200,
+          ),
+
+          // 3. Paystack Checkout
+          _buildPaymentOptionTile(
+            method: FoamPaymentMethod.paystack,
+            title: 'Paystack Checkout',
+            subtitle: 'Debit Cards (Visa, Verve, Mastercard), Bank & USSD',
+            icon: Icons.credit_card_rounded,
+            iconColor: const Color(0xFF0284C7),
+            iconBgColor: const Color(0xFFE0F2FE),
+            badgeText: 'Cards/Bank',
+            badgeColor: const Color(0xFF0369A1),
+            badgeBgColor: const Color(0xFFE0F2FE),
           ),
 
           const SizedBox(height: 22),
@@ -367,13 +321,15 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.lock_rounded, color: Colors.white, size: 18),
+                        const Icon(Icons.lock_rounded,
+                            color: Colors.white, size: 18),
                         const SizedBox(width: 8),
                         Text(
                           'Pay ₦${widget.amount.toStringAsFixed(0)} with ${_getMethodName(_selectedMethod)}',
@@ -409,7 +365,9 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
       padding: const EdgeInsets.only(bottom: 10),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: _isProcessing ? null : () => setState(() => _selectedMethod = method),
+        onTap: _isProcessing
+            ? null
+            : () => setState(() => _selectedMethod = method),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -417,7 +375,9 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
             color: isSelected ? const Color(0xFFF0FDF4) : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+              color: isSelected
+                  ? const Color(0xFF16A34A)
+                  : const Color(0xFFE2E8F0),
               width: isSelected ? 1.8 : 1.0,
             ),
           ),
@@ -444,14 +404,17 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                             title,
                             style: TextStyle(
                               fontSize: 14.5,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w600,
                               color: const Color(0xFF0F172A),
                             ),
                           ),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2.5),
                           decoration: BoxDecoration(
                             color: badgeBgColor,
                             borderRadius: BorderRadius.circular(6),
@@ -459,7 +422,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                           child: Text(
                             badgeText,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: 10.5,
                               fontWeight: FontWeight.w700,
                               color: badgeColor,
                             ),
@@ -471,7 +434,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 11.5,
+                        fontSize: 12,
                         color: Colors.grey.shade600,
                       ),
                     ),
@@ -485,10 +448,13 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF16A34A) : Colors.grey.shade400,
+                    color: isSelected
+                        ? const Color(0xFF16A34A)
+                        : Colors.grey.shade300,
                     width: 2,
                   ),
-                  color: isSelected ? const Color(0xFF16A34A) : Colors.transparent,
+                  color:
+                      isSelected ? const Color(0xFF16A34A) : Colors.transparent,
                 ),
                 child: isSelected
                     ? const Icon(Icons.check, size: 14, color: Colors.white)

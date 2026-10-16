@@ -688,13 +688,22 @@ class _HomePageState extends State<HomePage> {
                                 purpose: FoamPaymentPurpose.subscription,
                                 plan: plan,
                               );
-                              if (result != null && result.success) {
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(result.message),
-                                    backgroundColor: Colors.green.shade700,
-                                  ),
-                                );
+                              if (result != null) {
+                                if (result.success) {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(result.message),
+                                      backgroundColor: Colors.green.shade700,
+                                    ),
+                                  );
+                                } else {
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(result.message),
+                                      backgroundColor: Colors.red.shade700,
+                                    ),
+                                  );
+                                }
                               }
                             },
                           );

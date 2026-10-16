@@ -8,6 +8,7 @@ import 'package:foam_mobile/feature/authentication/model/change_password_model.d
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
@@ -877,62 +878,90 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 20),
 
-                // Wallet & Subscriptions Section
-                _buildSectionHeader('Wallet & Subscriptions'),
+                // Subscriptions & Plans Section
+                _buildSectionHeader('Subscriptions & Membership'),
                 const SizedBox(height: 8),
-                Consumer<WalletProvider>(
-                  builder: (ctx, walletProvider, _) {
-                    return _buildSectionCard([
-                      _buildDetailTile(
-                        icon: Icons.account_balance_wallet_rounded,
-                        iconBgColor: const Color(0xFFE0F2FE),
-                        iconColor: const Color(0xFF0284C7),
-                        title: 'Foam Wallet Balance',
-                        value: '₦${NumberFormat('#,###').format(walletProvider.balance)}',
-                        trailingWidget: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0098A6),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            '+ Top Up',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: Colors.white,
-                            ),
+                _buildSectionCard([
+                  _buildDetailTile(
+                    icon: Icons.card_membership_rounded,
+                    iconBgColor: const Color(0xFFDCFCE7),
+                    iconColor: const Color(0xFF16A34A),
+                    title: 'Billing & Subscriptions',
+                    value: 'Manage monthly laundry plans & billing history',
+                    trailingWidget: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Manage',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF334155),
+                        ),
+                      ),
+                    ),
+                    onTap: () => Navigator.pushNamed(context, BillingScreen.id),
+                  ),
+                ]),
+
+                const SizedBox(height: 20),
+
+                // Vendor / Business Section
+                _buildSectionHeader('Vendor & Business'),
+                const SizedBox(height: 8),
+                _buildSectionCard([
+                  if (authProvider.isVendor)
+                    _buildDetailTile(
+                      icon: Icons.storefront_rounded,
+                      iconBgColor: const Color(0xFFE0F2FE),
+                      iconColor: const Color(0xFF0284C7),
+                      title: 'Vendor Management Portal',
+                      value: 'Manage laundry orders, stores & services',
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0284C7),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Open Portal',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
-                        onTap: () => _showTopUpDialog(context),
                       ),
-                      _buildCardDivider(),
-                      _buildDetailTile(
-                        icon: Icons.card_membership_rounded,
-                        iconBgColor: const Color(0xFFDCFCE7),
-                        iconColor: const Color(0xFF16A34A),
-                        title: 'Billing & Subscriptions',
-                        value: 'Manage monthly plans & billing history',
-                        trailingWidget: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(
-                            'Manage',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF334155),
-                            ),
+                      onTap: () => Navigator.pushNamed(context, VendorMainScreen.id),
+                    )
+                  else
+                    _buildDetailTile(
+                      icon: Icons.store_mall_directory_rounded,
+                      iconBgColor: const Color(0xFFFEF3C7),
+                      iconColor: const Color(0xFFD97706),
+                      title: 'Become a Foam Vendor',
+                      value: 'Partner with Foam & list your laundry business',
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFD97706),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Apply Now',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
                           ),
                         ),
-                        onTap: () => Navigator.pushNamed(context, BillingScreen.id),
                       ),
-                    ]);
-                  },
-                ),
+                      onTap: () => Navigator.pushNamed(context, VendorSignUpScreen.id),
+                    ),
+                ]),
 
                 const SizedBox(height: 20),
 

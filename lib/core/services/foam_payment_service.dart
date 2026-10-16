@@ -1,7 +1,11 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:pay/pay.dart';
 import 'package:provider/provider.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -44,6 +48,27 @@ class FoamPaymentService {
         "Content-Type": "application/json",
       };
 
+  static Pay? _payClient;
+
+  /// Lazy loads and initializes the native Pay client with Google Pay & Apple Pay profiles
+  static Future<Pay> _getPayClient() async {
+    if (_payClient != null) return _payClient!;
+    try {
+      final googleConfig = await PaymentConfiguration.fromAsset(
+          'assets/payment/default_google_pay_config.json');
+      final appleConfig = await PaymentConfiguration.fromAsset(
+          'assets/payment/default_apple_pay_config.json');
+      _payClient = Pay({
+        PayProvider.google_pay: googleConfig,
+        PayProvider.apple_pay: appleConfig,
+      });
+      return _payClient!;
+    } catch (e) {
+      debugPrint('Error loading Pay configurations: $e');
+      rethrow;
+    }
+  }
+
   /// -------------------------------------------------------------
   /// 1. SUBSCRIPTIONS END-TO-END
   /// -------------------------------------------------------------
@@ -58,7 +83,7 @@ class FoamPaymentService {
     final double planPrice = (plan['price'] as num?)?.toDouble() ?? 0.0;
     final planName = plan['name'] ?? 'Subscription';
 
-    // A. FOAM WALLET
+    // A. FOAM WALLET (For supported accounts)
     if (method == FoamPaymentMethod.wallet) {
       final walletProvider = Provider.of<WalletProvider>(context, listen: false);
       await walletProvider.fetchWallet();
@@ -70,7 +95,8 @@ class FoamPaymentService {
           success: false,
           insufficientWallet: true,
           shortfall: shortfall,
-          message: 'Insufficient wallet balance. Shortfall: ₦${shortfall.toStringAsFixed(0)}',
+          message:
+              'Insufficient wallet balance. Shortfall: ₦${shortfall.toStringAsFixed(0)}',
         );
       }
 
@@ -99,7 +125,8 @@ class FoamPaymentService {
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: 'Network error: $e');
+        return PaymentProcessResult(
+            success: false, message: 'Network connection error: $e');
       }
     }
 
@@ -116,22 +143,35 @@ class FoamPaymentService {
           }),
         );
 
+        final dynamic initData = jsonDecode(initRes.body);
+
         if (initRes.statusCode != 200) {
-          final err = jsonDecode(initRes.body);
+          final errorMsg = initData['error'] ??
+              initData['message'] ??
+              'Failed to initialize Paystack payment (${initRes.statusCode})';
           return PaymentProcessResult(
             success: false,
-            message: err['error'] ?? 'Failed to initialize Paystack payment',
+            message: errorMsg,
           );
         }
 
-        final initData = jsonDecode(initRes.body);
-        final String reference = initData['reference'];
+        final String reference = initData['reference'] ?? '';
         final String? authUrl = initData['authorization_url'];
 
-        // Step 2: Open Paystack interactive dialog
-        if (!context.mounted) {
-          return PaymentProcessResult(success: false, message: 'Payment cancelled');
+        if (authUrl == null || authUrl.isEmpty) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Paystack authorization URL was not received from server.',
+          );
         }
+
+        // Step 2: Open Paystack interactive webview modal
+        if (!context.mounted) {
+          return PaymentProcessResult(
+              success: false, message: 'Payment cancelled');
+        }
+
         final completed = await _showPaystackCheckoutModal(
           context: context,
           title: 'Paystack Checkout',
@@ -144,7 +184,7 @@ class FoamPaymentService {
         if (!completed) {
           return PaymentProcessResult(
             success: false,
-            message: 'Payment cancelled or abandoned',
+            message: 'Paystack payment was cancelled or closed.',
           );
         }
 
@@ -158,7 +198,7 @@ class FoamPaymentService {
           }),
         );
 
-        final verifyData = jsonDecode(verifyRes.body);
+        final dynamic verifyData = jsonDecode(verifyRes.body);
         if (verifyRes.statusCode == 200) {
           return PaymentProcessResult(
             success: true,
@@ -169,37 +209,53 @@ class FoamPaymentService {
         } else {
           return PaymentProcessResult(
             success: false,
-            message: verifyData['error'] ?? 'Payment verification failed',
+            message: verifyData['error'] ??
+                verifyData['message'] ??
+                'Payment verification failed with Paystack.',
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: 'Paystack error: $e');
+        return PaymentProcessResult(
+            success: false, message: 'Paystack checkout error: $e');
       }
     }
 
-    // C. GOOGLE PAY (Android)
+    // C. GOOGLE PAY (Native Android)
     if (method == FoamPaymentMethod.googlePay) {
-      final confirmed = await _showMobilePayAuthorizationDialog(
-        context: context,
-        provider: 'Google Pay',
-        title: 'Google Pay Authorization',
-        description: 'Authorize $planName subscription of ₦${planPrice.toStringAsFixed(0)}/mo using your Google Wallet.',
-        icon: Icons.g_mobiledata_rounded,
-        primaryColor: const Color(0xFF1A73E8),
-      );
-
-      if (!confirmed) {
-        return PaymentProcessResult(success: false, message: 'Google Pay cancelled by user');
-      }
-
       try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(PayProvider.google_pay);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Google Pay is not set up on this device or has no active payment methods. Please configure Google Wallet or pay with Debit Card via Paystack.',
+          );
+        }
+
+        final paymentResult = await payClient.showPaymentSelector(
+          PayProvider.google_pay,
+          [
+            PaymentItem(
+              label: planName,
+              amount: planPrice.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
+        final reference =
+            'sub_gpay_${DateTime.now().millisecondsSinceEpoch}';
+
         final res = await http.post(
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
           headers: _headers,
           body: jsonEncode({
             "planId": planId,
             "provider": "GOOGLE_PAY",
-            "token": "gpay_token_${DateTime.now().millisecondsSinceEpoch}",
+            "token": jsonEncode(paymentResult),
+            "reference": reference,
           }),
         );
 
@@ -209,41 +265,65 @@ class FoamPaymentService {
             success: true,
             message: 'Subscribed to $planName via Google Pay! 🎉',
             data: data['subscription'],
+            reference: reference,
           );
         } else {
           return PaymentProcessResult(
             success: false,
-            message: data['error'] ?? 'Google Pay transaction failed',
+            message: data['error'] ??
+                data['message'] ??
+                'Google Pay transaction failed on server.',
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: 'Google Pay error: $e');
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') ||
+            errStr.contains('canceled') ||
+            errStr.contains('USER_CANCELLED')) {
+          return PaymentProcessResult(
+              success: false, message: 'Google Pay was cancelled by user.');
+        }
+        return PaymentProcessResult(
+            success: false, message: 'Google Pay error: $e');
       }
     }
 
-    // D. APPLE PAY (iOS)
+    // D. APPLE PAY (Native iOS)
     if (method == FoamPaymentMethod.applePay) {
-      final confirmed = await _showMobilePayAuthorizationDialog(
-        context: context,
-        provider: 'Apple Pay',
-        title: 'Apple Pay Authorization',
-        description: 'Confirm $planName subscription of ₦${planPrice.toStringAsFixed(0)}/mo using Face ID / Touch ID.',
-        icon: Icons.apple,
-        primaryColor: Colors.black,
-      );
-
-      if (!confirmed) {
-        return PaymentProcessResult(success: false, message: 'Apple Pay cancelled by user');
-      }
-
       try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(PayProvider.apple_pay);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Apple Pay is not configured on this device or has no supported cards. Please add a card to Apple Wallet or pay via Paystack.',
+          );
+        }
+
+        final paymentResult = await payClient.showPaymentSelector(
+          PayProvider.apple_pay,
+          [
+            PaymentItem(
+              label: planName,
+              amount: planPrice.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
+        final reference =
+            'sub_apay_${DateTime.now().millisecondsSinceEpoch}';
+
         final res = await http.post(
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
           headers: _headers,
           body: jsonEncode({
             "planId": planId,
             "provider": "APPLE_PAY",
-            "token": "apple_pay_token_${DateTime.now().millisecondsSinceEpoch}",
+            "token": jsonEncode(paymentResult),
+            "reference": reference,
           }),
         );
 
@@ -253,19 +333,31 @@ class FoamPaymentService {
             success: true,
             message: 'Subscribed to $planName via Apple Pay! 🎉',
             data: data['subscription'],
+            reference: reference,
           );
         } else {
           return PaymentProcessResult(
             success: false,
-            message: data['error'] ?? 'Apple Pay transaction failed',
+            message: data['error'] ??
+                data['message'] ??
+                'Apple Pay transaction failed on server.',
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: 'Apple Pay error: $e');
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') ||
+            errStr.contains('canceled') ||
+            errStr.contains('USER_CANCELLED')) {
+          return PaymentProcessResult(
+              success: false, message: 'Apple Pay was cancelled by user.');
+        }
+        return PaymentProcessResult(
+            success: false, message: 'Apple Pay error: $e');
       }
     }
 
-    return PaymentProcessResult(success: false, message: 'Unsupported payment method');
+    return PaymentProcessResult(
+        success: false, message: 'Unsupported payment method');
   }
 
   /// -------------------------------------------------------------
@@ -336,21 +428,31 @@ class FoamPaymentService {
           }),
         );
 
+        final initData = jsonDecode(initRes.body);
+
         if (initRes.statusCode != 200) {
-          final err = jsonDecode(initRes.body);
+          final err = initData['error'] ??
+              initData['message'] ??
+              'Failed to initialize Paystack order payment';
           return PaymentProcessResult(
             success: false,
-            message: err['error'] ?? 'Failed to initialize Paystack order payment',
+            message: err,
           );
         }
 
-        final initData = jsonDecode(initRes.body);
-        final String reference = initData['reference'];
+        final String reference = initData['reference'] ?? '';
         final String? authUrl = initData['authorization_url'];
 
-        if (!context.mounted) {
-          return PaymentProcessResult(success: false, message: 'Payment cancelled');
+        if (authUrl == null || authUrl.isEmpty) {
+          return PaymentProcessResult(
+              success: false, message: 'No authorization URL received');
         }
+
+        if (!context.mounted) {
+          return PaymentProcessResult(
+              success: false, message: 'Payment cancelled');
+        }
+
         final completed = await _showPaystackCheckoutModal(
           context: context,
           title: 'Paystack Order Payment',
@@ -361,7 +463,8 @@ class FoamPaymentService {
         );
 
         if (!completed) {
-          return PaymentProcessResult(success: false, message: 'Order payment cancelled');
+          return PaymentProcessResult(
+              success: false, message: 'Order payment cancelled or closed');
         }
 
         final verifyRes = await http.post(
@@ -380,33 +483,49 @@ class FoamPaymentService {
         } else {
           return PaymentProcessResult(
             success: false,
-            message: verifyData['error'] ?? 'Order payment verification failed',
+            message: verifyData['error'] ??
+                verifyData['message'] ??
+                'Order payment verification failed',
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: 'Paystack order error: $e');
+        return PaymentProcessResult(
+            success: false, message: 'Paystack order error: $e');
       }
     }
 
     // C. GOOGLE PAY / APPLE PAY
-    if (method == FoamPaymentMethod.googlePay || method == FoamPaymentMethod.applePay) {
-      final provider = method == FoamPaymentMethod.googlePay ? 'GOOGLE_PAY' : 'APPLE_PAY';
-      final providerName = method == FoamPaymentMethod.googlePay ? 'Google Pay' : 'Apple Pay';
-
-      final confirmed = await _showMobilePayAuthorizationDialog(
-        context: context,
-        provider: providerName,
-        title: '$providerName Order Checkout',
-        description: 'Authorize laundry order total of ₦${totalPrice.toStringAsFixed(0)} with $providerName.',
-        icon: method == FoamPaymentMethod.googlePay ? Icons.g_mobiledata_rounded : Icons.apple,
-        primaryColor: method == FoamPaymentMethod.googlePay ? const Color(0xFF1A73E8) : Colors.black,
-      );
-
-      if (!confirmed) {
-        return PaymentProcessResult(success: false, message: '$providerName cancelled');
-      }
+    if (method == FoamPaymentMethod.googlePay ||
+        method == FoamPaymentMethod.applePay) {
+      final isGoogle = method == FoamPaymentMethod.googlePay;
+      final provider = isGoogle ? 'GOOGLE_PAY' : 'APPLE_PAY';
+      final providerName = isGoogle ? 'Google Pay' : 'Apple Pay';
+      final payProvider =
+          isGoogle ? PayProvider.google_pay : PayProvider.apple_pay;
 
       try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(payProvider);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                '$providerName is not available on this device. Please select Paystack to pay with Debit Card.',
+          );
+        }
+
+        final paymentResult = await payClient.showPaymentSelector(
+          payProvider,
+          [
+            PaymentItem(
+              label: 'Foam Laundry Order',
+              amount: totalPrice.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
         final res = await http.post(
           Uri.parse("${Constants.url}/api/payment/mobile-pay/process"),
           headers: _headers,
@@ -416,6 +535,7 @@ class FoamPaymentService {
             "amount": totalPrice,
             "noFolding": noFolding,
             "storeId": storeId,
+            "token": jsonEncode(paymentResult),
           }),
         );
 
@@ -429,19 +549,30 @@ class FoamPaymentService {
         } else {
           return PaymentProcessResult(
             success: false,
-            message: data['error'] ?? '$providerName order failed',
+            message: data['error'] ??
+                data['message'] ??
+                '$providerName order failed on server',
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: '$providerName error: $e');
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') ||
+            errStr.contains('canceled') ||
+            errStr.contains('USER_CANCELLED')) {
+          return PaymentProcessResult(
+              success: false, message: '$providerName was cancelled by user.');
+        }
+        return PaymentProcessResult(
+            success: false, message: '$providerName error: $e');
       }
     }
 
-    return PaymentProcessResult(success: false, message: 'Invalid payment method');
+    return PaymentProcessResult(
+        success: false, message: 'Invalid payment method');
   }
 
   /// -------------------------------------------------------------
-  /// 3. WALLET TOP-UP END-TO-END
+  /// 3. WALLET TOP-UP END-TO-END (Vendor / Supported Accounts)
   /// -------------------------------------------------------------
 
   static Future<PaymentProcessResult> processWalletDeposit({
@@ -449,20 +580,23 @@ class FoamPaymentService {
     required double amount,
     required FoamPaymentMethod method,
   }) async {
-    final walletProvider = Provider.of<WalletProvider>(context, listen: false);
+    final walletProvider =
+        Provider.of<WalletProvider>(context, listen: false);
 
     // Paystack Top-Up
     if (method == FoamPaymentMethod.paystack) {
       final initData = await walletProvider.initializeDeposit(amount);
       if (initData == null || initData['reference'] == null) {
-        return PaymentProcessResult(success: false, message: 'Failed to initialize wallet deposit');
+        return PaymentProcessResult(
+            success: false, message: 'Failed to initialize wallet deposit');
       }
 
       final String reference = initData['reference'];
       final String? authUrl = initData['authorization_url'];
 
       if (!context.mounted) {
-        return PaymentProcessResult(success: false, message: 'Payment cancelled');
+        return PaymentProcessResult(
+            success: false, message: 'Payment cancelled');
       }
       final completed = await _showPaystackCheckoutModal(
         context: context,
@@ -474,40 +608,55 @@ class FoamPaymentService {
       );
 
       if (!completed) {
-        return PaymentProcessResult(success: false, message: 'Deposit cancelled');
+        return PaymentProcessResult(
+            success: false, message: 'Deposit cancelled');
       }
 
       final verified = await walletProvider.verifyDeposit(reference);
       if (verified) {
         return PaymentProcessResult(
           success: true,
-          message: '₦${amount.toStringAsFixed(0)} deposited to wallet via Paystack! 💳',
+          message:
+              '₦${amount.toStringAsFixed(0)} deposited to wallet via Paystack! 💳',
           reference: reference,
         );
       } else {
-        return PaymentProcessResult(success: false, message: 'Wallet deposit verification failed');
+        return PaymentProcessResult(
+            success: false, message: 'Wallet deposit verification failed');
       }
     }
 
     // Google Pay / Apple Pay Top-Up
-    if (method == FoamPaymentMethod.googlePay || method == FoamPaymentMethod.applePay) {
-      final provider = method == FoamPaymentMethod.googlePay ? 'GOOGLE_PAY' : 'APPLE_PAY';
-      final providerName = method == FoamPaymentMethod.googlePay ? 'Google Pay' : 'Apple Pay';
-
-      final confirmed = await _showMobilePayAuthorizationDialog(
-        context: context,
-        provider: providerName,
-        title: '$providerName Top-Up',
-        description: 'Deposit ₦${amount.toStringAsFixed(0)} into your Foam in-app wallet via $providerName.',
-        icon: method == FoamPaymentMethod.googlePay ? Icons.g_mobiledata_rounded : Icons.apple,
-        primaryColor: method == FoamPaymentMethod.googlePay ? const Color(0xFF1A73E8) : Colors.black,
-      );
-
-      if (!confirmed) {
-        return PaymentProcessResult(success: false, message: '$providerName cancelled');
-      }
+    if (method == FoamPaymentMethod.googlePay ||
+        method == FoamPaymentMethod.applePay) {
+      final isGoogle = method == FoamPaymentMethod.googlePay;
+      final provider = isGoogle ? 'GOOGLE_PAY' : 'APPLE_PAY';
+      final providerName = isGoogle ? 'Google Pay' : 'Apple Pay';
+      final payProvider =
+          isGoogle ? PayProvider.google_pay : PayProvider.apple_pay;
 
       try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(payProvider);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message: '$providerName is not available on this device.',
+          );
+        }
+
+        final paymentResult = await payClient.showPaymentSelector(
+          payProvider,
+          [
+            PaymentItem(
+              label: 'Wallet Top-Up',
+              amount: amount.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
         final res = await http.post(
           Uri.parse("${Constants.url}/api/payment/mobile-pay/process"),
           headers: _headers,
@@ -515,6 +664,7 @@ class FoamPaymentService {
             "provider": provider,
             "purpose": "WALLET_DEPOSIT",
             "amount": amount,
+            "token": jsonEncode(paymentResult),
           }),
         );
 
@@ -523,7 +673,8 @@ class FoamPaymentService {
           await walletProvider.fetchWallet();
           return PaymentProcessResult(
             success: true,
-            message: '₦${amount.toStringAsFixed(0)} credited to wallet via $providerName! 💳',
+            message:
+                '₦${amount.toStringAsFixed(0)} credited to wallet via $providerName! 💳',
           );
         } else {
           return PaymentProcessResult(
@@ -532,11 +683,18 @@ class FoamPaymentService {
           );
         }
       } catch (e) {
-        return PaymentProcessResult(success: false, message: '$providerName error: $e');
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') || errStr.contains('canceled')) {
+          return PaymentProcessResult(
+              success: false, message: '$providerName top-up cancelled.');
+        }
+        return PaymentProcessResult(
+            success: false, message: '$providerName error: $e');
       }
     }
 
-    return PaymentProcessResult(success: false, message: 'Unsupported top-up method');
+    return PaymentProcessResult(
+        success: false, message: 'Unsupported top-up method');
   }
 
   /// -------------------------------------------------------------
@@ -576,10 +734,10 @@ class FoamPaymentService {
   }
 
   /// -------------------------------------------------------------
-  /// 5. NATIVE / INTERACTIVE MODAL DIALOGS
+  /// 5. PAYSTACK INTERACTIVE WEBVIEW MODAL
   /// -------------------------------------------------------------
 
-  /// Shows Paystack checkout completion dialog with reference and direct simulated confirm
+  /// Shows Paystack checkout webview dialog loading the live authorization URL
   static Future<bool> _showPaystackCheckoutModal({
     required BuildContext context,
     required String title,
@@ -588,240 +746,281 @@ class FoamPaymentService {
     String? authUrl,
     required String reference,
   }) async {
+    if (authUrl == null || authUrl.isEmpty) {
+      if (context.mounted) {
+        await showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline_rounded, color: Colors.red),
+                SizedBox(width: 8),
+                Text('Paystack Error'),
+              ],
+            ),
+            content: const Text(
+                'No valid Paystack checkout URL was provided by the payment server.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('OK')),
+            ],
+          ),
+        );
+      }
+      return false;
+    }
+
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      isDismissible: true,
+      enableDrag: false,
       builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          ),
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF00C3F7).withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(Icons.payment_rounded, color: Color(0xFF0098A6), size: 28),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          title,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          planName,
-                          style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      '₦${amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.lock_outline_rounded, size: 14, color: Colors.grey),
-                        const SizedBox(width: 4),
-                        Text(
-                          'Secured by Paystack • Ref: ${reference.length > 16 ? "${reference.substring(0, 16)}..." : reference}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFBBF7D0)),
-                ),
-                child: const Row(
-                  children: [
-                    Icon(Icons.check_circle_outline, color: Color(0xFF16A34A), size: 20),
-                    SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Supports Debit Cards (Visa, Mastercard, Verve), Bank Transfers & USSD.',
-                        style: TextStyle(fontSize: 12, color: Color(0xFF166534)),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0098A6),
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, true),
-                      child: const Text(
-                        'Confirm & Complete Pay',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
+        return PaystackCheckoutModal(
+          authUrl: authUrl,
+          title: title,
+          planName: planName,
+          amount: amount,
+          reference: reference,
         );
       },
     );
 
     return result ?? false;
   }
+}
 
-  /// Shows Google Pay / Apple Pay authorization bottom sheet
-  static Future<bool> _showMobilePayAuthorizationDialog({
-    required BuildContext context,
-    required String provider,
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color primaryColor,
-  }) async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) {
-        return Container(
-          decoration: const BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+/// Dedicated Paystack interactive WebView sheet
+class PaystackCheckoutModal extends StatefulWidget {
+  final String authUrl;
+  final String title;
+  final String planName;
+  final double amount;
+  final String reference;
+
+  const PaystackCheckoutModal({
+    super.key,
+    required this.authUrl,
+    required this.title,
+    required this.planName,
+    required this.amount,
+    required this.reference,
+  });
+
+  @override
+  State<PaystackCheckoutModal> createState() => _PaystackCheckoutModalState();
+}
+
+class _PaystackCheckoutModalState extends State<PaystackCheckoutModal> {
+  late final WebViewController _controller;
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = WebViewController()
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onPageStarted: (url) {
+            if (mounted) setState(() => _isLoading = true);
+          },
+          onPageFinished: (url) {
+            if (mounted) setState(() => _isLoading = false);
+            final lower = url.toLowerCase();
+            if (lower.contains('/callback') ||
+                lower.contains('standard/callback') ||
+                lower.contains('status=success') ||
+                lower.contains('trxref=')) {
+              Navigator.pop(context, true);
+            }
+          },
+          onWebResourceError: (error) {
+            if (mounted) {
+              setState(() {
+                _isLoading = false;
+                _errorMessage = error.description;
+              });
+            }
+          },
+          onNavigationRequest: (request) {
+            final lower = request.url.toLowerCase();
+            if (lower.contains('/payment/callback') ||
+                lower.contains('standard/callback') ||
+                lower.contains('status=success')) {
+              Navigator.pop(context, true);
+              return NavigationDecision.prevent;
+            }
+            if (lower.contains('cancel') || lower.contains('close')) {
+              Navigator.pop(context, false);
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      )
+      ..loadRequest(Uri.parse(widget.authUrl));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.90,
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: Column(
+        children: [
+          // Drag handle
+          const SizedBox(height: 10),
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
-          padding: const EdgeInsets.fromLTRB(24, 20, 24, 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
+          const SizedBox(height: 10),
+
+          // Header
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+            decoration: const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0098A6)
+                              .withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.lock_rounded,
+                            size: 16, color: Color(0xFF0098A6)),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              widget.title,
+                              style: GoogleFonts.dmSans(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              '₦${widget.amount.toStringAsFixed(0)} • ${widget.planName}',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextButton(
+                      style: TextButton.styleFrom(
+                        backgroundColor: const Color(0xFF0098A6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(
+                        'I have paid',
+                        style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded,
+                          size: 20, color: Colors.grey),
+                      onPressed: () => Navigator.pop(context, false),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          if (_isLoading)
+            const LinearProgressIndicator(
+              color: Color(0xFF0098A6),
+              backgroundColor: Color(0xFFE0F2FE),
+            ),
+
+          if (_errorMessage != null)
+            Expanded(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.wifi_off_rounded,
+                          color: Colors.red, size: 48),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Unable to load Paystack checkout:\n$_errorMessage',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.dmSans(
+                            fontSize: 13, color: const Color(0xFF475569)),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0098A6),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _errorMessage = null;
+                            _isLoading = true;
+                          });
+                          _controller.reload();
+                        },
+                        child: Text('Retry Connection',
+                            style: GoogleFonts.dmSans(color: Colors.white)),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: primaryColor.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: primaryColor, size: 36),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600, height: 1.4),
-              ),
-              const SizedBox(height: 24),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('Cancel'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton.icon(
-                      icon: Icon(icon, color: Colors.white, size: 20),
-                      label: Text(
-                        'Authorize with $provider',
-                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: primaryColor,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.pop(ctx, true),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+            )
+          else
+            Expanded(
+              child: WebViewWidget(controller: _controller),
+            ),
+        ],
+      ),
     );
-
-    return result ?? false;
   }
 }

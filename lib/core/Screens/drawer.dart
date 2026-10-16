@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
 import 'package:foam_mobile/core/Screens/help/help_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/Screens/profile/profile_screen.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/drawer_tile.dart';
@@ -142,12 +145,20 @@ class MyDrawer extends StatelessWidget {
                         Navigator.popAndPushNamed(context, HelpScreen.id),
                   ),
 
-                  DrawerTile(
-                    tile: 'Vendor Portal',
-                    leading: const Icon(Icons.storefront_outlined),
-                    onTap: () =>
-                        Navigator.popAndPushNamed(context, VendorMainScreen.id),
-                  ),
+                  if (Provider.of<AuthProvider>(context, listen: false).isVendor)
+                    DrawerTile(
+                      tile: 'Vendor Portal',
+                      leading: const Icon(Icons.storefront_outlined),
+                      onTap: () =>
+                          Navigator.popAndPushNamed(context, VendorMainScreen.id),
+                    )
+                  else
+                    DrawerTile(
+                      tile: 'Become a Vendor',
+                      leading: const Icon(Icons.store_mall_directory_outlined),
+                      onTap: () =>
+                          Navigator.popAndPushNamed(context, VendorSignUpScreen.id),
+                    ),
                 ],
               ),
 
