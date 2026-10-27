@@ -50,7 +50,7 @@ class SplashFunction {
           user["phone"] ?? '',
           role: user["role"] ?? 'USER',
           businessName: user["businessName"] ?? '',
-          vendorStatus: user["vendorStatus"] ?? 'PENDING',
+          vendorStatus: user["vendorStatus"] ?? 'NOT_STARTED',
           vendorRejectionReason: user["vendorRejectionReason"],
         );
 

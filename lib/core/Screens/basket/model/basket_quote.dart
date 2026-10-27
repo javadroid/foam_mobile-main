@@ -1,7 +1,9 @@
 import 'dart:convert';
 
-BasketQuote basketQuoteFromJson(String str) =>
-    BasketQuote.fromJson(json.decode(str));
+BasketQuote basketQuoteFromJson(dynamic str) {
+  var decoded = str is String ? json.decode(str) : str;
+  return BasketQuote.fromJson(decoded);
+}
 
 String basketQuoteToJson(BasketQuote data) => json.encode(data.toJson());
 

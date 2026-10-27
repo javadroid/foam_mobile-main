@@ -86,6 +86,41 @@ class HiveClass {
   //   foamBox.put("main", 0);
   // }
 
+  /////////////////DELIVERY & PICKUP DETAILS///////////////////
+  static void saveDeliveryDetails({
+    String? address,
+    String? pickupDate,
+    String? fromTime,
+    String? toTime,
+    String? deliveryDate,
+  }) {
+    if (address != null && address.trim().isNotEmpty) {
+      foamBox.put('delivery_address', address.trim());
+    }
+    if (pickupDate != null && pickupDate.isNotEmpty) {
+      foamBox.put('delivery_pickup_date', pickupDate);
+    }
+    if (fromTime != null && fromTime.isNotEmpty) {
+      foamBox.put('delivery_from_time', fromTime);
+    }
+    if (toTime != null && toTime.isNotEmpty) {
+      foamBox.put('delivery_to_time', toTime);
+    }
+    if (deliveryDate != null && deliveryDate.isNotEmpty) {
+      foamBox.put('delivery_delivery_date', deliveryDate);
+    }
+  }
+
+  static Map<String, String?> getDeliveryDetails() {
+    return {
+      'address': foamBox.get('delivery_address') as String?,
+      'pickupDate': foamBox.get('delivery_pickup_date') as String?,
+      'fromTime': foamBox.get('delivery_from_time') as String?,
+      'toTime': foamBox.get('delivery_to_time') as String?,
+      'deliveryDate': foamBox.get('delivery_delivery_date') as String?,
+    };
+  }
+
   ///////////////////////////////////
   static void clearHive() {
     deleteToken();

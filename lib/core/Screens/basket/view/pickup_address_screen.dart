@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
@@ -33,6 +34,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
   String? selectedAddress;
   final TextEditingController _addressController = TextEditingController();
   DateTime selectedDate = DateTime.now();
+  DateTime? deliveryDate;
   TimeOfDay? fromTime;
   TimeOfDay? toTime;
   bool isLoading = false;
@@ -49,8 +51,73 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     super.initState();
     final AuthProvider authProvider =
         Provider.of<AuthProvider>(context, listen: false);
-    selectedAddress = authProvider.addressStreet;
+
+    // 1. Load saved delivery details from Hive for instant prefill
+    final savedDetails = HiveClass.getDeliveryDetails();
+    final savedAddress = savedDetails['address'];
+    final savedPickupDate = savedDetails['pickupDate'];
+    final savedFromTime = savedDetails['fromTime'];
+    final savedToTime = savedDetails['toTime'];
+    final savedDeliveryDate = savedDetails['deliveryDate'];
+
+    if (savedAddress != null && savedAddress.isNotEmpty) {
+      selectedAddress = savedAddress;
+      _addressController.text = savedAddress;
+    } else if (authProvider.addressStreet.isNotEmpty) {
+      selectedAddress = authProvider.addressStreet;
+      _addressController.text = authProvider.addressStreet;
+    }
+
+    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    if (savedPickupDate != null) {
+      final parsed = DateTime.tryParse(savedPickupDate);
+      if (parsed != null && !parsed.isBefore(today)) {
+        selectedDate = parsed;
+      }
+    }
+
+    if (savedDeliveryDate != null) {
+      final parsed = DateTime.tryParse(savedDeliveryDate);
+      if (parsed != null && !parsed.isBefore(selectedDate)) {
+        deliveryDate = parsed;
+      } else {
+        deliveryDate = selectedDate.add(const Duration(days: 2));
+      }
+    } else {
+      deliveryDate = selectedDate.add(const Duration(days: 2));
+    }
+
+    if (savedFromTime != null) {
+      fromTime = _parseTimeOfDay(savedFromTime);
+    }
+    if (savedToTime != null) {
+      toTime = _parseTimeOfDay(savedToTime);
+    }
+
     _addressController.addListener(_onAddressChanged);
+  }
+
+  TimeOfDay? _parseTimeOfDay(String str) {
+    try {
+      final parts = str.split(':');
+      if (parts.length >= 2) {
+        return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  void _saveCurrentDetails() {
+    final effectiveAddr = _addressController.text.trim().isNotEmpty
+        ? _addressController.text.trim()
+        : (selectedAddress ?? '');
+    HiveClass.saveDeliveryDetails(
+      address: effectiveAddr,
+      pickupDate: selectedDate.toIso8601String(),
+      fromTime: fromTime != null ? '${fromTime!.hour}:${fromTime!.minute}' : null,
+      toTime: toTime != null ? '${toTime!.hour}:${toTime!.minute}' : null,
+      deliveryDate: deliveryDate?.toIso8601String(),
+    );
   }
 
   @override
@@ -104,6 +171,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
       _addressSuggestions = <AddressSuggestion>[];
       _isSearchingSuggestions = false;
     });
+    _saveCurrentDetails();
     FocusScope.of(context).unfocus();
   }
 
@@ -125,6 +193,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
           _addressController.text = detected;
           selectedAddress = detected;
         });
+        _saveCurrentDetails();
         MyMessageHandler.showSnackBar(
           scaffoldKey,
           'Location detected: ${details.city.isNotEmpty ? details.city : details.lga}',
@@ -171,14 +240,48 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     if (picked != null && picked != selectedDate) {
       setState(() {
         selectedDate = picked;
+        if (deliveryDate != null && deliveryDate!.isBefore(picked)) {
+          deliveryDate = picked.add(const Duration(days: 2));
+        }
       });
+      _saveCurrentDetails();
+    }
+  }
+
+  Future<void> _selectDeliveryDate(BuildContext context) async {
+    final initial = deliveryDate != null && !deliveryDate!.isBefore(selectedDate)
+        ? deliveryDate!
+        : selectedDate.add(const Duration(days: 2));
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: selectedDate,
+      lastDate: DateTime(2101),
+      builder: (BuildContext context, Widget? child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: AppColors.primaryAccentColor,
+              onPrimary: Colors.white,
+              onSurface: AppColors.blackAccentColor,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null && picked != deliveryDate) {
+      setState(() {
+        deliveryDate = picked;
+      });
+      _saveCurrentDetails();
     }
   }
 
   Future<void> _selectTime(BuildContext context, bool isFrom) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.now(),
+      initialTime: (isFrom ? fromTime : toTime) ?? TimeOfDay.now(),
       builder: (BuildContext context, Widget? child) {
         return Theme(
           data: Theme.of(context).copyWith(
@@ -200,6 +303,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
           toTime = picked;
         }
       });
+      _saveCurrentDetails();
     }
   }
 
@@ -272,10 +376,9 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     onChanged: (String? value) {
                       setState(() {
                         selectedAddress = value;
-                        if (value == authProvider.addressStreet) {
-                          _addressController.clear();
-                        }
+                        _addressController.text = value ?? '';
                       });
+                      _saveCurrentDetails();
                     },
                   ),
                 ),
@@ -346,6 +449,7 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                               _addressSuggestions = <AddressSuggestion>[];
                               selectedAddress = authProvider.addressStreet;
                             });
+                            _saveCurrentDetails();
                           },
                         )
                       : null,
@@ -553,6 +657,34 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   ),
                 ],
               ),
+              AppSpaces.verticalSpace20,
+              const Text(
+                'Delivery Date (optional)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+              ),
+              AppSpaces.verticalSpace10,
+              InkWell(
+                onTap: () => _selectDeliveryDate(context),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  decoration: BoxDecoration(
+                    color: AppColors.shadeGreyAccentColor,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                    child: Text(
+                      deliveryDate != null
+                          ? DateFormat('dd MMM yyyy')
+                              .format(deliveryDate!)
+                              .toUpperCase()
+                          : 'SELECT DELIVERY DATE',
+                      style: const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ),
+              ),
               AppSpaces.verticalSpace40,
               Center(
                 child: ClickButton(
@@ -560,6 +692,20 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   textColor: Colors.white,
                   isLoading: isLoading,
                   onPressed: () async {
+                    final String effectiveAddress = _addressController.text.trim().isNotEmpty
+                        ? _addressController.text.trim()
+                        : (selectedAddress ?? '');
+
+                    if (effectiveAddress.isEmpty) {
+                      MyMessageHandler.showSnackBar(
+                        scaffoldKey,
+                        'Please enter or auto-detect your pickup address',
+                      );
+                      return;
+                    }
+
+                    _saveCurrentDetails();
+
                     setState(() {
                       isLoading = true;
                     });
@@ -568,6 +714,10 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                       final double orderAmount = widget.totalAmount > 0
                           ? widget.totalAmount.toDouble()
                           : basketProvider.totalPrice.toDouble();
+
+                      final String? formattedPickupTime = fromTime != null && toTime != null
+                          ? '${fromTime!.format(context)} - ${toTime!.format(context)}'
+                          : fromTime?.format(context);
 
                       final result = await FoamPaymentSheet.show(
                         context: context,
@@ -579,6 +729,11 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                         amount: orderAmount,
                         purpose: FoamPaymentPurpose.order,
                         noFolding: widget.noFolding,
+                        pickupAddress: effectiveAddress,
+                        deliveryAddress: effectiveAddress,
+                        pickupDate: selectedDate,
+                        pickupTime: formattedPickupTime,
+                        deliveryDate: deliveryDate,
                       );
 
                       if (result != null) {

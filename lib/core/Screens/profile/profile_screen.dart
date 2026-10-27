@@ -9,6 +9,7 @@ import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
@@ -762,7 +763,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 if (isVendor) ...[
                   InkWell(
                     onTap: () {
-                      Navigator.pushNamed(context, VendorMainScreen.id);
+                      Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context);
                     },
                     borderRadius: BorderRadius.circular(20),
                     child: Container(
@@ -935,7 +936,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      onTap: () => Navigator.pushNamed(context, VendorMainScreen.id),
+                      onTap: () => Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context),
                     )
                   else
                     _buildDetailTile(
@@ -959,7 +960,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                         ),
                       ),
-                      onTap: () => Navigator.pushNamed(context, VendorSignUpScreen.id),
+                      onTap: () => Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context),
                     ),
                 ]),
 

@@ -9,6 +9,7 @@ import 'package:foam_mobile/feature/authentication/controller/provider/authprovi
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/error_widget.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -66,9 +67,12 @@ class _SplashScreenState extends State<SplashScreen> {
           Navigator.pushReplacementNamed(context, VendorMainScreen.id);
         } else if (authProvider.vendorStatus == 'REJECTED') {
           Navigator.pushReplacementNamed(context, VendorRejectedScreen.id);
-        } else {
+        } else if (authProvider.vendorStatus == 'PENDING') {
           Navigator.pushReplacementNamed(
               context, VendorPendingVerificationScreen.id);
+        } else {
+          Navigator.pushReplacementNamed(
+              context, VendorOnboardingStepperScreen.id);
         }
       } else {
         // Customer routing

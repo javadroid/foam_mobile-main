@@ -2,9 +2,15 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:http/http.dart' as http;
+import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
+import 'package:provider/provider.dart';
 
 class VendorProvider extends ChangeNotifier {
   Timer? _countdownTimer;
@@ -31,6 +37,116 @@ class VendorProvider extends ChangeNotifier {
   final List<VendorStore> _stores = [];
 
   // KYC Onboarding state
+
+  int _onboardingStep = 0;
+  int get onboardingStep => _onboardingStep;
+  void setOnboardingStep(int step) {
+    _onboardingStep = step;
+    notifyListeners();
+  }
+
+  String _draftBusinessName = '';
+  String get draftBusinessName => _draftBusinessName;
+  void setDraftBusinessName(String val) {
+    _draftBusinessName = val;
+    notifyListeners();
+  }
+
+  String _draftOwnerName = '';
+  String get draftOwnerName => _draftOwnerName;
+  void setDraftOwnerName(String val) {
+    _draftOwnerName = val;
+    notifyListeners();
+  }
+
+  String _draftPhone = '';
+  String get draftPhone => _draftPhone;
+  void setDraftPhone(String val) {
+    _draftPhone = val;
+    notifyListeners();
+  }
+
+  String _draftEmail = '';
+  String get draftEmail => _draftEmail;
+  void setDraftEmail(String val) {
+    _draftEmail = val;
+    notifyListeners();
+  }
+
+  String? _lastError;
+  String? get lastError => _lastError;
+
+  String? _lastResolveError;
+  String? get lastResolveError => _lastResolveError;
+
+  String _parseApiError(http.Response res,
+      {String fallback = 'An unexpected error occurred'}) {
+    try {
+      if (res.body.trim().isEmpty) {
+        if (res.statusCode == 401)
+          return 'Session expired. Please log in again.';
+        if (res.statusCode == 403)
+          return 'You do not have permission to perform this action.';
+        if (res.statusCode == 404)
+          return 'The requested resource was not found.';
+        if (res.statusCode >= 500)
+          return 'Server error (${res.statusCode}). Please try again shortly.';
+        return fallback;
+      }
+
+      final body = res.body.trim();
+      if (body.startsWith('<html') || body.startsWith('<!DOCTYPE')) {
+        return 'Server error (${res.statusCode}). Please try again shortly.';
+      }
+
+      final dynamic data = jsonDecode(body);
+      if (data is Map) {
+        if (data['errors'] != null) {
+          if (data['errors'] is List) {
+            final list = (data['errors'] as List)
+                .map((e) => e is Map
+                    ? (e['message'] ?? e['msg'] ?? e['error'] ?? '').toString()
+                    : e.toString())
+                .where((s) => s.isNotEmpty)
+                .toList();
+            if (list.isNotEmpty) return list.join('\n');
+          } else if (data['errors'] is String) {
+            return data['errors'].toString();
+          }
+        }
+        if (data['error'] != null) {
+          if (data['error'] is String &&
+              (data['error'] as String).trim().isNotEmpty) {
+            return data['error'] as String;
+          } else if (data['error'] is Map && data['error']['message'] != null) {
+            return data['error']['message'].toString();
+          }
+        }
+        if (data['message'] != null) {
+          if (data['message'] is String &&
+              (data['message'] as String).trim().isNotEmpty) {
+            return data['message'] as String;
+          } else if (data['message'] is List) {
+            final list = (data['message'] as List)
+                .map((e) => e.toString())
+                .where((s) => s.isNotEmpty)
+                .toList();
+            if (list.isNotEmpty) return list.join('\n');
+          }
+        }
+        if (data['msg'] != null && data['msg'].toString().trim().isNotEmpty) {
+          return data['msg'].toString();
+        }
+      } else if (data is String && data.trim().isNotEmpty) {
+        return data.trim();
+      }
+    } catch (_) {}
+    if (res.statusCode == 401) return 'Session expired. Please log in again.';
+    if (res.statusCode >= 500)
+      return 'Server error (${res.statusCode}). Please try again shortly.';
+    return fallback;
+  }
+
   final VendorKycStatus _kycStatus = VendorKycStatus(
     cacUploaded: false,
     cacFileName: '',
@@ -281,12 +397,14 @@ class VendorProvider extends ChangeNotifier {
     }
   }
 
-  Map<String, double> getItemPrices(String storeId, String service, String foldType) {
+  Map<String, double> getItemPrices(
+      String storeId, String service, String foldType) {
     final key = '${storeId}_${service}_$foldType';
     return _pricingMap[key] ?? {};
   }
 
-  void setItemPrice(String storeId, String service, String foldType, String item, double price) {
+  void setItemPrice(String storeId, String service, String foldType,
+      String item, double price) {
     final key = '${storeId}_${service}_$foldType';
     if (!_pricingMap.containsKey(key)) {
       _pricingMap[key] = {};
@@ -311,7 +429,8 @@ class VendorProvider extends ChangeNotifier {
   bool withdraw(double amount, String ref) {
     if (amount > 0 && amount <= _availableBalance) {
       _availableBalance -= amount;
-      final bank = _kycStatus.bankName.isNotEmpty ? _kycStatus.bankName : 'Bank';
+      final bank =
+          _kycStatus.bankName.isNotEmpty ? _kycStatus.bankName : 'Bank';
       final acc = _kycStatus.accountNumber;
       final last4 = acc.length >= 4 ? acc.substring(acc.length - 4) : '••••';
       _transactions.insert(
@@ -446,6 +565,7 @@ class VendorProvider extends ChangeNotifier {
     required String accountNumber,
     required String bankCode,
   }) async {
+    _lastResolveError = null;
     try {
       final uri = Uri.parse(
         '${Constants.url}/api/payment/resolve-account?account_number=${accountNumber.trim()}&bank_code=${bankCode.trim()}',
@@ -456,16 +576,27 @@ class VendorProvider extends ChangeNotifier {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-      );
+      ).timeout(const Duration(seconds: 15));
 
       final data = jsonDecode(res.body);
       if (res.statusCode == 200 && data['status'] == true) {
         return data['accountName'] as String?;
       } else {
-        debugPrint('Paystack resolve response: ${data['error'] ?? data['message']}');
+        _lastResolveError = data['error']?.toString() ??
+            data['message']?.toString() ??
+            'Could not verify account details with Paystack.';
+        debugPrint('Paystack resolve response: $_lastResolveError');
       }
     } catch (e) {
       debugPrint('Error resolving Paystack account: $e');
+      final str = e.toString().toLowerCase();
+      if (str.contains('socketexception')) {
+        _lastResolveError = 'Network error: please check your connection.';
+      } else if (str.contains('timeoutexception')) {
+        _lastResolveError = 'Verification timed out. Please retry.';
+      } else {
+        _lastResolveError = 'Could not verify account details with Paystack.';
+      }
     }
     return null;
   }
@@ -529,18 +660,24 @@ class VendorProvider extends ChangeNotifier {
     }
 
     return VendorStore(
-      id: json['id']?.toString() ?? 'store_${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id']?.toString() ??
+          'store_${DateTime.now().millisecondsSinceEpoch}',
       name: json['name']?.toString() ?? 'Branch Store',
       address: json['address']?.toString() ?? 'No address set',
       status: json['status']?.toString() ?? 'LIVE',
-      rating: (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.8,
+      rating:
+          (json['rating'] is num) ? (json['rating'] as num).toDouble() : 4.8,
       itemsPricedCount: pricedCount,
       totalItems: 28,
       hoursMonFri: monFri,
       hoursSat: sat,
       hoursSun: sun,
-      latitude: (json['latitude'] is num) ? (json['latitude'] as num).toDouble() : null,
-      longitude: (json['longitude'] is num) ? (json['longitude'] as num).toDouble() : null,
+      latitude: (json['latitude'] is num)
+          ? (json['latitude'] as num).toDouble()
+          : null,
+      longitude: (json['longitude'] is num)
+          ? (json['longitude'] as num).toDouble()
+          : null,
       photoUrl: json['photoUrl']?.toString(),
     );
   }
@@ -573,7 +710,8 @@ class VendorProvider extends ChangeNotifier {
             }
           }
           if (_stores.isNotEmpty &&
-              (_selectedStoreId == null || !_stores.any((s) => s.id == _selectedStoreId))) {
+              (_selectedStoreId == null ||
+                  !_stores.any((s) => s.id == _selectedStoreId))) {
             _selectedStoreId = _stores.first.id;
           }
           notifyListeners();
@@ -642,7 +780,8 @@ class VendorProvider extends ChangeNotifier {
         notifyListeners();
         return {
           'success': false,
-          'message': data['error'] ?? data['message'] ?? 'Failed to create store',
+          'message':
+              data['error'] ?? data['message'] ?? 'Failed to create store',
         };
       }
     } catch (e) {
@@ -707,7 +846,8 @@ class VendorProvider extends ChangeNotifier {
 
       final data = jsonDecode(res.body);
       if (res.statusCode == 200 && data['store'] != null) {
-        final updatedStore = _parseStoreJson(data['store'] as Map<String, dynamic>);
+        final updatedStore =
+            _parseStoreJson(data['store'] as Map<String, dynamic>);
         final idx = _stores.indexWhere((s) => s.id == storeId);
         if (idx != -1) {
           _stores[idx] = updatedStore;
@@ -740,5 +880,234 @@ class VendorProvider extends ChangeNotifier {
     _isLoading = false;
     notifyListeners();
     return {'success': true, 'store': currentStore};
+  }
+
+  /// Fetch vendor profile from backend, including onboarding and KYC progress
+  Future<Map<String, dynamic>?> fetchVendorProfile() async {
+    try {
+      final token = HiveClass.getToken();
+      if (token.isEmpty) return null;
+
+      final res = await http.get(
+        Uri.parse('${Constants.url}/api/vendor/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+
+        _draftBusinessName = data['businessName']?.toString() ?? '';
+        final firstName = data['firstName']?.toString() ?? '';
+        final lastName = data['lastName']?.toString() ?? '';
+        _draftOwnerName = '$firstName $lastName'.trim();
+        _draftPhone = data['phone']?.toString() ?? '';
+        _draftEmail = data['email']?.toString() ?? '';
+
+        final rawStatus =
+            data['vendorStatus']?.toString().toUpperCase() ?? 'NOT_STARTED';
+        final role = data['role']?.toString().toUpperCase() ?? 'USER';
+        final bool hasDocs = (data['documents'] is Map &&
+            ((data['documents']['cacDocUrl']?.toString().isNotEmpty ?? false) ||
+                (data['documents']['ownerIdDocUrl']?.toString().isNotEmpty ??
+                    false)));
+        final bool hasBank = (data['bankDetails'] is Map &&
+            (data['bankDetails']['accountNumber']?.toString().isNotEmpty ??
+                false));
+
+        String vendorStatus = rawStatus;
+        if (role != 'VENDOR' &&
+            rawStatus != 'APPROVED' &&
+            rawStatus != 'REJECTED' &&
+            !hasDocs &&
+            !hasBank) {
+          vendorStatus = 'NOT_STARTED';
+        }
+        _kycStatus.reviewStatus = vendorStatus;
+        _kycStatus.rejectionReason = data['rejectionReason']?.toString();
+
+        if (data['documents'] is Map) {
+          final docs = data['documents'];
+          if (docs['cacDocUrl'] != null &&
+              docs['cacDocUrl'].toString().isNotEmpty) {
+            _kycStatus.cacUploaded = true;
+            _kycStatus.cacUrl = docs['cacDocUrl'].toString();
+            _kycStatus.cacFileName = 'CAC_Certificate.pdf';
+          }
+          if (docs['ownerIdDocUrl'] != null &&
+              docs['ownerIdDocUrl'].toString().isNotEmpty) {
+            _kycStatus.ownerIdUploaded = true;
+            _kycStatus.ownerIdUrl = docs['ownerIdDocUrl'].toString();
+            _kycStatus.ownerIdFileName = 'Owner_ID.pdf';
+          }
+          if (docs['proofOfAddressDocUrl'] != null &&
+              docs['proofOfAddressDocUrl'].toString().isNotEmpty) {
+            _kycStatus.proofOfAddressUploaded = true;
+            _kycStatus.proofOfAddressUrl =
+                docs['proofOfAddressDocUrl'].toString();
+            _kycStatus.proofOfAddressFileName = 'Proof_Of_Address.pdf';
+          }
+        }
+
+        if (data['bankDetails'] is Map) {
+          final bank = data['bankDetails'];
+          if (bank['bankName'] != null &&
+              bank['bankName'].toString().isNotEmpty) {
+            _kycStatus.bankName = bank['bankName'].toString();
+            _kycStatus.bankCode = bank['bankCode']?.toString() ?? '';
+            _kycStatus.accountNumber = bank['accountNumber']?.toString() ?? '';
+            _kycStatus.accountName = bank['accountName']?.toString() ?? '';
+          }
+        }
+
+        // Determine resume step based on completed sections
+        if (_kycStatus.bankName.isNotEmpty &&
+            _kycStatus.accountNumber.isNotEmpty) {
+          _onboardingStep = 2;
+        } else if (_kycStatus.cacUploaded ||
+            _kycStatus.ownerIdUploaded ||
+            _kycStatus.proofOfAddressUploaded) {
+          _onboardingStep = 1;
+        } else {
+          _onboardingStep = 0;
+        }
+
+        notifyListeners();
+        return data;
+      }
+    } catch (e) {
+      debugPrint('Error fetching vendor profile: $e');
+    }
+    return null;
+  }
+
+  /// Save onboarding draft to backend
+  Future<bool> saveOnboardingDraft({
+    String? businessName,
+    String? ownerName,
+    String? phone,
+    bool isFinalSubmit = false,
+  }) async {
+    _lastError = null;
+    try {
+      final token = HiveClass.getToken();
+      if (token.isEmpty) {
+        _lastError = 'You must be logged in to save onboarding draft.';
+        return false;
+      }
+
+      String? firstName;
+      String? lastName;
+      final resolvedOwnerName = ownerName ?? _draftOwnerName;
+      if (resolvedOwnerName.isNotEmpty) {
+        final parts = resolvedOwnerName.trim().split(' ');
+        firstName = parts.first;
+        lastName = parts.length > 1 ? parts.sublist(1).join(' ') : 'Vendor';
+      }
+
+      final payload = <String, dynamic>{
+        'businessName': businessName ?? _draftBusinessName,
+        if (firstName != null) 'firstName': firstName,
+        if (lastName != null) 'lastName': lastName,
+        if (phone != null || _draftPhone.isNotEmpty)
+          'phone': phone ?? _draftPhone,
+        if (_kycStatus.cacUrl != null) 'cacDocUrl': _kycStatus.cacUrl,
+        if (_kycStatus.ownerIdUrl != null)
+          'ownerIdDocUrl': _kycStatus.ownerIdUrl,
+        if (_kycStatus.proofOfAddressUrl != null)
+          'proofOfAddressDocUrl': _kycStatus.proofOfAddressUrl,
+        if (_kycStatus.bankName.isNotEmpty) 'bankName': _kycStatus.bankName,
+        if (_kycStatus.bankCode.isNotEmpty) 'bankCode': _kycStatus.bankCode,
+        if (_kycStatus.accountNumber.isNotEmpty)
+          'bankAccountNumber': _kycStatus.accountNumber,
+        if (_kycStatus.accountName.isNotEmpty)
+          'bankAccountName': _kycStatus.accountName,
+        'isFinalSubmit': isFinalSubmit,
+      };
+
+      final res = await http
+          .post(
+            Uri.parse('${Constants.url}/api/vendor/onboarding/draft'),
+            headers: {
+              'Authorization': 'Bearer $token',
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(payload),
+          )
+          .timeout(const Duration(seconds: 20));
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        if (businessName != null) _draftBusinessName = businessName;
+        if (ownerName != null) _draftOwnerName = ownerName;
+        if (phone != null) _draftPhone = phone;
+        if (isFinalSubmit) {
+          _kycStatus.reviewStatus = 'PENDING';
+        }
+        notifyListeners();
+        return true;
+      } else {
+        _lastError =
+            _parseApiError(res, fallback: 'Failed to save onboarding draft.');
+      }
+    } catch (e) {
+      debugPrint('Error saving onboarding draft: $e');
+      final str = e.toString().toLowerCase();
+      if (str.contains('socketexception') ||
+          str.contains('network is unreachable')) {
+        _lastError =
+            'Unable to connect. Please check your internet connection.';
+      } else if (str.contains('timeoutexception')) {
+        _lastError = 'Connection timed out. Please try again.';
+      } else {
+        _lastError =
+            'Error: ${e.toString().replaceFirst(RegExp(r'^Exception:\s*'), '')}';
+      }
+    }
+    return false;
+  }
+
+  /// Check verification status and navigate appropriately
+  Future<void> checkAndNavigateToVendor(BuildContext context) async {
+    final token = HiveClass.getToken();
+    if (token.isEmpty) {
+      Navigator.pushNamed(context, '/log_in');
+      return;
+    }
+
+    // Show lightweight loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    await fetchVendorProfile();
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss loader
+
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final status = _kycStatus.reviewStatus.toUpperCase();
+
+    // Check if the vendor is approved, actively in review, or starting onboarding
+    if (status == 'APPROVED') {
+      Navigator.pushNamed(context, VendorMainScreen.id);
+    } else if (status == 'PENDING' &&
+        (auth.isVendor ||
+            _kycStatus.cacUploaded ||
+            _kycStatus.ownerIdUploaded ||
+            _kycStatus.accountNumber.isNotEmpty)) {
+      Navigator.pushNamed(context, VendorPendingVerificationScreen.id);
+    } else if (status == 'REJECTED') {
+      Navigator.pushNamed(context, VendorRejectedScreen.id);
+    } else {
+      // NOT_STARTED, DRAFT, or customer applying for vendor
+      Navigator.pushNamed(context, VendorOnboardingStepperScreen.id);
+    }
   }
 }

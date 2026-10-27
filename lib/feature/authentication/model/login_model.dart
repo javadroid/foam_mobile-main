@@ -18,6 +18,7 @@ import 'package:foam_mobile/core/services/socket_service.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
 import 'package:foam_mobile/widgets/app_fullscreen_loader.dart';
 
 class LoginClass {
@@ -106,7 +107,7 @@ class LoginClass {
         user["phone"] ?? '',
         role: user["role"] ?? 'USER',
         businessName: user["businessName"] ?? '',
-        vendorStatus: user["vendorStatus"] ?? 'PENDING',
+        vendorStatus: user["vendorStatus"] ?? 'NOT_STARTED',
         vendorRejectionReason: user["vendorRejectionReason"],
       );
 
@@ -132,9 +133,14 @@ class LoginClass {
             VendorRejectedScreen.id,
             (Route<dynamic> route) => false,
           );
-        } else {
+        } else if (authProvider.vendorStatus == 'PENDING') {
           Navigator.of(context).pushNamedAndRemoveUntil(
             VendorPendingVerificationScreen.id,
+            (Route<dynamic> route) => false,
+          );
+        } else {
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            VendorOnboardingStepperScreen.id,
             (Route<dynamic> route) => false,
           );
         }

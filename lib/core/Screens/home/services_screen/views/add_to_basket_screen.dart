@@ -197,7 +197,8 @@ class _AddToBasketState extends State<AddToBasket> {
                                   child: Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-Row(
+                                       Expanded(
+                                         child: Row(
   children: [
      SizedBox(
       width: 100,
@@ -221,19 +222,20 @@ Row(
                                         ),
                                       ),
                                       AppSpaces.horizontalSpace10,
-                                      SizedBox(
+                                      Expanded(
                                         child: Column(
                                           crossAxisAlignment:
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               item.name,
-                                              maxLines: 3,
+                                              maxLines: 1,
                                               overflow: TextOverflow.ellipsis,
                                               style: Constants.subHeadingStyle,
                                             ),
                                             AppSpaces.verticalSpace20,
                                             Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
                                                 Text(
                                                   '₦${Constants().currencyFormat(item.price)}',
@@ -247,7 +249,7 @@ Row(
                                                         .primaryAccentColor,
                                                   ),
                                                 ),
-                                                const SizedBox(width: 8),
+                                                const SizedBox(height: 4),
                                                 Text(
                                                   '₦${Constants().currencyFormat((item.price * 1.3).round())}',
                                                   style: Constants.subHeadingStyle
@@ -266,6 +268,8 @@ Row(
                                      
   ],
 ),
+                                       ),
+                                       const SizedBox(width: 8),
 
                                       SizedBox(
                                       
@@ -284,7 +288,11 @@ Row(
                                                                   serviceId,
                                                                   item.id,
                                                                   1,
-                                                                  scaffoldKey),
+                                                                  scaffoldKey,
+                                                                  itemName: item.name,
+                                                                  itemPrice: item.price,
+                                                                  itemImageUrl: item.imageUrl,
+                                                                  refreshQuote: false),
                                                             ),
                                                     child: Container(
                                                       padding: const EdgeInsets
@@ -367,6 +375,7 @@ Row(
                                                                     item.id,
                                                                     newValue,
                                                                     scaffoldKey,
+                                                                    refreshQuote: false,
                                                                   ),
                                                                 );
                                                               }
@@ -401,12 +410,12 @@ Row(
                                                                     if (currentQuantity == 1) {
                                                                       await basketProvider.removeFromBasket(
                                                                           item.id,
-                                                                          scaffoldKey);
+                                                                          scaffoldKey, refreshQuote: false);
                                                                     } else if (currentQuantity > 1) {
                                                                       await basketProvider.updateQuantity(
                                                                           item.id,
                                                                           currentQuantity - 1,
-                                                                          scaffoldKey);
+                                                                          scaffoldKey, refreshQuote: false);
                                                                     }
                                                                   },
                                                                 ),
@@ -447,7 +456,7 @@ Row(
                                                                   () => basketProvider.updateQuantity(
                                                                       item.id,
                                                                       currentQuantity + 1,
-                                                                      scaffoldKey),
+                                                                      scaffoldKey, refreshQuote: false),
                                                                 ),
                                                         icon: Icon(
                                                           Icons.add_circle,

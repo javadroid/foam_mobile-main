@@ -8,6 +8,7 @@ import 'package:foam_mobile/feature/authentication/controller/provider/authprovi
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/drawer_tile.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -149,15 +150,21 @@ class MyDrawer extends StatelessWidget {
                     DrawerTile(
                       tile: 'Vendor Portal',
                       leading: const Icon(Icons.storefront_outlined),
-                      onTap: () =>
-                          Navigator.popAndPushNamed(context, VendorMainScreen.id),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Provider.of<VendorProvider>(context, listen: false)
+                            .checkAndNavigateToVendor(context);
+                      },
                     )
                   else
                     DrawerTile(
                       tile: 'Become a Vendor',
                       leading: const Icon(Icons.store_mall_directory_outlined),
-                      onTap: () =>
-                          Navigator.popAndPushNamed(context, VendorSignUpScreen.id),
+                      onTap: () {
+                        Navigator.pop(context);
+                        Provider.of<VendorProvider>(context, listen: false)
+                            .checkAndNavigateToVendor(context);
+                      },
                     ),
                 ],
               ),

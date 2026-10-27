@@ -1,9 +1,11 @@
 import 'dart:convert';
 
 List<BasketList> basketListFromJson(dynamic str) {
-  var decodedJson = json.decode(str);
+  var decodedJson = str is String ? json.decode(str) : str;
 
-  if (decodedJson['basket'] == null || decodedJson['basket']['items'] == null) {
+  if (decodedJson == null ||
+      decodedJson['basket'] == null ||
+      decodedJson['basket']['items'] == null) {
     return [];
   }
 

@@ -423,6 +423,12 @@ class FoamPaymentService {
     required double totalPrice,
     int? storeId,
     required FoamPaymentMethod method,
+    String? pickupAddress,
+    String? deliveryAddress,
+    DateTime? pickupDate,
+    String? pickupTime,
+    DateTime? deliveryDate,
+    String? deliveryTime,
   }) async {
     // A. WALLET
     if (method == FoamPaymentMethod.wallet) {
@@ -447,6 +453,12 @@ class FoamPaymentService {
           body: jsonEncode({
             "noFolding": noFolding,
             "storeId": storeId,
+            "pickupAddress": pickupAddress,
+            "deliveryAddress": deliveryAddress ?? pickupAddress,
+            "pickupDate": pickupDate?.toIso8601String(),
+            "pickupTime": pickupTime,
+            "deliveryDate": deliveryDate?.toIso8601String(),
+            "deliveryTime": deliveryTime,
           }),
         );
 
@@ -478,6 +490,12 @@ class FoamPaymentService {
           body: jsonEncode({
             "noFolding": noFolding,
             "storeId": storeId,
+            "pickupAddress": pickupAddress,
+            "deliveryAddress": deliveryAddress ?? pickupAddress,
+            "pickupDate": pickupDate?.toIso8601String(),
+            "pickupTime": pickupTime,
+            "deliveryDate": deliveryDate?.toIso8601String(),
+            "deliveryTime": deliveryTime,
           }),
         );
 
@@ -589,6 +607,12 @@ class FoamPaymentService {
             "noFolding": noFolding,
             "storeId": storeId,
             "token": jsonEncode(paymentResult),
+            "pickupAddress": pickupAddress,
+            "deliveryAddress": deliveryAddress ?? pickupAddress,
+            "pickupDate": pickupDate?.toIso8601String(),
+            "pickupTime": pickupTime,
+            "deliveryDate": deliveryDate?.toIso8601String(),
+            "deliveryTime": deliveryTime,
           }),
         );
 

@@ -50,7 +50,7 @@ class BasketProvider extends ChangeNotifier {
     await fetchQuote(noFolding: value, scaffoldKey: scaffoldKey);
   }
 
-  Future<void> fetchBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool showLoading = true}) async {
+  Future<void> fetchBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool showLoading = true, bool refreshQuote = true}) async {
     if (showLoading) {
       _isLoading = true;
       notifyListeners();
@@ -58,11 +58,26 @@ class BasketProvider extends ChangeNotifier {
 
     final result = await BasketClass.getServices(scaffoldKey);
     if (result != null) {
-      _basketItems = result;
       if (_basketItems.isNotEmpty) {
-        await fetchQuote(noFolding: _isNoFolding, scaffoldKey: scaffoldKey);
+        final existingOrder = {
+          for (var i = 0; i < _basketItems.length; i++)
+            _basketItems[i].categoryId: i
+        };
+        result.sort((a, b) {
+          final orderA = existingOrder[a.categoryId] ?? 999999;
+          final orderB = existingOrder[b.categoryId] ?? 999999;
+          return orderA.compareTo(orderB);
+        });
+      }
+      _basketItems = result;
+      if (refreshQuote) {
+        if (_basketItems.isNotEmpty) {
+          await fetchQuote(noFolding: _isNoFolding, scaffoldKey: scaffoldKey);
+        } else {
+          _currentQuote = BasketQuote.empty();
+        }
       } else {
-        _currentQuote = BasketQuote.empty();
+        _currentQuote = null;
       }
     }
     
@@ -72,12 +87,50 @@ class BasketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addToBasket(BuildContext context, int serviceId, int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+  Future<void> addToBasket(
+    BuildContext context,
+    int serviceId,
+    int categoryId,
+    int quantity,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    String? itemName,
+    int? itemPrice,
+    String? itemImageUrl,
+    bool refreshQuote = false,
+  }) async {
+    // Optimistic local update for instant UI responsiveness
+    final index = _basketItems.indexWhere((item) => item.categoryId == categoryId);
+    if (index != -1) {
+      final current = _basketItems[index];
+      _basketItems[index] = BasketList(
+        categoryId: current.categoryId,
+        quantity: current.quantity + quantity,
+        name: current.name,
+        price: current.price,
+        imageUrl: current.imageUrl,
+      );
+      notifyListeners();
+    } else if (itemName != null) {
+      _basketItems.add(BasketList(
+        categoryId: categoryId,
+        quantity: quantity,
+        name: itemName,
+        price: itemPrice ?? 0,
+        imageUrl: itemImageUrl,
+      ));
+      notifyListeners();
+    }
+
     await ServicesClass.addToBasket(context, serviceId, categoryId, quantity, scaffoldKey);
-    await fetchBasket(scaffoldKey, showLoading: false);
+    await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
   }
 
-  Future<void> updateQuantity(int categoryId, int quantity, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+  Future<void> updateQuantity(
+    int categoryId,
+    int quantity,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool refreshQuote = true,
+  }) async {
     // Optimistic local update for instant UI responsiveness
     final index = _basketItems.indexWhere((item) => item.categoryId == categoryId);
     if (index != -1) {
@@ -93,20 +146,95 @@ class BasketProvider extends ChangeNotifier {
           imageUrl: current.imageUrl,
         );
       }
+      if (refreshQuote) {
+        _isQuoteLoading = true;
+      }
       notifyListeners();
     }
 
-    await BasketClass.updateQuantity(categoryId, quantity, scaffoldKey);
-    await fetchBasket(scaffoldKey, showLoading: false);
+    final res = await BasketClass.updateQuantity(
+      categoryId,
+      quantity,
+      scaffoldKey,
+      noFolding: _isNoFolding,
+    );
+
+    if (res != null) {
+      if (refreshQuote && res['quote'] != null) {
+        _currentQuote = BasketQuote.fromJson(res['quote']);
+      }
+      if (res['basket'] != null && res['basket']['items'] != null) {
+        final existingOrder = {
+          for (var i = 0; i < _basketItems.length; i++)
+            _basketItems[i].categoryId: i
+        };
+        final updatedItems = List<BasketList>.from(
+          (res['basket']['items'] as List).map((x) => BasketList.fromJson(x)),
+        );
+        updatedItems.sort((a, b) {
+          final orderA = existingOrder[a.categoryId] ?? 999999;
+          final orderB = existingOrder[b.categoryId] ?? 999999;
+          return orderA.compareTo(orderB);
+        });
+        _basketItems = updatedItems;
+      }
+      if (_basketItems.isEmpty) {
+        _currentQuote = BasketQuote.empty();
+      }
+      _isQuoteLoading = false;
+      notifyListeners();
+    } else {
+      _isQuoteLoading = false;
+      await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
+    }
   }
 
-  Future<void> removeFromBasket(int categoryId, GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+  Future<void> removeFromBasket(
+    int categoryId,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool refreshQuote = true,
+  }) async {
     // Optimistic local removal
     _basketItems.removeWhere((item) => item.categoryId == categoryId);
+    if (refreshQuote) {
+      _isQuoteLoading = true;
+    }
     notifyListeners();
 
-    await ServicesClass.removeFromBasket(categoryId, scaffoldKey);
-    await fetchBasket(scaffoldKey, showLoading: false);
+    final res = await BasketClass.removeItemByCategory(
+      categoryId,
+      scaffoldKey,
+      noFolding: _isNoFolding,
+    );
+
+    if (res != null) {
+      if (refreshQuote && res['quote'] != null) {
+        _currentQuote = BasketQuote.fromJson(res['quote']);
+      }
+      if (res['basket'] != null && res['basket']['items'] != null) {
+        final existingOrder = {
+          for (var i = 0; i < _basketItems.length; i++)
+            _basketItems[i].categoryId: i
+        };
+        final updatedItems = List<BasketList>.from(
+          (res['basket']['items'] as List).map((x) => BasketList.fromJson(x)),
+        );
+        updatedItems.sort((a, b) {
+          final orderA = existingOrder[a.categoryId] ?? 999999;
+          final orderB = existingOrder[b.categoryId] ?? 999999;
+          return orderA.compareTo(orderB);
+        });
+        _basketItems = updatedItems;
+      }
+      if (_basketItems.isEmpty) {
+        _currentQuote = BasketQuote.empty();
+      }
+      _isQuoteLoading = false;
+      notifyListeners();
+    } else {
+      _isQuoteLoading = false;
+      await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
+    }
   }
 
   Future<void> clearBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey) async {

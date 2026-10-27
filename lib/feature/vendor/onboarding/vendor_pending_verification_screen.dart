@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
+import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class VendorPendingVerificationScreen extends StatelessWidget {
   static const String id = '/vendor_pending_verification';
@@ -11,13 +16,94 @@ class VendorPendingVerificationScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: VendorColors.textMain, size: 20),
+          onPressed: () {
+            Navigator.pushNamedAndRemoveUntil(
+                context, MainScreen.id, (route) => false);
+          },
+        ),
+        title: Text(
+          'Verification Status',
+          style: GoogleFonts.dmSans(
+            fontSize: 17,
+            fontWeight: FontWeight.w700,
+            color: VendorColors.textMain,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, color: VendorColors.textMain),
+            tooltip: 'Check Status',
+            onPressed: () async {
+              final vendor =
+                  Provider.of<VendorProvider>(context, listen: false);
+              final profile = await vendor.fetchVendorProfile();
+              if (!context.mounted) return;
+              if (profile != null) {
+                final status = vendor.kycStatus.reviewStatus.toUpperCase();
+                if (status == 'APPROVED') {
+                  Navigator.pushReplacementNamed(
+                      context, VendorMainScreen.id);
+                } else if (status == 'REJECTED') {
+                  Navigator.pushReplacementNamed(
+                      context, VendorRejectedScreen.id);
+                } else {
+                  ScaffoldMessenger.of(context).clearSnackBars();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.white, size: 18),
+                          const SizedBox(width: 10),
+                          Text(
+                            'Your application is still under review.',
+                            style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                      backgroundColor: const Color(0xFF0F172A),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  );
+                }
+              } else {
+                ScaffoldMessenger.of(context).clearSnackBars();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.error_outline_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Unable to check status. Please check your network.',
+                            style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFFDC2626),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                );
+              }
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 16),
               Container(
                 width: 48,
                 height: 48,
@@ -43,33 +129,33 @@ class VendorPendingVerificationScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                "This usually takes up to 2 business days. We'll notify you via email and SMS as soon as your account is approved.",
+                "This usually takes up to 2 business days. We'll notify you as soon as your account is approved.",
                 style: GoogleFonts.dmSans(
                   color: VendorColors.textMuted,
                   fontSize: 14,
                   height: 1.4,
                 ),
               ),
-              const SizedBox(height: 36),
+              const SizedBox(height: 32),
 
               // Timeline progression
               _buildTimelineStep(
-                title: 'Submitted',
-                subtitle: 'Today, 9:12 AM',
+                title: 'Application Submitted',
+                subtitle: 'Documents & payout bank saved',
                 isCompleted: true,
                 isActive: false,
                 isLast: false,
               ),
               _buildTimelineStep(
-                title: 'Under review',
-                subtitle: 'Documents and bank account',
+                title: 'Under Review',
+                subtitle: 'Foam team is reviewing your business',
                 isCompleted: false,
                 isActive: true,
                 isLast: false,
               ),
               _buildTimelineStep(
                 title: 'Approved',
-                subtitle: 'Wallet set up for payouts',
+                subtitle: 'Ready to set up stores and receive orders',
                 isCompleted: false,
                 isActive: false,
                 isLast: true,
@@ -77,61 +163,72 @@ class VendorPendingVerificationScreen extends StatelessWidget {
 
               const Spacer(),
 
-              // Quick simulation helpers for review
-              // Container(
-              //   padding: const EdgeInsets.all(12),
-              //   decoration: BoxDecoration(
-              //     color: VendorColors.lightBg,
-              //     borderRadius: BorderRadius.circular(12),
-              //     border: Border.all(color: VendorColors.border),
-              //   ),
-              //   child: Column(
-              //     children: [
-              //       Text(
-              //         'Preview States (Figma Flows)',
-              //         style: GoogleFonts.dmSans(
-              //           fontSize: 12,
-              //           fontWeight: FontWeight.w700,
-              //           color: VendorColors.textMuted,
-              //         ),
-              //       ),
-              //       const SizedBox(height: 8),
-              //       Row(
-              //         children: [
-              //           Expanded(
-              //             child: VendorButton(
-              //               text: 'View Approved',
-              //               onPressed: () {
-              //                 Navigator.push(
-              //                   context,
-              //                   MaterialPageRoute(
-              //                     builder: (context) => const VendorApprovedScreen(),
-              //                   ),
-              //                 );
-              //               },
-              //             ),
-              //           ),
-              //           const SizedBox(width: 8),
-              //           Expanded(
-              //             child: VendorButton(
-              //               text: 'View Rejected',
-              //               isSecondary: true,
-              //               onPressed: () {
-              //                 Navigator.push(
-              //                   context,
-              //                   MaterialPageRoute(
-              //                     builder: (context) => const VendorRejectedScreen(),
-              //                   ),
-              //                 );
-              //               },
-              //             ),
-              //           ),
-              //         ],
-              //       ),
-              //     ],
-              //   ),
-              // ),
-              // const SizedBox(height: 16),
+              // Switch to Customer mode card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: VendorColors.lightBg,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: VendorColors.border),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: VendorColors.border),
+                          ),
+                          child: const Icon(
+                            Icons.shopping_bag_outlined,
+                            color: VendorColors.primary,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Browse as Customer',
+                                style: GoogleFonts.dmSans(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                  color: VendorColors.textMain,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'You can order laundry and use customer features while you wait.',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12.5,
+                                  color: VendorColors.textMuted,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    VendorButton(
+                      text: 'Switch to Customer App',
+                      onPressed: () {
+                        Navigator.pushNamedAndRemoveUntil(
+                          context,
+                          MainScreen.id,
+                          (route) => false,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
           ),
         ),

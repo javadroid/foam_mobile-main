@@ -95,9 +95,13 @@ class BasketClass {
     }
   }
 
-  static Future<void> updateQuantity(int categoryId, int quantity,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey,
-      [BuildContext? context]) async {
+  static Future<Map<String, dynamic>?> updateQuantity(
+    int categoryId,
+    int quantity,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool noFolding = false,
+    BuildContext? context,
+  }) async {
     try {
       final res = await http.put(
         Uri.parse("${Constants.url}/api/user/basket/category/$categoryId"),
@@ -106,23 +110,70 @@ class BasketClass {
           "Accept": "application/json",
           "Content-Type": "application/json",
         },
-        body: jsonEncode({"quantity": quantity}),
+        body: jsonEncode({
+          "quantity": quantity,
+          "noFolding": noFolding,
+        }),
       );
 
       if (res.statusCode == 401 && context != null) {
         LogoutClass.logOut2(context);
-        return;
+        return null;
       }
 
       if (res.statusCode == 200 || res.statusCode == 201) {
         debugPrint("Quantity updated: ${res.body}");
+        final data = jsonDecode(res.body);
+        return data is Map<String, dynamic> ? data : null;
       } else {
         debugPrint("Failed to update quantity: ${res.statusCode}");
         MyMessageHandler.showSnackBar(scaffoldKey, "Failed to update quantity");
+        return null;
       }
     } catch (e) {
       debugPrint("Error updating quantity: $e");
       MyMessageHandler.showSnackBar(scaffoldKey, "Error updating quantity");
+      return null;
+    }
+  }
+
+  static Future<Map<String, dynamic>?> removeItemByCategory(
+    int categoryId,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool noFolding = false,
+    BuildContext? context,
+  }) async {
+    try {
+      final res = await http.delete(
+        Uri.parse("${Constants.url}/api/user/basket/category/$categoryId"),
+        headers: {
+          "Authorization": "Bearer ${HiveClass.getToken()}",
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        },
+        body: jsonEncode({
+          "noFolding": noFolding,
+        }),
+      );
+
+      if (res.statusCode == 401 && context != null) {
+        LogoutClass.logOut2(context);
+        return null;
+      }
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        debugPrint("Item removed: ${res.body}");
+        final data = jsonDecode(res.body);
+        return data is Map<String, dynamic> ? data : null;
+      } else {
+        debugPrint("Failed to remove item: ${res.statusCode}");
+        MyMessageHandler.showSnackBar(scaffoldKey, "Failed to remove item");
+        return null;
+      }
+    } catch (e) {
+      debugPrint("Error removing item: $e");
+      MyMessageHandler.showSnackBar(scaffoldKey, "Error removing item");
+      return null;
     }
   }
 

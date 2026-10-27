@@ -128,11 +128,12 @@ class VendorKycStatus {
   String proofOfAddressFileName;
   String? proofOfAddressUrl;
 
-  String bankName;
+    String bankName;
+  String bankCode;
   String accountNumber;
   String accountName;
 
-  String reviewStatus; // 'NOT_STARTED', 'PENDING', 'APPROVED', 'REJECTED'
+  String reviewStatus; // 'NOT_STARTED', 'DRAFT', 'PENDING', 'APPROVED', 'REJECTED'
   String? rejectionReason;
 
   VendorKycStatus({
@@ -146,9 +147,10 @@ class VendorKycStatus {
     this.proofOfAddressFileName = '',
     this.proofOfAddressUrl,
     this.bankName = '',
+    this.bankCode = '',
     this.accountNumber = '',
     this.accountName = '',
-    this.reviewStatus = 'PENDING',
+    this.reviewStatus = 'NOT_STARTED',
     this.rejectionReason,
   });
 }

@@ -34,6 +34,19 @@ class _BasketScreenState extends State<BasketScreen> {
   bool isLoading = false;
   List<CategoryItem> categories = [];
   bool categoriesLoaded = false;
+  final Set<int> _loadingItemIds = {};
+
+  Future<void> _handleBasketAction(
+      int categoryId, Future<void> Function() action) async {
+    setState(() => _loadingItemIds.add(categoryId));
+    try {
+      await action();
+    } finally {
+      if (mounted) {
+        setState(() => _loadingItemIds.remove(categoryId));
+      }
+    }
+  }
 
   @override
   void initState() {
@@ -60,6 +73,14 @@ class _BasketScreenState extends State<BasketScreen> {
     final noFoldingSurcharge = basketProvider.foldingSurchargeTotal;
     final totalPrice = basketProvider.totalPrice;
     final isNoFolding = basketProvider.isNoFolding;
+    final isQuoteLoading = basketProvider.isQuoteLoading;
+    if (basket.isNotEmpty && basketProvider.currentQuote == null && !isQuoteLoading) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          basketProvider.fetchQuote(scaffoldKey: scaffoldKey);
+        }
+      });
+    }
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return ScaffoldMessenger(
       key: scaffoldKey,
@@ -88,7 +109,50 @@ class _BasketScreenState extends State<BasketScreen> {
             if (basket.isNotEmpty)
               TextButton(
                 onPressed: () async {
-                  await basketProvider.clearBasket(scaffoldKey);
+                  final confirm = await showDialog<bool>(
+                    context: context,
+                    builder: (ctx) => AlertDialog(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      title: const Text(
+                        'Clear Cart',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      content: const Text(
+                        'Are you sure you want to remove all items from your basket?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text(
+                            'Cancel',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red.shade600,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(ctx, true),
+                          child: const Text(
+                            'Clear',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+
+                  if (confirm == true) {
+                    await basketProvider.clearBasket(scaffoldKey);
+                  }
                 },
                 child: const Text(
                   'Clear Cart',
@@ -139,7 +203,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                 child: Row(
                                   children: [
                                     const Text(
-                                      'Skip folding?',
+                                      'Include folding?',
                                       style: TextStyle(
                                         fontSize: 18,
                                         fontWeight: FontWeight.bold,
@@ -148,12 +212,14 @@ class _BasketScreenState extends State<BasketScreen> {
                                     AppSpaces.horizontalSpace10,
                                     Switch(
                                       value: isNoFolding,
-                                      onChanged: (value) async {
-                                        await basketProvider.setNoFolding(
-                                          value,
-                                          scaffoldKey: scaffoldKey,
-                                        );
-                                      },
+                                      onChanged: isQuoteLoading
+                                          ? null
+                                          : (value) async {
+                                              await basketProvider.setNoFolding(
+                                                value,
+                                                scaffoldKey: scaffoldKey,
+                                              );
+                                            },
                                       activeColor: AppColors.primaryAccentColor,
                                     ),
                                   ],
@@ -170,88 +236,94 @@ class _BasketScreenState extends State<BasketScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        children: [
-                                          SizedBox(
-                                            width: 50,
-                                            child: Container(
-                                              height: MediaQuery.sizeOf(context)
-                                                      .height *
-                                                  0.12,
-                                              decoration: BoxDecoration(
-                                                borderRadius:
-                                                    BorderRadius.circular(12),
-                                                color: AppColors
-                                                    .fadeBlueAccentColor,
-                                                image: (item.imageUrl != null)
-                                                    ? DecorationImage(
-                                                        image: NetworkImage(
-                                                          item.imageUrl!,
-                                                        ),
-                                                        fit: BoxFit.contain,
-                                                      )
+                                      Expanded(
+                                        child: Row(
+                                          children: [
+                                            SizedBox(
+                                              width: 50,
+                                              child: Container(
+                                                height:
+                                                    MediaQuery.sizeOf(context)
+                                                            .height *
+                                                        0.12,
+                                                decoration: BoxDecoration(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                  color: AppColors
+                                                      .fadeBlueAccentColor,
+                                                  image: (item.imageUrl != null)
+                                                      ? DecorationImage(
+                                                          image: NetworkImage(
+                                                            item.imageUrl!,
+                                                          ),
+                                                          fit: BoxFit.contain,
+                                                        )
+                                                      : null,
+                                                ),
+                                                child: (item.imageUrl == null)
+                                                    ? const Icon(Icons
+                                                        .image_not_supported)
                                                     : null,
                                               ),
-                                              child: (item.imageUrl == null)
-                                                  ? const Icon(
-                                                      Icons.image_not_supported)
-                                                  : null,
                                             ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          SizedBox(
-                                            child: Column(
-                                              crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  item.name.trimRight(),
-                                                  maxLines: 3,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.w500,
+                                            const SizedBox(width: 6),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    item.name.trimRight(),
+                                                    maxLines: 1,
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: const TextStyle(
+                                                      fontSize: 18,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
                                                   ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Column(
-                                                  crossAxisAlignment:
-                                                      CrossAxisAlignment.start,
-                                                  children: [
-                                                    Text(
-                                                      '₦${Constants().currencyFormat(item.price)}',
-                                                      maxLines: 2,
-                                                      overflow:
-                                                          TextOverflow.ellipsis,
-                                                      style: Constants
-                                                          .subHeadingStyle
-                                                          .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w800,
-                                                        fontSize: 14,
+                                                  const SizedBox(height: 4),
+                                                  Column(
+                                                    crossAxisAlignment:
+                                                        CrossAxisAlignment
+                                                            .start,
+                                                    children: [
+                                                      Text(
+                                                        '₦${Constants().currencyFormat(item.price)}',
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow
+                                                            .ellipsis,
+                                                        style: Constants
+                                                            .subHeadingStyle
+                                                            .copyWith(
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          fontSize: 14,
+                                                        ),
                                                       ),
-                                                    ),
-                                                    const SizedBox(height: 4),
-                                                    Text(
-                                                      '₦${Constants().currencyFormat((item.price * 1.3).round())}',
-                                                      style: Constants
-                                                          .subHeadingStyle
-                                                          .copyWith(
-                                                        decoration:
-                                                            TextDecoration
-                                                                .lineThrough,
-                                                        color: Colors.grey,
-                                                        fontSize: 10,
+                                                      const SizedBox(height: 4),
+                                                      Text(
+                                                        '₦${Constants().currencyFormat((item.price * 1.3).round())}',
+                                                        style: Constants
+                                                            .subHeadingStyle
+                                                            .copyWith(
+                                                          decoration:
+                                                              TextDecoration
+                                                                  .lineThrough,
+                                                          color: Colors.grey,
+                                                          fontSize: 10,
+                                                        ),
                                                       ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
                                             ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
                                       ),
+                                      const SizedBox(width: 8),
                                       SizedBox(
                                         // Fixed width for the entire quantity selector
                                         child: item.quantity >= 6
@@ -277,51 +349,78 @@ class _BasketScreenState extends State<BasketScreen> {
                                                         width: 1.5,
                                                       ),
                                                     ),
-                                                    child:
-                                                        DropdownButtonHideUnderline(
-                                                      child:
-                                                          DropdownButton<int>(
-                                                        value: item.quantity,
-                                                        icon: Icon(
-                                                          Icons.arrow_drop_down,
-                                                          color: AppColors
-                                                              .navyBlueAccent,
-                                                        ),
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w700,
-                                                          color: AppColors
-                                                              .navyBlueAccent,
-                                                        ),
-                                                        onChanged:
-                                                            (newValue) async {
-                                                          if (newValue !=
-                                                              null) {
-                                                            await basketProvider
-                                                                .updateQuantity(
-                                                              item.categoryId,
-                                                              newValue,
-                                                              scaffoldKey,
-                                                            );
-                                                          }
-                                                        },
-                                                        items: List.generate(
-                                                          200,
-                                                          (index) => index + 1,
-                                                        ).map<
-                                                            DropdownMenuItem<
-                                                                int>>((int
-                                                            value) {
-                                                          return DropdownMenuItem<
-                                                              int>(
-                                                            value: value,
-                                                            child: Text(value
-                                                                .toString()),
-                                                          );
-                                                        }).toList(),
-                                                      ),
-                                                    ),
+                                                    child: _loadingItemIds
+                                                            .contains(
+                                                                item.categoryId)
+                                                        ? Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .all(6.0),
+                                                            child: SizedBox(
+                                                              width: 16,
+                                                              height: 16,
+                                                              child:
+                                                                  CircularProgressIndicator(
+                                                                strokeWidth: 2,
+                                                                color: AppColors
+                                                                    .navyBlueAccent,
+                                                              ),
+                                                            ),
+                                                          )
+                                                        : DropdownButtonHideUnderline(
+                                                            child:
+                                                                DropdownButton<
+                                                                    int>(
+                                                              value:
+                                                                  item.quantity,
+                                                              icon: Icon(
+                                                                Icons
+                                                                    .arrow_drop_down,
+                                                                color: AppColors
+                                                                    .navyBlueAccent,
+                                                              ),
+                                                              style: TextStyle(
+                                                                fontSize: 16,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .w700,
+                                                                color: AppColors
+                                                                    .navyBlueAccent,
+                                                              ),
+                                                              onChanged:
+                                                                  (newValue) async {
+                                                                if (newValue !=
+                                                                    null) {
+                                                                  _handleBasketAction(
+                                                                      item
+                                                                          .categoryId,
+                                                                      () =>
+                                                                          basketProvider
+                                                                              .updateQuantity(
+                                                                            item.categoryId,
+                                                                            newValue,
+                                                                            scaffoldKey,
+                                                                          ));
+                                                                }
+                                                              },
+                                                              items: List
+                                                                  .generate(
+                                                                200,
+                                                                (index) =>
+                                                                    index + 1,
+                                                              ).map<
+                                                                  DropdownMenuItem<
+                                                                      int>>((int
+                                                                  value) {
+                                                                return DropdownMenuItem<
+                                                                    int>(
+                                                                  value: value,
+                                                                  child: Text(value
+                                                                      .toString()),
+                                                                );
+                                                              }).toList(),
+                                                            ),
+                                                          ),
                                                   ),
                                                 ],
                                               )
@@ -333,53 +432,101 @@ class _BasketScreenState extends State<BasketScreen> {
                                                     padding: EdgeInsets.zero,
                                                     constraints:
                                                         const BoxConstraints(),
-                                                    onPressed: () async {
-                                                      if (item.quantity > 1) {
-                                                        await basketProvider
-                                                            .updateQuantity(
-                                                          item.categoryId,
-                                                          item.quantity - 1,
-                                                          scaffoldKey,
-                                                        );
-                                                      } else {
-                                                        await basketProvider
-                                                            .removeFromBasket(
-                                                          item.categoryId,
-                                                          scaffoldKey,
-                                                        );
-                                                      }
-                                                    },
+                                                    onPressed: _loadingItemIds
+                                                            .contains(
+                                                                item.categoryId)
+                                                        ? null
+                                                        : () =>
+                                                            _handleBasketAction(
+                                                              item.categoryId,
+                                                              () async {
+                                                                if (item.quantity >
+                                                                    1) {
+                                                                  await basketProvider
+                                                                      .updateQuantity(
+                                                                    item.categoryId,
+                                                                    item.quantity -
+                                                                        1,
+                                                                    scaffoldKey,
+                                                                  );
+                                                                } else {
+                                                                  await basketProvider
+                                                                      .removeFromBasket(
+                                                                    item.categoryId,
+                                                                    scaffoldKey,
+                                                                  );
+                                                                }
+                                                              },
+                                                            ),
                                                     icon: Icon(
                                                       Icons.remove_circle,
-                                                      color: AppColors
-                                                          .navyBlueAccent,
+                                                      color: _loadingItemIds
+                                                              .contains(item
+                                                                  .categoryId)
+                                                          ? Colors.grey
+                                                          : AppColors
+                                                              .navyBlueAccent,
                                                       size: 24,
                                                     ),
                                                   ),
-                                                  Text(
-                                                    item.quantity.toString(),
-                                                    style: const TextStyle(
-                                                      fontSize: 18,
-                                                      fontWeight:
-                                                          FontWeight.w700,
-                                                    ),
+                                                  Padding(
+                                                    padding: const EdgeInsets
+                                                        .symmetric(
+                                                        horizontal: 6.0),
+                                                    child: _loadingItemIds
+                                                            .contains(
+                                                                item.categoryId)
+                                                        ? SizedBox(
+                                                            width: 16,
+                                                            height: 16,
+                                                            child:
+                                                                CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                              color: AppColors
+                                                                  .navyBlueAccent,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            item.quantity
+                                                                .toString(),
+                                                            style:
+                                                                const TextStyle(
+                                                              fontSize: 18,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w700,
+                                                            ),
+                                                          ),
                                                   ),
                                                   IconButton(
                                                     padding: EdgeInsets.zero,
                                                     constraints:
                                                         const BoxConstraints(),
-                                                    onPressed: () async {
-                                                      await basketProvider
-                                                          .updateQuantity(
-                                                        item.categoryId,
-                                                        item.quantity + 1,
-                                                        scaffoldKey,
-                                                      );
-                                                    },
+                                                    onPressed: _loadingItemIds
+                                                            .contains(
+                                                                item.categoryId)
+                                                        ? null
+                                                        : () =>
+                                                            _handleBasketAction(
+                                                              item.categoryId,
+                                                              () async {
+                                                                await basketProvider
+                                                                    .updateQuantity(
+                                                                  item.categoryId,
+                                                                  item.quantity +
+                                                                      1,
+                                                                  scaffoldKey,
+                                                                );
+                                                              },
+                                                            ),
                                                     icon: Icon(
                                                       Icons.add_circle,
-                                                      color: AppColors
-                                                          .navyBlueAccent,
+                                                      color: _loadingItemIds
+                                                              .contains(item
+                                                                  .categoryId)
+                                                          ? Colors.grey
+                                                          : AppColors
+                                                              .navyBlueAccent,
                                                       size: 24,
                                                     ),
                                                   ),
@@ -398,6 +545,45 @@ class _BasketScreenState extends State<BasketScreen> {
                           padding: const EdgeInsets.all(16.0),
                           child: Column(
                             children: [
+                              if (isQuoteLoading)
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.fadeBlueAccentColor,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(
+                                      color: AppColors.primaryAccentColor
+                                          .withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.primaryAccentColor,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Text(
+                                        'Calculating new price...',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.navyBlueAccent,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                               const Divider(),
                               Padding(
                                 padding:
@@ -480,13 +666,36 @@ class _BasketScreenState extends State<BasketScreen> {
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    Text(
-                                      '₦${Constants().currencyFormat(totalPrice)}',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    if (isQuoteLoading)
+                                      Row(
+                                        children: [
+                                          SizedBox(
+                                            width: 14,
+                                            height: 14,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.primaryAccentColor,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            'Calculating...',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w600,
+                                              color: Colors.grey.shade600,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    else
+                                      Text(
+                                        '₦${Constants().currencyFormat(totalPrice)}',
+                                        style: const TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
                                   ],
                                 ),
                               ),
@@ -498,25 +707,31 @@ class _BasketScreenState extends State<BasketScreen> {
                                 children: [
                                   Expanded(
                                     child: ClickButton(
-                                      text: 'Make Payment',
+                                      text: isQuoteLoading
+                                          ? 'Calculating new price...'
+                                          : 'Make Payment',
                                       textColor: Colors.white,
                                       isLoading: isLoading,
-                                      onPressed: () async {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) =>
-                                                PickupAddressScreen(
-                                              totalAmount: totalPrice,
-                                              noFolding: isNoFolding,
-                                            ),
-                                          ),
-                                        );
-                                      },
+                                      onPressed: (isQuoteLoading || isLoading)
+                                          ? null
+                                          : () async {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      PickupAddressScreen(
+                                                    totalAmount: totalPrice,
+                                                    noFolding: isNoFolding,
+                                                  ),
+                                                ),
+                                              );
+                                            },
                                       fontSize:
                                           MediaQuery.sizeOf(context).height /
                                               53,
-                                      color: AppColors.secondaryBackgroundColor,
+                                      color: isQuoteLoading
+                                          ? Colors.grey
+                                          : AppColors.secondaryBackgroundColor,
                                     ),
                                   ),
                                 ],

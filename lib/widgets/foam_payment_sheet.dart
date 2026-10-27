@@ -13,6 +13,12 @@ class FoamPaymentSheet extends StatefulWidget {
   final dynamic plan;
   final bool noFolding;
   final int? storeId;
+  final String? pickupAddress;
+  final String? deliveryAddress;
+  final DateTime? pickupDate;
+  final String? pickupTime;
+  final DateTime? deliveryDate;
+  final String? deliveryTime;
 
   const FoamPaymentSheet({
     super.key,
@@ -25,6 +31,12 @@ class FoamPaymentSheet extends StatefulWidget {
     this.plan,
     this.noFolding = false,
     this.storeId,
+    this.pickupAddress,
+    this.deliveryAddress,
+    this.pickupDate,
+    this.pickupTime,
+    this.deliveryDate,
+    this.deliveryTime,
   });
 
   static Future<PaymentProcessResult?> show({
@@ -38,6 +50,12 @@ class FoamPaymentSheet extends StatefulWidget {
     dynamic plan,
     bool noFolding = false,
     int? storeId,
+    String? pickupAddress,
+    String? deliveryAddress,
+    DateTime? pickupDate,
+    String? pickupTime,
+    DateTime? deliveryDate,
+    String? deliveryTime,
   }) {
     return showModalBottomSheet<PaymentProcessResult>(
       context: context,
@@ -53,6 +71,12 @@ class FoamPaymentSheet extends StatefulWidget {
         plan: plan,
         noFolding: noFolding,
         storeId: storeId,
+        pickupAddress: pickupAddress,
+        deliveryAddress: deliveryAddress,
+        pickupDate: pickupDate,
+        pickupTime: pickupTime,
+        deliveryDate: deliveryDate,
+        deliveryTime: deliveryTime,
       ),
     );
   }
@@ -107,6 +131,12 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           totalPrice: widget.amount,
           storeId: widget.storeId,
           method: _selectedMethod,
+          pickupAddress: widget.pickupAddress,
+          deliveryAddress: widget.deliveryAddress,
+          pickupDate: widget.pickupDate,
+          pickupTime: widget.pickupTime,
+          deliveryDate: widget.deliveryDate,
+          deliveryTime: widget.deliveryTime,
         );
       } else {
         result = await FoamPaymentService.processWalletDeposit(

@@ -25,6 +25,7 @@ import 'package:foam_mobile/feature/vendor/onboarding/vendor_payout_bank_screen.
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_service_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_review_live_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
@@ -165,9 +166,15 @@ class AppRouter {
           settings: settings,
         );
 
+      case VendorOnboardingStepperScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const VendorOnboardingStepperScreen(),
+          settings: settings,
+        );
+
       case VendorSignUpScreen.id:
         return MaterialPageRoute(
-          builder: (_) => const VendorSignUpScreen(),
+          builder: (_) => const VendorOnboardingStepperScreen(),
           settings: settings,
         );
 

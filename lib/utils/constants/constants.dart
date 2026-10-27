@@ -2,7 +2,7 @@ part of '../values.dart';
 
 class Constants {
   // URL
-  static String url = "http://192.168.0.74:8545";
+  static String url = "http://192.168.0.29:8545";
   // static String url = "http://localhost:8545";
   // static String url = "https://foamlaundryapp.com";
 

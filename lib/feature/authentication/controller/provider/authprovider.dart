@@ -17,10 +17,12 @@ class AuthProvider extends ChangeNotifier {
 
   String role = 'USER';
   String businessName = '';
-  String vendorStatus = 'PENDING';
+  String vendorStatus = 'NOT_STARTED';
   String? vendorRejectionReason;
 
   bool get isVendor => role.toUpperCase() == 'VENDOR';
+  bool get isVendorVerified => isVendor && vendorStatus == 'APPROVED';
+  bool get isVendorPending => isVendor && vendorStatus == 'PENDING';
 
   Map<String, dynamic> user = {};
 
@@ -70,7 +72,7 @@ class AuthProvider extends ChangeNotifier {
     password = '';
     role = 'USER';
     businessName = '';
-    vendorStatus = 'PENDING';
+    vendorStatus = 'NOT_STARTED';
     vendorRejectionReason = null;
     addressStreet = '';
     addressCity = '';
