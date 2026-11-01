@@ -9,8 +9,7 @@ class Constants {
   // static String url = "https://foamlaundryapp.com";
 
   // PayStack public key
-  static String payStackPublicKey =
-      "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69";
+  static String payStackPublicKey = "pk_test_54b24598d6fa688ebf11aa69f689ae41e7765d2d";
 
   // OneSignal App ID
   static String oneSignalAppId = "b3f03235-0ed2-4afa-8818-e38f36a453d8";

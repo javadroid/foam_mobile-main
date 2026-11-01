@@ -11,7 +11,7 @@
           "type": "PAYMENT_GATEWAY",
           "parameters": {
             "gateway": "paystack",
-            "gatewayMerchantId": "pk_live_1ed764614ba0e2993ae08d6312e2cccb9a5e6c69"
+            "gatewayMerchantId": "pk_test_54b24598d6fa688ebf11aa69f689ae41e7765d2d"
           }
         },
         "parameters": {
