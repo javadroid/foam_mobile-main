@@ -12,6 +12,7 @@ class VendorStore {
   double? latitude;
   double? longitude;
   String? photoUrl;
+  int turnaroundDays;
 
   VendorStore({
     required this.id,
@@ -27,7 +28,10 @@ class VendorStore {
     this.latitude,
     this.longitude,
     this.photoUrl,
+    this.turnaroundDays = 2,
   });
+
+  String get turnaroundText => turnaroundDays <= 1 ? 'Next-day' : 'Ready in $turnaroundDays days';
 
   bool get isLive => status.toUpperCase() == 'LIVE';
   bool get isPaused => status.toUpperCase() == 'PAUSED';
@@ -62,6 +66,8 @@ class VendorOrder {
   String? receivedAt;
   String? washingStartedAt;
   String? readyAt;
+  String? pickupPin;
+  String? deliveryPin;
   final List<VendorOrderItem> items;
 
   VendorOrder({
@@ -79,6 +85,8 @@ class VendorOrder {
     this.receivedAt,
     this.washingStartedAt,
     this.readyAt,
+    this.pickupPin,
+    this.deliveryPin,
     required this.items,
   });
 

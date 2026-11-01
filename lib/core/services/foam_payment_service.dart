@@ -1,5 +1,8 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:pay/pay.dart';
@@ -47,7 +50,7 @@ class FoamPaymentService {
         "Content-Type": "application/json",
       };
 
-  static const String _googlePayConfigJson = '''{
+  static const String googlePayConfigJson = '''{
   "provider": "google_pay",
   "data": {
     "environment": "TEST",
@@ -71,8 +74,8 @@ class FoamPaymentService {
       }
     ],
     "merchantInfo": {
-      "merchantId": "BCR2DN6TXQ27EXAMPLE",
-      "merchantName": "Foam Laundry"
+      "merchantId": "BCR2DN6DZKL7RYTR",
+      "merchantName": "Foam"
     },
     "transactionInfo": {
       "countryCode": "NG",
@@ -101,7 +104,7 @@ class FoamPaymentService {
     if (_payClient != null) return _payClient!;
     try {
       final googleConfig =
-          PaymentConfiguration.fromJsonString(_googlePayConfigJson);
+          PaymentConfiguration.fromJsonString(googlePayConfigJson);
       final appleConfig =
           PaymentConfiguration.fromJsonString(_applePayConfigJson);
       _payClient = Pay({
@@ -120,6 +123,79 @@ class FoamPaymentService {
         PayProvider.apple_pay: appleConfig,
       });
       return _payClient!;
+    }
+  }
+
+  static const EventChannel _googlePayEventChannel =
+      EventChannel('plugins.flutter.io/pay/payment_result');
+
+  /// Safe wrapper to invoke the payment selector across platforms.
+  /// On Android (Google Pay), package:pay requires an active EventChannel listener
+  /// before calling showPaymentSelector, otherwise it throws illegalEventChannelState.
+  /// On iOS (Apple Pay), results return synchronously from the method call.
+  static Future<Map<String, dynamic>> _showPlatformPaymentSelector(
+    Pay payClient,
+    PayProvider provider,
+    List<PaymentItem> items,
+  ) async {
+    if (provider == PayProvider.google_pay &&
+        defaultTargetPlatform == TargetPlatform.android) {
+      final completer = Completer<Map<String, dynamic>>();
+      StreamSubscription? subscription;
+
+      subscription = _googlePayEventChannel
+          .receiveBroadcastStream()
+          .listen(
+        (dynamic event) {
+          subscription?.cancel();
+          if (!completer.isCompleted) {
+            try {
+              if (event is String) {
+                final decoded = jsonDecode(event);
+                if (decoded is Map<String, dynamic>) {
+                  completer.complete(decoded);
+                } else if (decoded is Map) {
+                  completer.complete(Map<String, dynamic>.from(decoded));
+                } else {
+                  completer.complete({'data': decoded});
+                }
+              } else if (event is Map<String, dynamic>) {
+                completer.complete(event);
+              } else if (event is Map) {
+                completer.complete(Map<String, dynamic>.from(event));
+              } else {
+                completer.complete({'data': event});
+              }
+            } catch (err) {
+              completer.completeError(err);
+            }
+          }
+        },
+        onError: (dynamic error) {
+          subscription?.cancel();
+          if (!completer.isCompleted) {
+            completer.completeError(error);
+          }
+        },
+        onDone: () {
+          subscription?.cancel();
+          if (!completer.isCompleted) {
+            completer.completeError('Google Pay stream closed unexpectedly.');
+          }
+        },
+        cancelOnError: true,
+      );
+
+      try {
+        await payClient.showPaymentSelector(provider, items);
+      } catch (e) {
+        subscription.cancel();
+        rethrow;
+      }
+
+      return await completer.future;
+    } else {
+      return await payClient.showPaymentSelector(provider, items);
     }
   }
 
@@ -288,7 +364,8 @@ class FoamPaymentService {
           );
         }
 
-        final paymentResult = await payClient.showPaymentSelector(
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
           PayProvider.google_pay,
           [
             PaymentItem(
@@ -355,7 +432,8 @@ class FoamPaymentService {
           );
         }
 
-        final paymentResult = await payClient.showPaymentSelector(
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
           PayProvider.apple_pay,
           [
             PaymentItem(
@@ -586,7 +664,8 @@ class FoamPaymentService {
           );
         }
 
-        final paymentResult = await payClient.showPaymentSelector(
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
           payProvider,
           [
             PaymentItem(
@@ -722,7 +801,8 @@ class FoamPaymentService {
           );
         }
 
-        final paymentResult = await payClient.showPaymentSelector(
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
           payProvider,
           [
             PaymentItem(
@@ -814,6 +894,24 @@ class FoamPaymentService {
   /// -------------------------------------------------------------
 
   /// Shows Paystack checkout webview dialog loading the live authorization URL
+  static Future<bool> showPaystackCheckoutModal({
+    required BuildContext context,
+    required String title,
+    required String planName,
+    required double amount,
+    String? authUrl,
+    required String reference,
+  }) async {
+    return _showPaystackCheckoutModal(
+      context: context,
+      title: title,
+      planName: planName,
+      amount: amount,
+      authUrl: authUrl,
+      reference: reference,
+    );
+  }
+
   static Future<bool> _showPaystackCheckoutModal({
     required BuildContext context,
     required String title,

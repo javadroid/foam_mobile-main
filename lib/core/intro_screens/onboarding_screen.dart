@@ -1,3 +1,5 @@
+import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -218,6 +220,35 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                             'Partner with Foam · Vendor Portal',
                             style: GoogleFonts.dmSans(
                               color: AppColors.primaryAccentColor,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ),
+                    ),
+                  const SizedBox(height: 6),
+                  InkWell(
+                    onTap: () =>
+                        Navigator.of(context, rootNavigator: true).pushNamed(
+                      RiderRegistrationScreen.id,
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 6.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.two_wheeler_outlined,
+                            size: 16,
+                            color: AppColors.secondaryBackgroundColor,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Deliver with Foam · Rider Portal',
+                            style: GoogleFonts.dmSans(
+                              color: AppColors.secondaryBackgroundColor,
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
                             ),

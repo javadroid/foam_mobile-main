@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -72,6 +71,44 @@ class SocketService {
         onWalletUpdated(Map<String, dynamic>.from(data));
       }
     });
+
+    // Listen for Google Pay / Mobile payment success (backup socket event)
+    _socket!.on('payment_succeeded', (data) {
+      debugPrint('[Socket.io] Event received: payment_succeeded -> $data');
+    });
+
+    // Listen for subscription activated
+    _socket!.on('subscription_activated', (data) {
+      debugPrint('[Socket.io] Event received: subscription_activated -> $data');
+    });
+  }
+
+  /// Register custom listener for payment_succeeded event
+  static void onPaymentSuccess(Function(Map<String, dynamic>) handler) {
+    _socket?.on('payment_succeeded', (data) {
+      if (data is Map) {
+        handler(Map<String, dynamic>.from(data));
+      }
+    });
+  }
+
+  /// Remove payment_succeeded listener
+  static void offPaymentSuccess() {
+    _socket?.off('payment_succeeded');
+  }
+
+  /// Register custom listener for subscription_activated event
+  static void onSubscriptionActive(Function(Map<String, dynamic>) handler) {
+    _socket?.on('subscription_activated', (data) {
+      if (data is Map) {
+        handler(Map<String, dynamic>.from(data));
+      }
+    });
+  }
+
+  /// Remove subscription_activated listener
+  static void offSubscriptionActive() {
+    _socket?.off('subscription_activated');
   }
 
   /// Disconnect socket on logout

@@ -29,6 +29,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
   String _hoursMonFri = '8:00 AM – 6:00 PM';
   String _hoursSat = '9:00 AM – 5:00 PM';
   String _hoursSun = 'Closed';
+  int _turnaroundDays = 2;
 
   double? _latitude;
   double? _longitude;
@@ -79,6 +80,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
       _hoursMonFri = currentStore.hoursMonFri;
       _hoursSat = currentStore.hoursSat;
       _hoursSun = currentStore.hoursSun;
+      _turnaroundDays = currentStore.turnaroundDays;
     } else {
       // Adding a new branch
       final storeCount = vendor.stores.length;
@@ -1139,6 +1141,37 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                   setState(() => _hoursSun = val);
                 }),
               ),
+              const SizedBox(height: 28),
+
+              // Standard Turnaround Time Setting
+              Text(
+                'STANDARD TURNAROUND TIME',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  color: VendorColors.textMuted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Displayed to customers on store cards & used for price level tier matching.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 13,
+                  color: VendorColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _buildTurnaroundOption(1, 'Next-day (1 day)'),
+                  _buildTurnaroundOption(2, '2 days (Standard)'),
+                  _buildTurnaroundOption(3, '3 days'),
+                  _buildTurnaroundOption(4, '4+ days'),
+                ],
+              ),
               const SizedBox(height: 36),
 
               VendorButton(
@@ -1203,6 +1236,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             monFri: _hoursMonFri,
                             sat: _hoursSat,
                             sun: _hoursSun,
+                            turnaroundDays: _turnaroundDays,
                           );
 
                           if (!mounted) return;
@@ -1242,6 +1276,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             monFri: _hoursMonFri,
                             sat: _hoursSat,
                             sun: _hoursSun,
+                            turnaroundDays: _turnaroundDays,
                           );
 
                           if (!mounted) return;
@@ -1327,6 +1362,33 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
               ],
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTurnaroundOption(int days, String label) {
+    final isSelected = _turnaroundDays == days;
+    return InkWell(
+      onTap: () => setState(() => _turnaroundDays = days),
+      borderRadius: BorderRadius.circular(10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFFE5F7F8) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: isSelected ? const Color(0xFF00AABC) : VendorColors.border,
+            width: isSelected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.dmSans(
+            fontSize: 13.5,
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+            color: isSelected ? const Color(0xFF001C1F) : VendorColors.textMain,
+          ),
         ),
       ),
     );

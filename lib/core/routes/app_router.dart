@@ -1,6 +1,24 @@
+import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_active_ride_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_history_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_wallet_screen.dart';
+import 'package:foam_mobile/feature/rider/models/rider_models.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/01_how_to_choose_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/02_tiers_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/04_store_page_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/06_checkout_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/08_pickup_leg_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/09_at_store_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/10_delivery_leg_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/11_delivered_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/view/basket_screen.dart';
 import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
+import 'package:foam_mobile/core/Screens/billing/payment_success_screen.dart';
 import 'package:foam_mobile/core/Screens/help/help_screen.dart';
 import 'package:foam_mobile/core/Screens/history/history_screen.dart';
 import 'package:foam_mobile/core/Screens/home/home_screen.dart';
@@ -37,6 +55,72 @@ class AppRouter {
 
   static Route<dynamic>? onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
+      case HowToChooseScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const HowToChooseScreen(),
+          settings: settings,
+        );
+
+      case ScheduleTiersScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const ScheduleTiersScreen(),
+          settings: settings,
+        );
+
+      case NearbyStoresScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const NearbyStoresScreen(),
+          settings: settings,
+        );
+
+      case CustomerStorePageScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const CustomerStorePageScreen(),
+          settings: settings,
+        );
+
+      case ScheduleItemsScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const ScheduleItemsScreen(),
+          settings: settings,
+        );
+
+      case ScheduleCheckoutScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const ScheduleCheckoutScreen(),
+          settings: settings,
+        );
+
+      case ScheduleOrderPlacedScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const ScheduleOrderPlacedScreen(),
+          settings: settings,
+        );
+
+      case ScheduleTrackingScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const ScheduleTrackingScreen(),
+          settings: settings,
+        );
+
+      case CustomerAtStoreScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const CustomerAtStoreScreen(),
+          settings: settings,
+        );
+
+      case CustomerDeliveryLegScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const CustomerDeliveryLegScreen(),
+          settings: settings,
+        );
+
+      case CustomerDeliveredScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const CustomerDeliveredScreen(),
+          settings: settings,
+        );
+
       case OnBoardingScreen.id:
         return MaterialPageRoute(
           builder: (_) => const OnBoardingScreen(),
@@ -76,6 +160,25 @@ class AppRouter {
       case BillingScreen.id:
         return MaterialPageRoute(
           builder: (_) => const BillingScreen(),
+          settings: settings,
+        );
+
+      case PaymentSuccessScreen.id:
+        final args = settings.arguments as Map<String, dynamic>? ?? {};
+        return MaterialPageRoute(
+          builder: (_) => PaymentSuccessScreen(
+            title: args['title'] ?? 'Payment Successful! 🎉',
+            subtitle: args['subtitle'] ??
+                'Your payment was processed and verified successfully.',
+            itemTitle: args['itemTitle'] ?? 'Subscription',
+            amount: (args['amount'] as num?)?.toDouble() ?? 0.0,
+            paymentMethod: args['paymentMethod'],
+            reference: args['reference'],
+            details:
+                (args['details'] as List<MapEntry<String, String>>?) ?? const [],
+            primaryButtonLabel:
+                args['primaryButtonLabel'] ?? 'View Subscription',
+          ),
           settings: settings,
         );
 
@@ -229,6 +332,43 @@ class AppRouter {
       case VendorMainScreen.id:
         return MaterialPageRoute(
           builder: (_) => const VendorMainScreen(),
+          settings: settings,
+        );
+
+      case RiderRegistrationScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const RiderRegistrationScreen(),
+          settings: settings,
+        );
+
+      case RiderDashboardScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const RiderDashboardScreen(),
+          settings: settings,
+        );
+
+      case RiderHistoryScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const RiderHistoryScreen(),
+          settings: settings,
+        );
+
+      case RiderWalletScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const RiderWalletScreen(),
+          settings: settings,
+        );
+
+      case RiderActiveRideScreen.id:
+        final activeRide = settings.arguments as ActiveRide?;
+        if (activeRide != null) {
+          return MaterialPageRoute(
+            builder: (_) => RiderActiveRideScreen(ride: activeRide),
+            settings: settings,
+          );
+        }
+        return MaterialPageRoute(
+          builder: (_) => const RiderDashboardScreen(),
           settings: settings,
         );
 

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
+import 'package:foam_mobile/core/Screens/billing/payment_success_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/billing_widget.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
@@ -84,13 +85,33 @@ class _BillingScreenState extends State<BillingScreen> {
 
     if (result != null && mounted) {
       if (result.success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(result.message),
-            backgroundColor: Colors.green.shade700,
+        _fetchPlansAndStatus();
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PaymentSuccessScreen(
+              title: 'Subscription Activated! 🎉',
+              subtitle: 'Your $name laundry plan is now active.',
+              itemTitle: name,
+              amount: price,
+              paymentMethod: result.data?['paymentMethod'] ?? 'Google Pay',
+              reference: result.reference ?? '',
+              details: [
+                if (plan['itemQuota'] != null)
+                  MapEntry('Monthly Quota', '${plan['itemQuota']} clothing items'),
+                if (plan['turnaroundDays'] != null)
+                  MapEntry('Turnaround', '${plan['turnaroundDays']} business days'),
+                if (plan['freePickupsCount'] != null)
+                  MapEntry('Free Pickups', '${plan['freePickupsCount']} monthly pickups included'),
+              ],
+              primaryButtonLabel: 'View Subscription',
+              onPrimaryPressed: () {
+                Navigator.pop(context);
+                _fetchPlansAndStatus();
+              },
+            ),
           ),
         );
-        _fetchPlansAndStatus();
       } else {
         showDialog(
           context: context,

@@ -11,7 +11,9 @@ import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
+import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
+import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -62,7 +64,13 @@ void main() async {
             create: (_) => VendorProvider(),
           ),
           ChangeNotifierProvider(
+            create: (_) => SchedulePickupProvider(),
+          ),
+          ChangeNotifierProvider(
             create: (_) => WalletProvider(),
+          ),
+          ChangeNotifierProvider(
+            create: (_) => RiderProvider(),
           ),
         ],
         child: const MyApp(),

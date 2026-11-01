@@ -23,6 +23,7 @@ class AuthProvider extends ChangeNotifier {
   bool get isVendor => role.toUpperCase() == 'VENDOR';
   bool get isVendorVerified => isVendor && vendorStatus == 'APPROVED';
   bool get isVendorPending => isVendor && vendorStatus == 'PENDING';
+  bool get isRider => role.toUpperCase() == 'RIDER';
 
   Map<String, dynamic> user = {};
 

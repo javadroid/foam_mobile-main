@@ -20,6 +20,9 @@ import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dar
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
 import 'package:foam_mobile/widgets/app_fullscreen_loader.dart';
+import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
+import 'package:foam_mobile/feature/rider/models/rider_models.dart';
+import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
@@ -58,11 +61,26 @@ class LoginClass {
 
         if (res.statusCode == 200) {
           // if status code is 200 show the message
-          MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
+          MyMessageHandler.showSnackBar(scaffoldKey, response["message"] ?? "Welcome");
           // then insert user token
           HiveClass.insertToken(
             response["token"],
           );
+
+          if (response["isRider"] == true || response["userType"] == "RIDER" || response["role"] == "RIDER") {
+            AppFullScreenLoader.hide(context);
+            final riderProvider = Provider.of<RiderProvider>(context, listen: false);
+            if (response["rider"] != null) {
+              final riderProfile = RiderProfile.fromJson(response["rider"]);
+              riderProvider.setCurrentRiderForTesting(riderProfile, token: response["token"]);
+            }
+            Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+              RiderDashboardScreen.id,
+              (Route<dynamic> route) => false,
+            );
+            return;
+          }
+
           getProfile(context, scaffoldKey, isSignup: isSignup);
         } else {
           AppFullScreenLoader.hide(context);
@@ -119,6 +137,22 @@ class LoginClass {
           NotificationService.registerUser(userId);
           SocketService.connect();
         }
+      }
+
+      if (user["role"] == 'RIDER' || user["isRider"] == true) {
+        AppFullScreenLoader.hide(context);
+        final riderProvider = Provider.of<RiderProvider>(context, listen: false);
+        if (user["riderProfile"] != null) {
+          riderProvider.setCurrentRiderForTesting(
+            RiderProfile.fromJson(user["riderProfile"]),
+            token: HiveClass.getToken(),
+          );
+        }
+        Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
+          RiderDashboardScreen.id,
+          (Route<dynamic> route) => false,
+        );
+        return;
       }
 
       if (authProvider.isVendor) {

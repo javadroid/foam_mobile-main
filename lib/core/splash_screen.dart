@@ -10,6 +10,7 @@ import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verificatio
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/error_widget.dart';
 import 'package:loading_animation_widget/loading_animation_widget.dart';
@@ -61,7 +62,9 @@ class _SplashScreenState extends State<SplashScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     if (authProvider.initDone) {
-      if (authProvider.isVendor) {
+      if (authProvider.isRider) {
+        Navigator.pushReplacementNamed(context, RiderDashboardScreen.id);
+      } else if (authProvider.isVendor) {
         // Vendor routing based on status
         if (authProvider.vendorStatus == 'APPROVED') {
           Navigator.pushReplacementNamed(context, VendorMainScreen.id);

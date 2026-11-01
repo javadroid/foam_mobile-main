@@ -679,6 +679,9 @@ class VendorProvider extends ChangeNotifier {
           ? (json['longitude'] as num).toDouble()
           : null,
       photoUrl: json['photoUrl']?.toString(),
+      turnaroundDays: (json['turnaroundDays'] is num)
+          ? (json['turnaroundDays'] as num).toInt()
+          : 2,
     );
   }
 
@@ -732,6 +735,7 @@ class VendorProvider extends ChangeNotifier {
     String monFri = '8:00 AM – 6:00 PM',
     String sat = '9:00 AM – 5:00 PM',
     String sun = 'Closed',
+    int turnaroundDays = 2,
   }) async {
     if (!canAddStore) {
       return {
@@ -759,6 +763,7 @@ class VendorProvider extends ChangeNotifier {
           'latitude': lat,
           'longitude': lng,
           'photoUrl': photoUrl,
+          'turnaroundDays': turnaroundDays,
           'operatingHours': {
             'monFri': monFri,
             'sat': sat,
@@ -817,6 +822,7 @@ class VendorProvider extends ChangeNotifier {
     String monFri = '8:00 AM – 6:00 PM',
     String sat = '9:00 AM – 5:00 PM',
     String sun = 'Closed',
+    int turnaroundDays = 2,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -836,6 +842,7 @@ class VendorProvider extends ChangeNotifier {
           'latitude': lat,
           'longitude': lng,
           'photoUrl': photoUrl,
+          'turnaroundDays': turnaroundDays,
           'operatingHours': {
             'monFri': monFri,
             'sat': sat,

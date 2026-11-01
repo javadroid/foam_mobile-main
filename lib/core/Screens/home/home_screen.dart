@@ -1,3 +1,4 @@
+import 'package:foam_mobile/feature/schedule_pickup/views/01_how_to_choose_screen.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -7,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
 import 'package:foam_mobile/core/Screens/basket/view/basket_screen.dart';
 import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
+import 'package:foam_mobile/core/Screens/billing/payment_success_screen.dart';
 import 'package:foam_mobile/core/Screens/drawer.dart';
 import 'package:foam_mobile/core/Screens/home/notifications/notification_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
@@ -416,7 +418,7 @@ class _HomePageState extends State<HomePage> {
                               ),
                               onPressed: () {
                                 Navigator.of(context)
-                                    .pushNamed(BasketScreen.id);
+                                    .pushNamed(HowToChooseScreen.id);
                               },
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
@@ -676,7 +678,6 @@ class _HomePageState extends State<HomePage> {
                             onGetStarted: () async {
                               final double planPrice =
                                   (plan['price'] as num?)?.toDouble() ?? 0.0;
-                              final messenger = ScaffoldMessenger.of(context);
                               final result = await FoamPaymentSheet.show(
                                 context: context,
                                 title: 'Subscribe to Plan',
@@ -688,16 +689,32 @@ class _HomePageState extends State<HomePage> {
                                 purpose: FoamPaymentPurpose.subscription,
                                 plan: plan,
                               );
-                              if (result != null) {
+                              if (result != null && context.mounted) {
                                 if (result.success) {
-                                  messenger.showSnackBar(
-                                    SnackBar(
-                                      content: Text(result.message),
-                                      backgroundColor: Colors.green.shade700,
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => PaymentSuccessScreen(
+                                        title: 'Subscription Activated! 🎉',
+                                        subtitle:
+                                            'Your ${plan['name'] ?? 'Plan'} laundry plan is now active.',
+                                        itemTitle: plan['name'] ?? 'Plan',
+                                        amount: planPrice,
+                                        paymentMethod:
+                                            result.data?['paymentMethod'] ??
+                                                'Google Pay',
+                                        reference: result.reference ?? '',
+                                        primaryButtonLabel: 'View Subscription',
+                                        onPrimaryPressed: () {
+                                          Navigator.pop(context);
+                                          Navigator.pushNamed(
+                                              context, BillingScreen.id);
+                                        },
+                                      ),
                                     ),
                                   );
                                 } else {
-                                  messenger.showSnackBar(
+                                  ScaffoldMessenger.maybeOf(context)?.showSnackBar(
                                     SnackBar(
                                       content: Text(result.message),
                                       backgroundColor: Colors.red.shade700,

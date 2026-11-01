@@ -92,7 +92,76 @@ class VendorActiveOrderScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 16),
+
+              // PIN Verification Card for Order Handshakes
+              if (order.pickupPin != null || order.deliveryPin != null) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFE5F7F8),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFF00AABC), width: 1),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    children: [
+                      if (order.pickupPin != null)
+                        Column(
+                          children: [
+                            Text(
+                              'PICKUP PIN',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF00AABC),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              order.pickupPin!,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF001C1F),
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                      if (order.pickupPin != null && order.deliveryPin != null)
+                        Container(width: 1, height: 32, color: const Color(0xFF00AABC).withOpacity(0.3)),
+                      if (order.deliveryPin != null)
+                        Column(
+                          children: [
+                            Text(
+                              'DELIVERY PIN',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF00AABC),
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              order.deliveryPin!,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w800,
+                                color: const Color(0xFF001C1F),
+                                letterSpacing: 2,
+                              ),
+                            ),
+                          ],
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+              ],
+              const SizedBox(height: 12),
 
               // Status Progression Stepper
               _buildStepItem(

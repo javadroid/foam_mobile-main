@@ -1,3 +1,6 @@
+import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
+import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
@@ -962,6 +965,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       onTap: () => Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context),
                     ),
+                ]),
+
+                const SizedBox(height: 20),
+
+                // Rider / Logistics Section
+                _buildSectionHeader('Logistics & Rider Partner'),
+                const SizedBox(height: 8),
+                _buildSectionCard([
+                  _buildDetailTile(
+                    icon: Icons.two_wheeler_rounded,
+                    iconBgColor: const Color(0xFFDCFCE7),
+                    iconColor: const Color(0xFF16A34A),
+                    title: 'Foam Rider Portal',
+                    value: 'Deliver laundry, accept rides & earn daily',
+                    trailingWidget: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF16A34A),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Rider Mode',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                    onTap: () {
+                      final riderProvider = Provider.of<RiderProvider>(context, listen: false);
+                      if (riderProvider.isRegistered) {
+                        Navigator.of(context, rootNavigator: true).pushNamed(RiderDashboardScreen.id);
+                      } else {
+                        Navigator.of(context, rootNavigator: true).pushNamed(RiderRegistrationScreen.id);
+                      }
+                    },
+                  ),
                 ]),
 
                 const SizedBox(height: 20),
