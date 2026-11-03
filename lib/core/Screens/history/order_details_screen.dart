@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:intl/intl.dart';
@@ -37,13 +38,14 @@ class OrderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     int activeIndex = 0;
-    if (order.status == 'ACCEPTED') {
+    final upperStatus = order.status.toUpperCase();
+    if (upperStatus == 'ACCEPTED') {
       activeIndex = 1;
-    } else if (order.status == 'ONGOING') {
+    } else if (upperStatus == 'ONGOING' || upperStatus == 'IN_PROGRESS') {
       activeIndex = 2;
-    } else if (order.status == 'COMPLETED') {
+    } else if (upperStatus == 'READY' || upperStatus == 'OUT_FOR_DELIVERY') {
       activeIndex = 3;
-    } else if (order.status == 'DELIVERED') {
+    } else if (upperStatus == 'COMPLETED' || upperStatus == 'DELIVERED') {
       activeIndex = 4;
     }
 
@@ -58,11 +60,11 @@ class OrderDetailsScreen extends StatelessWidget {
       },
       {
         'title': 'Order In Progress',
-        'description': 'Picked up and being washed',
+        'description': 'Picked up and being washed & cared for',
       },
       {
         'title': 'Ready for Delivery',
-        'description': 'Washed, dried & ready to go',
+        'description': 'Washed, dried, packaged & ready to go',
       },
       {
         'title': 'Order Delivered',
@@ -76,9 +78,10 @@ class OrderDetailsScreen extends StatelessWidget {
         : 'Order completed!';
 
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         elevation: 0,
-        bottomOpacity: 6,
+        backgroundColor: Colors.white,
         leading: IconButton(
           icon: Icon(
             Icons.arrow_back_ios_new,
@@ -87,15 +90,20 @@ class OrderDetailsScreen extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Order Details',
+          'Order #FM-${order.id}',
           overflow: TextOverflow.ellipsis,
-          style: Constants.headingStyle,
+          style: GoogleFonts.dmSans(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF0F172A),
+          ),
         ),
+        centerTitle: true,
       ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -118,8 +126,9 @@ class OrderDetailsScreen extends StatelessWidget {
                             children: [
                               Text(
                                 'Order Cancelled',
-                                style: Constants.headingStyle.copyWith(
+                                style: GoogleFonts.dmSans(
                                   fontSize: 16,
+                                  fontWeight: FontWeight.w700,
                                   color: Colors.red[900],
                                 ),
                               ),
@@ -144,10 +153,10 @@ class OrderDetailsScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12.0),
                     child: Text(
                       headerText,
-                      style: const TextStyle(
+                      style: GoogleFonts.dmSans(
                         fontSize: 13,
-                        color: Colors.grey,
-                        fontWeight: FontWeight.w500,
+                        color: const Color(0xFF64748B),
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
@@ -228,15 +237,16 @@ class OrderDetailsScreen extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // Timestamp / Status Placeholder
+                          // Timestamp
                           Text(
                             index == 0
-                                ? DateFormat('H:mm').format(order.createdAt)
-                                : (index <= activeIndex ? '' : '-'),
+                                ? DateFormat('h:mm a').format(order.createdAt)
+                                : (index <= activeIndex ? '✓' : '-'),
                             style: TextStyle(
                               fontSize: 12,
+                              fontWeight: FontWeight.w600,
                               color: index <= activeIndex
-                                  ? Colors.black54
+                                  ? AppColors.primaryAccentColor
                                   : Colors.grey[400],
                             ),
                           ),
@@ -258,14 +268,15 @@ class OrderDetailsScreen extends StatelessWidget {
                       children: [
                         Text(
                           _getOrdinalDate(order.createdAt),
-                          style: Constants.headingStyle.copyWith(
+                          style: GoogleFonts.dmSans(
                             fontSize: 16,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           DateFormat('h:mm a').format(order.createdAt),
-                          style: Constants.subHeadingStyle.copyWith(
+                          style: GoogleFonts.dmSans(
                             fontSize: 13,
                             color: Colors.black54,
                           ),
@@ -273,21 +284,84 @@ class OrderDetailsScreen extends StatelessWidget {
                       ],
                     ),
                     Text(
-                      '₦ ${Constants().currencyFormat(order.totalPrice)}',
-                      style: Constants.headingStyle.copyWith(
-                        fontSize: 18,
+                      '₦${Constants().currencyFormat(order.totalPrice)}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryAccentColor,
                       ),
                     ),
                   ],
                 ),
+
+                // Delivery & Location Card
+                if (order.pickupAddress != null || order.storeName != null) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (order.storeName != null && order.storeName!.isNotEmpty) ...[
+                          Row(
+                            children: [
+                              Icon(Icons.storefront, size: 16, color: AppColors.primaryAccentColor),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Vendor: ${order.storeName}',
+                                  style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                        ],
+                        if (order.pickupAddress != null && order.pickupAddress!.isNotEmpty) ...[
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Pickup: ${order.pickupAddress}',
+                                  style: GoogleFonts.dmSans(fontSize: 12.5, color: const Color(0xFF334155)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                        ],
+                        Row(
+                          children: [
+                            const Icon(Icons.dry_cleaning_outlined, size: 16, color: Color(0xFF64748B)),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Service: ${order.noFolding ? "No Folding (Hangers)" : "Standard Folding Included"}',
+                              style: GoogleFonts.dmSans(fontSize: 12.5, color: const Color(0xFF334155)),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
                 const SizedBox(height: 16),
                 const Divider(),
                 AppSpaces.verticalSpace10,
 
                 // Items Section
                 Text(
-                  'Items',
-                  style: Constants.headingStyle.copyWith(fontSize: 16),
+                  'Items (${order.items.fold(0, (s, i) => s + i.quantity)})',
+                  style: GoogleFonts.dmSans(fontSize: 16, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 15),
                 Column(
@@ -303,8 +377,8 @@ class OrderDetailsScreen extends StatelessWidget {
                         children: [
                           // Item Image
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 70,
+                            height: 70,
                             decoration: BoxDecoration(
                               color: AppColors.fadeBlueAccentColor,
                               borderRadius: BorderRadius.circular(8),
@@ -318,7 +392,7 @@ class OrderDetailsScreen extends StatelessWidget {
                                   : null,
                             ),
                             child: item.category.imageUrl == null
-                                ? const Icon(Icons.image_not_supported)
+                                ? const Icon(Icons.local_laundry_service_outlined)
                                 : null,
                           ),
                           AppSpaces.horizontalSpace10,
@@ -330,15 +404,20 @@ class OrderDetailsScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   item.category.name,
-                                  style: Constants.subHeadingStyle.copyWith(
-                                    fontWeight: FontWeight.w600,
+                                  style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
                                   ),
                                 ),
-                                AppSpaces.verticalSpace5,
-                                Text(
-                                  item.category.description,
-                                  style: Constants.textStyle,
-                                ),
+                                if (item.category.description.isNotEmpty) ...[
+                                  AppSpaces.verticalSpace5,
+                                  Text(
+                                    item.category.description,
+                                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ],
                             ),
                           ),
@@ -348,16 +427,18 @@ class OrderDetailsScreen extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
                               Text(
-                                'x${item.quantity}',
-                                style: Constants.headingStyle.copyWith(
+                                '×${item.quantity}',
+                                style: GoogleFonts.dmSans(
                                   fontSize: 15,
+                                  fontWeight: FontWeight.w700,
                                 ),
                               ),
                               AppSpaces.verticalSpace5,
                               Text(
                                 '₦${Constants().currencyFormat(item.category.price * item.quantity)}',
-                                style: Constants.headingStyle.copyWith(
+                                style: GoogleFonts.dmSans(
                                   fontSize: 14,
+                                  fontWeight: FontWeight.w700,
                                   color: AppColors.primaryAccentColor,
                                 ),
                               ),
@@ -378,9 +459,10 @@ class OrderDetailsScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Subtotal'),
+                        const Text('Total Amount Paid'),
                         Text(
                           '₦${Constants().currencyFormat(order.totalPrice)}',
+                          style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                       ],
                     ),
@@ -389,7 +471,7 @@ class OrderDetailsScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Payment Method'),
-                        Text(order.paymentType),
+                        Text(order.paymentType.isNotEmpty ? order.paymentType : 'Online'),
                       ],
                     ),
                     AppSpaces.verticalSpace10,
@@ -400,16 +482,17 @@ class OrderDetailsScreen extends StatelessWidget {
                         Text(
                           order.paymentStatus,
                           style: TextStyle(
-                            color: order.paymentStatus == 'SUCCEEDED'
+                            color: order.paymentStatus.toUpperCase() == 'SUCCEEDED'
                                 ? Colors.green
-                                : Colors.red,
-                            fontWeight: FontWeight.w600,
+                                : Colors.amber.shade800,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
+                const SizedBox(height: 30),
               ],
             ),
           ),

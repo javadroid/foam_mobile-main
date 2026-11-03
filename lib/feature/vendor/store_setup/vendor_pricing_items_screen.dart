@@ -11,7 +11,7 @@ class VendorPricingItemsScreen extends StatefulWidget {
   const VendorPricingItemsScreen({
     super.key,
     required this.serviceType,
-    required this.foldType,
+    this.foldType = 'Folding',
   });
 
   @override
@@ -20,8 +20,9 @@ class VendorPricingItemsScreen extends StatefulWidget {
 
 class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
   final Map<String, TextEditingController> _controllers = {};
+  late bool _includeFolding;
 
-  final List<String> _items = [
+  final List<String> _laundryItems = [
     'Shirt',
     'T-shirt',
     'Trouser',
@@ -32,10 +33,26 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
     'Native (agbada)',
   ];
 
+  final List<String> _dryCleaningItems = [
+    'Suit (2-piece)',
+    'Suit (3-piece)',
+    'Blazer / Jacket',
+    'Dress / Gown',
+    'Evening Gown',
+    'Winter Coat',
+    'Silk / Delicate Top',
+    'Agbada Complete',
+  ];
+
+  List<String> get _items =>
+      widget.serviceType == 'Dry cleaning' ? _dryCleaningItems : _laundryItems;
+
   @override
   void initState() {
     super.initState();
     final provider = Provider.of<VendorProvider>(context, listen: false);
+    _includeFolding = provider.getStoreIncludeFolding(provider.currentStore.id);
+
     final existingPrices = provider.getItemPrices(
       provider.currentStore.id,
       widget.serviceType,
@@ -66,11 +83,28 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
   void _savePrices() {
     final provider = Provider.of<VendorProvider>(context, listen: false);
+    final storeId = provider.currentStore.id;
+
     for (final entry in _controllers.entries) {
       final p = double.tryParse(entry.value.text.trim());
       if (p != null) {
+        // Save price uniformly under the service
         provider.setItemPrice(
-          provider.currentStore.id,
+          storeId,
+          widget.serviceType,
+          'Folding',
+          entry.key,
+          p,
+        );
+        provider.setItemPrice(
+          storeId,
+          widget.serviceType,
+          'Non-folding',
+          entry.key,
+          p,
+        );
+        provider.setItemPrice(
+          storeId,
           widget.serviceType,
           widget.foldType,
           entry.key,
@@ -78,11 +112,18 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
         );
       }
     }
+
+    if (widget.serviceType == 'Laundry') {
+      provider.setStoreIncludeFolding(storeId, _includeFolding);
+    }
+
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLaundry = widget.serviceType == 'Laundry';
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -103,7 +144,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    widget.foldType,
+                    widget.serviceType,
                     style: GoogleFonts.dmSans(
                       color: VendorColors.textMain,
                       fontSize: 26,
@@ -113,13 +154,78 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '${widget.serviceType} · ${widget.foldType} · price per item',
+                    '${widget.serviceType} · price per item',
                     style: GoogleFonts.dmSans(
                       color: VendorColors.textMuted,
                       fontSize: 14,
                     ),
                   ),
                   const SizedBox(height: 12),
+
+                  // Folding Service Setting Switch
+                  if (isLaundry) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: _includeFolding ? const Color(0xFFF0FDF4) : const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: _includeFolding ? const Color(0xFF86EFAC) : const Color(0xFFE2E8F0),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(7),
+                            decoration: BoxDecoration(
+                              color: _includeFolding ? const Color(0xFFDCFCE7) : const Color(0xFFE2E8F0),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.checkroom_rounded,
+                              color: _includeFolding ? const Color(0xFF16A34A) : Colors.grey,
+                              size: 18,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Include Folding Service',
+                                  style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13.5,
+                                    color: const Color(0xFF0F172A),
+                                  ),
+                                ),
+                                const SizedBox(height: 1),
+                                Text(
+                                  'Fold items in packaging (customers can opt out at checkout)',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 11.5,
+                                    color: const Color(0xFF64748B),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Switch(
+                            value: _includeFolding,
+                            activeColor: const Color(0xFF16A34A),
+                            onChanged: (val) {
+                              setState(() {
+                                _includeFolding = val;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [

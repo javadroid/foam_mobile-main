@@ -1,7 +1,12 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
+import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 
 class RiderProvider extends ChangeNotifier {
@@ -29,6 +34,7 @@ class RiderProvider extends ChangeNotifier {
 
   bool get isRegistered => _currentRider != null;
   bool get isApproved => _currentRider?.isApproved ?? false;
+  bool get isPending => _currentRider?.approvalStatus == 'PENDING';
   bool get isOnline => _currentRider?.isOnline ?? false;
 
   String get _baseUrl {
@@ -38,10 +44,13 @@ class RiderProvider extends ChangeNotifier {
     return url;
   }
 
-  Map<String, String> get _authHeaders => {
-        'Content-Type': 'application/json',
-        if (_token != null) 'Authorization': 'Bearer $_token',
-      };
+  Map<String, String> get _authHeaders {
+    final activeToken = (_token != null && _token!.isNotEmpty) ? _token! : HiveClass.getToken();
+    return {
+      'Content-Type': 'application/json',
+      if (activeToken.isNotEmpty) 'Authorization': 'Bearer $activeToken',
+    };
+  }
 
   void clearError() {
     _errorMessage = null;
@@ -60,12 +69,182 @@ class RiderProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Register a new Rider
+  /// Fetch rider profile using active rider or user token
+  Future<RiderProfile?> fetchRiderProfile() async {
+    try {
+      final activeToken = (_token != null && _token!.isNotEmpty) ? _token! : HiveClass.getToken();
+      if (activeToken.isEmpty) return null;
+
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/rider/profile'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $activeToken',
+            },
+          )
+          .timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['rider'] != null) {
+          _currentRider = RiderProfile.fromJson(data['rider']);
+          _walletBalance = _currentRider!.walletBalance;
+          notifyListeners();
+          return _currentRider;
+        }
+      } else if (response.statusCode == 404) {
+        // User is not registered as a rider yet
+        _currentRider = null;
+        notifyListeners();
+        return null;
+      }
+    } catch (_) {}
+    return _currentRider;
+  }
+
+  /// Check verification status and navigate appropriately (mirroring checkAndNavigateToVendor)
+  Future<void> checkAndNavigateToRider(BuildContext context) async {
+    final token = HiveClass.getToken();
+    if (token.isEmpty) {
+      Navigator.pushNamed(context, '/log_in');
+      return;
+    }
+
+    // Show lightweight loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => const Center(
+        child: CircularProgressIndicator(color: Color(0xFF00AABC)),
+      ),
+    );
+
+    await fetchRiderProfile();
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop(); // dismiss loader
+
+    if (_currentRider != null) {
+      final status = _currentRider!.approvalStatus.toUpperCase();
+      if (status == 'APPROVED') {
+        Navigator.pushNamed(context, RiderDashboardScreen.id);
+      } else if (status == 'PENDING') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.hourglass_top_rounded, color: Color(0xFFFFA000), size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Application Pending',
+                  style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your rider application has been received and is currently under administrative review.',
+                  style: GoogleFonts.dmSans(fontSize: 14, color: const Color(0xFF212828)),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF8E1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: const Color(0xFFFFECB3)),
+                  ),
+                  child: Text(
+                    'Once approved by Foam Administrators, dispatch broadcast rides will become available to accept.',
+                    style: GoogleFonts.dmSans(fontSize: 12, color: const Color(0xFF795548)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Dismiss', style: GoogleFonts.dmSans(color: Colors.black54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00AABC),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(context, RiderDashboardScreen.id);
+                },
+                child: Text(
+                  'View Dashboard',
+                  style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else if (status == 'REJECTED') {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: Row(
+              children: [
+                const Icon(Icons.cancel_rounded, color: Colors.redAccent, size: 28),
+                const SizedBox(width: 8),
+                Text(
+                  'Application Declined',
+                  style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+              ],
+            ),
+            content: Text(
+              'Your rider application was not approved. You can review your details and re-apply.',
+              style: GoogleFonts.dmSans(fontSize: 14, color: const Color(0xFF212828)),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('Close', style: GoogleFonts.dmSans(color: Colors.black54)),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF00AABC),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Navigator.pushNamed(context, RiderRegistrationScreen.id);
+                },
+                child: Text(
+                  'Update & Reapply',
+                  style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+        );
+      } else {
+        Navigator.pushNamed(context, RiderDashboardScreen.id);
+      }
+    } else {
+      // User is not yet a rider -> Navigate to RiderRegistrationScreen
+      Navigator.pushNamed(context, RiderRegistrationScreen.id);
+    }
+  }
+
+  /// Register a new Rider (or register an existing user as a Rider)
   Future<bool> register({
     required String name,
     required String phone,
     String? email,
-    required String password,
+    String? password,
     required String vehicleType,
     required String vehiclePlate,
     String? licenseNumber,
@@ -79,15 +258,16 @@ class RiderProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
+      final headers = _authHeaders;
       final response = await http
           .post(
             Uri.parse('$_baseUrl/api/rider/register'),
-            headers: {'Content-Type': 'application/json'},
+            headers: headers,
             body: jsonEncode({
               'name': name.trim(),
               'phone': phone.trim(),
               'email': email?.trim(),
-              'password': password,
+              if (password != null && password.isNotEmpty) 'password': password,
               'vehicleType': vehicleType.toUpperCase(),
               'vehiclePlate': vehiclePlate.trim(),
               'licenseNumber': licenseNumber?.trim(),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
@@ -30,6 +32,32 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
 
   String _selectedVehicleType = 'Motorcycle';
   final List<String> _vehicleTypes = ['Motorcycle', 'Bicycle', 'Car', 'Van'];
+  bool _isLoggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initUserData());
+  }
+
+  void _initUserData() {
+    final token = HiveClass.getToken();
+    _isLoggedIn = token.isNotEmpty;
+    if (_isLoggedIn) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      final fullName = '${auth.firstName} ${auth.lastName}'.trim();
+      if (fullName.isNotEmpty) {
+        _nameController.text = fullName;
+      }
+      if (auth.phoneNumber.isNotEmpty) {
+        _phoneController.text = auth.phoneNumber;
+      }
+      if (auth.email.isNotEmpty) {
+        _emailController.text = auth.email;
+      }
+      setState(() {});
+    }
+  }
 
   @override
   void dispose() {
@@ -54,7 +82,9 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       email: _emailController.text.trim().isNotEmpty
           ? _emailController.text.trim()
           : null,
-      password: _passwordController.text,
+      password: _isLoggedIn
+          ? (_passwordController.text.trim().isNotEmpty ? _passwordController.text.trim() : null)
+          : _passwordController.text.trim(),
       vehicleType: _selectedVehicleType.toUpperCase(),
       vehiclePlate: _plateController.text.trim(),
       licenseNumber: _licenseController.text.trim().isNotEmpty
@@ -69,6 +99,10 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     if (!mounted) return;
 
     if (success) {
+      if (_isLoggedIn) {
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        auth.setRiderRegistered(true, status: 'PENDING');
+      }
       _showPendingApprovalDialog();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -181,7 +215,9 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Register your vehicle and route coverage to start accepting delivery orders.',
+                  _isLoggedIn
+                      ? 'Your account details are linked. Complete your vehicle & coverage information below to become a rider.'
+                      : 'Register your vehicle and route coverage to start accepting delivery orders.',
                   style: GoogleFonts.dmSans(fontSize: 14, color: Colors.black54),
                 ),
                 const SizedBox(height: 24),
@@ -280,7 +316,7 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
 
                 const SizedBox(height: 24),
                 // Personal & Account Info
-                _buildSectionHeader('Rider Account Details'),
+                _buildSectionHeader(_isLoggedIn ? 'Rider Account Details (Linked)' : 'Rider Account Details'),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -309,22 +345,37 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                         validator: (v) => (v == null || v.trim().length < 10) ? 'Enter valid phone number' : null,
                       ),
                       const SizedBox(height: 14),
-                      Text('Email Address', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                      Text(
+                        _isLoggedIn ? 'Email Address (Locked to account)' : 'Email Address',
+                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
                       const SizedBox(height: 6),
                       TextFormField(
                         controller: _emailController,
+                        readOnly: _isLoggedIn,
                         keyboardType: TextInputType.emailAddress,
-                        decoration: _inputDecoration(hint: 'rider@example.com'),
+                        decoration: _inputDecoration(
+                          hint: 'rider@example.com',
+                          suffixIcon: _isLoggedIn
+                              ? const Tooltip(
+                                  message: 'Email cannot be changed once linked to account',
+                                  child: Icon(Icons.lock_outline, size: 18, color: Colors.black45),
+                                )
+                              : null,
+                          helperText: _isLoggedIn ? 'Your account email cannot be changed' : null,
+                        ),
                       ),
-                      const SizedBox(height: 14),
-                      Text('Password', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13)),
-                      const SizedBox(height: 6),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: true,
-                        decoration: _inputDecoration(hint: '••••••••'),
-                        validator: (v) => (v == null || v.length < 6) ? 'Password must be at least 6 characters' : null,
-                      ),
+                      if (!_isLoggedIn) ...[
+                        const SizedBox(height: 14),
+                        Text('Password', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13)),
+                        const SizedBox(height: 6),
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: true,
+                          decoration: _inputDecoration(hint: '••••••••'),
+                          validator: (v) => (v == null || v.length < 6) ? 'Password must be at least 6 characters' : null,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -400,10 +451,13 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     }
   }
 
-  InputDecoration _inputDecoration({required String hint}) {
+  InputDecoration _inputDecoration({required String hint, Widget? suffixIcon, String? helperText}) {
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.dmSans(color: Colors.black38, fontSize: 14),
+      suffixIcon: suffixIcon,
+      helperText: helperText,
+      helperStyle: GoogleFonts.dmSans(color: Colors.black45, fontSize: 12),
       filled: true,
       fillColor: const Color(0xFFF9FAFB),
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),

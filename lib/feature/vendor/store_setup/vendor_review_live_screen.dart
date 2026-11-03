@@ -20,10 +20,9 @@ class VendorReviewLiveScreen extends StatelessWidget {
             : store.name.substring(0, store.name.length >= 2 ? 2 : 1).toUpperCase())
         : 'ST';
 
-    final laundryPriced = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding').length +
-        vendorProvider.getItemPrices(store.id, 'Laundry', 'Non-folding').length;
-    final dryCleaningPriced = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Folding').length +
-        vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Non-folding').length;
+    final laundryPriced = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding').length;
+    final dryCleaningPriced = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Standard').length;
+    final includeFolding = vendorProvider.getStoreIncludeFolding(store.id);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -125,6 +124,8 @@ class VendorReviewLiveScreen extends StatelessWidget {
               _buildCheckItem('Laundry prices', laundryPriced > 0 ? '$laundryPriced items configured' : 'Not configured'),
               const SizedBox(height: 12),
               _buildCheckItem('Dry cleaning prices', dryCleaningPriced > 0 ? '$dryCleaningPriced items configured' : 'Not configured'),
+              const SizedBox(height: 12),
+              _buildCheckItem('Folding service', includeFolding ? 'Included by default' : 'Optional'),
 
               const SizedBox(height: 24),
 

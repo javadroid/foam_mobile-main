@@ -642,6 +642,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final String address = authProvider.addressStreet;
             final String city = authProvider.addressCity;
             final bool isVendor = authProvider.role == 'VENDOR' || authProvider.businessName.isNotEmpty;
+            final riderProvider = Provider.of<RiderProvider>(context);
+            final bool isRiderRegistered = authProvider.isRider || riderProvider.isRegistered;
+            final bool isRiderApproved = riderProvider.isApproved || (authProvider.role == 'RIDER' && authProvider.isRiderVerified);
+            final bool isRiderPending = riderProvider.isPending || authProvider.isRiderPending;
 
             final String initials = (firstName.isNotEmpty && lastName.isNotEmpty)
                 ? '${firstName[0]}${lastName[0]}'.toUpperCase()
@@ -849,6 +853,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                 ],
 
+                // If user is also an approved rider, show rider quick switch card
+                if (isRiderApproved) ...[
+                  InkWell(
+                    onTap: () {
+                      Provider.of<RiderProvider>(context, listen: false).checkAndNavigateToRider(context);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF064E3B), Color(0xFF047857)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF064E3B).withValues(alpha: 0.15),
+                            blurRadius: 16,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(Icons.two_wheeler_rounded, color: Colors.white, size: 22),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Rider Dashboard',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 15,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Accept rides, track dispatches & view wallet',
+                                  style: GoogleFonts.dmSans(
+                                    color: const Color(0xFFA7F3D0),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Switch',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                const Icon(Icons.arrow_forward_ios_rounded, color: Colors.white, size: 11),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+
                 // 2. Personal Information Section
                 _buildSectionHeader('Personal Details'),
                 const SizedBox(height: 8),
@@ -973,36 +1064,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildSectionHeader('Logistics & Rider Partner'),
                 const SizedBox(height: 8),
                 _buildSectionCard([
-                  _buildDetailTile(
-                    icon: Icons.two_wheeler_rounded,
-                    iconBgColor: const Color(0xFFDCFCE7),
-                    iconColor: const Color(0xFF16A34A),
-                    title: 'Foam Rider Portal',
-                    value: 'Deliver laundry, accept rides & earn daily',
-                    trailingWidget: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF16A34A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        'Rider Mode',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.white,
+                  if (isRiderRegistered)
+                    _buildDetailTile(
+                      icon: Icons.two_wheeler_rounded,
+                      iconBgColor: const Color(0xFFDCFCE7),
+                      iconColor: const Color(0xFF16A34A),
+                      title: 'Rider Dashboard',
+                      value: isRiderPending
+                          ? 'Application under review · Pending verification'
+                          : 'Deliver laundry, accept rides & earn daily',
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: isRiderPending ? const Color(0xFFF59E0B) : const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          isRiderPending ? 'Pending' : 'Open',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
+                      onTap: () => Provider.of<RiderProvider>(context, listen: false).checkAndNavigateToRider(context),
+                    )
+                  else
+                    _buildDetailTile(
+                      icon: Icons.two_wheeler_rounded,
+                      iconBgColor: const Color(0xFFDCFCE7),
+                      iconColor: const Color(0xFF16A34A),
+                      title: 'Become a Foam Rider',
+                      value: 'Deliver laundry, accept rides & earn daily',
+                      trailingWidget: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          'Apply Now',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ),
+                      onTap: () => Provider.of<RiderProvider>(context, listen: false).checkAndNavigateToRider(context),
                     ),
-                    onTap: () {
-                      final riderProvider = Provider.of<RiderProvider>(context, listen: false);
-                      if (riderProvider.isRegistered) {
-                        Navigator.of(context, rootNavigator: true).pushNamed(RiderDashboardScreen.id);
-                      } else {
-                        Navigator.of(context, rootNavigator: true).pushNamed(RiderRegistrationScreen.id);
-                      }
-                    },
-                  ),
                 ]),
 
                 const SizedBox(height: 20),

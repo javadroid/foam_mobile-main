@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 
@@ -138,6 +139,64 @@ void main() {
       expect(provider.isApproved, true);
       expect(provider.isOnline, true);
       expect(provider.token, 'fake-jwt-token');
+    });
+
+    test('Existing user can become a rider and tracks status seamlessly', () {
+      final auth = AuthProvider();
+      auth.fillAuth('Chinedu', 'Eze', '', 'chinedu@example.com', '08099887766');
+
+      expect(auth.isRider, false);
+      expect(auth.isRiderPending, false);
+      expect(auth.isRiderVerified, false);
+
+      // Existing user registers as rider -> status becomes PENDING
+      auth.setRiderRegistered(true, status: 'PENDING');
+      expect(auth.isRider, true);
+      expect(auth.isRiderPending, true);
+      expect(auth.isRiderVerified, false);
+
+      // Admin approves rider -> status becomes APPROVED
+      auth.setRiderRegistered(true, status: 'APPROVED');
+      expect(auth.isRider, true);
+      expect(auth.isRiderPending, false);
+      expect(auth.isRiderVerified, true);
+    });
+
+    test('AuthProvider populates rider details from backend profile response map', () {
+      final auth = AuthProvider();
+      auth.fillAuth(
+        'Ngozi',
+        'Okoro',
+        '',
+        'ngozi@example.com',
+        '08012349999',
+        role: 'USER',
+        rider: {
+          'id': 50,
+          'approvalStatus': 'PENDING',
+          'vehicleType': 'MOTORCYCLE',
+        },
+      );
+
+      expect(auth.isRiderRegistered, true);
+      expect(auth.isRider, true);
+      expect(auth.isRiderPending, true);
+      expect(auth.riderStatus, 'PENDING');
+    });
+
+    test('RiderProvider pending approval status gating', () {
+      final provider = RiderProvider();
+      final pendingProfile = RiderProfile(
+        id: 99,
+        name: 'Pending Rider',
+        phone: '08099999999',
+        approvalStatus: 'PENDING',
+      );
+
+      provider.setCurrentRiderForTesting(pendingProfile);
+      expect(provider.isRegistered, true);
+      expect(provider.isPending, true);
+      expect(provider.isApproved, false);
     });
   });
 }

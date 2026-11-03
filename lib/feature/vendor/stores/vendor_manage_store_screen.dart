@@ -177,7 +177,7 @@ class VendorManageStoreScreen extends StatelessWidget {
               const SizedBox(height: 12),
 
               _buildManagePriceRow(
-                title: 'Laundry · Folding',
+                title: 'Laundry',
                 subtitle: _getPriceSummary(provider, store.id, 'Laundry', 'Folding'),
                 onEdit: () {
                   Navigator.push(
@@ -193,51 +193,57 @@ class VendorManageStoreScreen extends StatelessWidget {
               ),
               const Divider(height: 16, color: VendorColors.border),
               _buildManagePriceRow(
-                title: 'Laundry · Non-folding',
-                subtitle: _getPriceSummary(provider, store.id, 'Laundry', 'Non-folding'),
-                onEdit: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
-                        serviceType: 'Laundry',
-                        foldType: 'Non-folding',
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const Divider(height: 16, color: VendorColors.border),
-              _buildManagePriceRow(
-                title: 'Dry cleaning · Folding',
-                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Folding'),
+                title: 'Dry cleaning',
+                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Standard'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
                       builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
-                        foldType: 'Folding',
+                        foldType: 'Standard',
                       ),
                     ),
                   );
                 },
               ),
               const Divider(height: 16, color: VendorColors.border),
-              _buildManagePriceRow(
-                title: 'Dry cleaning · Non-folding',
-                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Non-folding'),
-                onEdit: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
-                        serviceType: 'Dry cleaning',
-                        foldType: 'Non-folding',
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Include Folding Service',
+                            style: GoogleFonts.dmSans(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              color: VendorColors.textMain,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Wash, dry, iron and fold by default (customers can opt out at checkout)',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12.5,
+                              color: VendorColors.textMuted,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  );
-                },
+                    Switch(
+                      value: provider.getStoreIncludeFolding(store.id),
+                      activeColor: const Color(0xFF16A34A),
+                      onChanged: (val) {
+                        provider.setStoreIncludeFolding(store.id, val);
+                      },
+                    ),
+                  ],
+                ),
               ),
 
               const SizedBox(height: 28),

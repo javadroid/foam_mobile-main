@@ -11,8 +11,10 @@ import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:ultimate_bottom_navbar/ultimate_bottom_navbar.dart';
 
 class MainScreen extends StatefulWidget {
+  final int initialIndex;
   const MainScreen({
     super.key,
+    this.initialIndex = 0,
   });
 
   static const String id = '/main_screen';
@@ -65,6 +67,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void initState() {
     super.initState();
+    currentIndex = widget.initialIndex;
     var authProvider = Provider.of<AuthProvider>(context, listen: false);
     var basketProvider = Provider.of<BasketProvider>(context, listen: false);
 

@@ -165,6 +165,16 @@ class VendorProvider extends ChangeNotifier {
 
   // Pricing Matrix: StoreId -> ServiceType -> FoldType -> ItemName -> Price
   final Map<String, Map<String, double>> _pricingMap = {};
+  final Map<String, bool> _storeFoldingSetting = {};
+
+  bool getStoreIncludeFolding(String storeId) {
+    return _storeFoldingSetting[storeId] ?? true;
+  }
+
+  void setStoreIncludeFolding(String storeId, bool value) {
+    _storeFoldingSetting[storeId] = value;
+    notifyListeners();
+  }
 
   // Wallet
   double _availableBalance = 0.0;
@@ -400,7 +410,22 @@ class VendorProvider extends ChangeNotifier {
   Map<String, double> getItemPrices(
       String storeId, String service, String foldType) {
     final key = '${storeId}_${service}_$foldType';
-    return _pricingMap[key] ?? {};
+    if (_pricingMap.containsKey(key) && _pricingMap[key]!.isNotEmpty) {
+      return _pricingMap[key]!;
+    }
+    final foldKey = '${storeId}_${service}_Folding';
+    if (_pricingMap.containsKey(foldKey) && _pricingMap[foldKey]!.isNotEmpty) {
+      return _pricingMap[foldKey]!;
+    }
+    final nonFoldKey = '${storeId}_${service}_Non-folding';
+    if (_pricingMap.containsKey(nonFoldKey) && _pricingMap[nonFoldKey]!.isNotEmpty) {
+      return _pricingMap[nonFoldKey]!;
+    }
+    final stdKey = '${storeId}_${service}_Standard';
+    if (_pricingMap.containsKey(stdKey) && _pricingMap[stdKey]!.isNotEmpty) {
+      return _pricingMap[stdKey]!;
+    }
+    return {};
   }
 
   void setItemPrice(String storeId, String service, String foldType,

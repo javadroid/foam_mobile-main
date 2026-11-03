@@ -1,3 +1,4 @@
+import 'package:foam_mobile/core/Screens/billing/payment_success_screen.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
@@ -738,11 +739,53 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
 
                       if (result != null) {
                         if (result.success) {
+                          final previousTotalItems = basketProvider.totalItems;
                           await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
-                          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
-                          nav.pushNamedAndRemoveUntil(
-                            MainScreen.id,
-                            (route) => false,
+
+                          final orderData = result.data;
+                          final String orderRef = result.reference ??
+                              (orderData != null && orderData.containsKey('id')
+                                  ? '#FM-${orderData['id']}'
+                                  : (orderData != null && orderData.containsKey('reference') ? orderData['reference'].toString() : ''));
+
+                          await nav.push(
+                            MaterialPageRoute(
+                              builder: (_) => PaymentSuccessScreen(
+                                title: 'Order Placed Successfully! 🎉',
+                                subtitle: 'Your laundry order was placed and confirmed.',
+                                itemTitle: '$previousTotalItems Laundry Items',
+                                amount: orderAmount,
+                                paymentMethod: orderData != null && orderData.containsKey('paymentMethod')
+                                    ? orderData['paymentMethod'].toString()
+                                    : (orderData != null && orderData.containsKey('paymentType')
+                                        ? orderData['paymentType'].toString()
+                                        : 'Online Payment'),
+                                reference: orderRef.isNotEmpty ? orderRef : null,
+                                details: [
+                                  MapEntry('Pickup Address', effectiveAddress),
+                                  MapEntry('Pickup Date',
+                                      DateFormat('dd MMM yyyy').format(selectedDate)),
+                                  if (formattedPickupTime != null)
+                                    MapEntry('Pickup Time', formattedPickupTime),
+                                  if (deliveryDate != null)
+                                    MapEntry(
+                                        'Delivery Date',
+                                        DateFormat('dd MMM yyyy')
+                                            .format(deliveryDate!)),
+                                  MapEntry('Folding Service',
+                                      widget.noFolding ? 'No Folding' : 'Standard Folding Included'),
+                                ],
+                                primaryButtonLabel: 'View Order in History',
+                                onPrimaryPressed: () {
+                                  nav.pushAndRemoveUntil(
+                                    MaterialPageRoute(
+                                      builder: (_) => const MainScreen(initialIndex: 1),
+                                    ),
+                                    (route) => false,
+                                  );
+                                },
+                              ),
+                            ),
                           );
                         } else {
                           MyMessageHandler.showSnackBar(scaffoldKey, result.message);

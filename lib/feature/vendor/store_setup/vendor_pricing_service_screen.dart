@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
-import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_fold_screen.dart';
+import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_items_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_review_live_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -17,10 +17,11 @@ class VendorPricingServiceScreen extends StatelessWidget {
     final store = vendorProvider.currentStore;
     final storeName = store.name;
 
-    final laundryCount = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding').length +
-        vendorProvider.getItemPrices(store.id, 'Laundry', 'Non-folding').length;
-    final dryCleaningCount = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Folding').length +
-        vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Non-folding').length;
+    final laundryPrices = vendorProvider.getItemPrices(store.id, 'Laundry', 'Folding');
+    final laundryCount = laundryPrices.length;
+
+    final dryCleaningPrices = vendorProvider.getItemPrices(store.id, 'Dry cleaning', 'Standard');
+    final dryCleaningCount = dryCleaningPrices.length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -66,18 +67,19 @@ class VendorPricingServiceScreen extends StatelessWidget {
               ),
               const SizedBox(height: 28),
 
-              // Service Option 1: Laundry
+              // Service Option 1: Laundry (Direct to Items with Folding Setting)
               _buildServiceCard(
                 title: 'Laundry',
-                subtitle: 'Wash & fold or wash & hang',
+                subtitle: 'Wash, dry, iron & folding care',
                 statusText: laundryCount > 0 ? '$laundryCount items priced' : 'Not started',
                 isConfigured: laundryCount > 0,
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Laundry',
+                        foldType: 'Folding',
                       ),
                     ),
                   );
@@ -85,7 +87,7 @@ class VendorPricingServiceScreen extends StatelessWidget {
               ),
               const SizedBox(height: 16),
 
-              // Service Option 2: Dry cleaning
+              // Service Option 2: Dry cleaning (Direct to Items)
               _buildServiceCard(
                 title: 'Dry cleaning',
                 subtitle: 'Suits, evening wear, delicate fabrics',
@@ -95,8 +97,9 @@ class VendorPricingServiceScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingFoldScreen(
+                      builder: (context) => const VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
+                        foldType: 'Standard',
                       ),
                     ),
                   );
@@ -161,26 +164,35 @@ class VendorPricingServiceScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(18),
         decoration: BoxDecoration(
-          color: VendorColors.lightBg,
+          color: Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isConfigured
-                ? VendorColors.primary.withValues(alpha: 0.4)
-                : VendorColors.border,
+            color: isConfigured ? VendorColors.primary : VendorColors.border,
+            width: isConfigured ? 1.5 : 1.0,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
-                color: isConfigured ? VendorColors.draftBg : Colors.white,
+                color: isConfigured
+                    ? VendorColors.primary.withValues(alpha: 0.1)
+                    : VendorColors.lightBg,
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 title == 'Laundry' ? Icons.local_laundry_service : Icons.dry_cleaning,
                 color: isConfigured ? VendorColors.primary : VendorColors.textMuted,
-                size: 24,
+                size: 22,
               ),
             ),
             const SizedBox(width: 16),
@@ -191,32 +203,36 @@ class VendorPricingServiceScreen extends StatelessWidget {
                   Text(
                     title,
                     style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 17,
                       color: VendorColors.textMain,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 16,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Text(
                     subtitle,
                     style: GoogleFonts.dmSans(
-                      fontSize: 13,
                       color: VendorColors.textMuted,
+                      fontSize: 13,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     statusText,
                     style: GoogleFonts.dmSans(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
                       color: isConfigured ? VendorColors.primary : VendorColors.textMuted,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 12,
                     ),
                   ),
                 ],
               ),
             ),
-            const Icon(Icons.chevron_right, color: VendorColors.textMuted),
+            const Icon(
+              Icons.chevron_right,
+              color: VendorColors.border,
+              size: 24,
+            ),
           ],
         ),
       ),

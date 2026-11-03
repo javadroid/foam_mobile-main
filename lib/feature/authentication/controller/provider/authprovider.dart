@@ -23,7 +23,12 @@ class AuthProvider extends ChangeNotifier {
   bool get isVendor => role.toUpperCase() == 'VENDOR';
   bool get isVendorVerified => isVendor && vendorStatus == 'APPROVED';
   bool get isVendorPending => isVendor && vendorStatus == 'PENDING';
-  bool get isRider => role.toUpperCase() == 'RIDER';
+
+  bool isRiderRegistered = false;
+  String riderStatus = 'NOT_REGISTERED';
+  bool get isRider => role.toUpperCase() == 'RIDER' || isRiderRegistered;
+  bool get isRiderVerified => isRider && riderStatus == 'APPROVED';
+  bool get isRiderPending => isRider && riderStatus == 'PENDING';
 
   Map<String, dynamic> user = {};
 
@@ -75,6 +80,8 @@ class AuthProvider extends ChangeNotifier {
     businessName = '';
     vendorStatus = 'NOT_STARTED';
     vendorRejectionReason = null;
+    isRiderRegistered = false;
+    riderStatus = 'NOT_REGISTERED';
     addressStreet = '';
     addressCity = '';
     addressPostalCode = '';
@@ -93,6 +100,7 @@ class AuthProvider extends ChangeNotifier {
     String? businessName,
     String? vendorStatus,
     String? vendorRejectionReason,
+    dynamic rider,
   }) {
     firstName = userFirstName;
     lastName = userLastName;
@@ -105,6 +113,16 @@ class AuthProvider extends ChangeNotifier {
     if (vendorRejectionReason != null) {
       this.vendorRejectionReason = vendorRejectionReason;
     }
+    if (rider != null && rider is Map) {
+      isRiderRegistered = true;
+      riderStatus = (rider['approvalStatus'] ?? 'PENDING').toString().toUpperCase();
+    }
+    notifyListeners();
+  }
+
+  void setRiderRegistered(bool registered, {String status = 'PENDING'}) {
+    isRiderRegistered = registered;
+    riderStatus = status;
     notifyListeners();
   }
 

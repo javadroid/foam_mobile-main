@@ -30,6 +30,13 @@ class Order {
   final DateTime createdAt;
   final int? orderHistoryId;
   final int? riderId;
+  final String? pickupAddress;
+  final String? deliveryAddress;
+  final String? pickupTime;
+  final String? deliveryTime;
+  final String? storeName;
+  final String? riderName;
+  final String? riderPhone;
   final List<OrderItem> items;
 
   Order({
@@ -46,6 +53,13 @@ class Order {
     required this.createdAt,
     this.orderHistoryId,
     this.riderId,
+    this.pickupAddress,
+    this.deliveryAddress,
+    this.pickupTime,
+    this.deliveryTime,
+    this.storeName,
+    this.riderName,
+    this.riderPhone,
     required this.items,
   });
 
@@ -74,6 +88,13 @@ class Order {
           : DateTime.now(),
       orderHistoryId: json['orderHistoryId'],
       riderId: json['riderId'],
+      pickupAddress: json['pickupAddress'],
+      deliveryAddress: json['deliveryAddress'],
+      pickupTime: json['pickupTime'],
+      deliveryTime: json['deliveryTime'],
+      storeName: json['store'] != null ? json['store']['name'] : null,
+      riderName: json['rider'] != null ? json['rider']['name'] : null,
+      riderPhone: json['rider'] != null ? json['rider']['phone'] : null,
       items: items,
     );
   }
