@@ -12,6 +12,7 @@ import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
 
 class PickupAddressScreen extends StatefulWidget {
@@ -317,19 +318,27 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
           elevation: 0,
+          backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: AppColors.blackAccentColor,
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF0F172A),
+              size: 20,
             ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Pickup Address',
-            style: Constants.headingStyle.copyWith(fontSize: 20),
+            'Schedule & Address',
+            style: GoogleFonts.dmSans(
+              fontSize: 19,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+            ),
           ),
+          centerTitle: true,
         ),
         body: SingleChildScrollView(
           padding: const EdgeInsets.all(20.0),
@@ -571,119 +580,253 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                 ),
                 const SizedBox(height: 4),
               ],
-              AppSpaces.verticalSpace20,
-              const Text(
+              const SizedBox(height: 18),
+              Text(
                 'Pickup Date',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-              AppSpaces.verticalSpace10,
+              const SizedBox(height: 8),
               InkWell(
                 onTap: () => _selectDate(context),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.shadeGreyAccentColor,
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Center(
-                    child: Text(
-                      DateFormat('dd MMM yyyy')
-                          .format(selectedDate)
-                          .toUpperCase(),
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w500),
-                    ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryAccentColor.withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.calendar_today_rounded,
+                          size: 18,
+                          color: AppColors.primaryAccentColor,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
+                              style: GoogleFonts.dmSans(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF0F172A),
+                              ),
+                            ),
+                            Text(
+                              'Tap to reschedule pickup day',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+                    ],
                   ),
                 ),
               ),
-              AppSpaces.verticalSpace20,
-              const Text(
-                'Pickup Time (optional)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+
+              const SizedBox(height: 16),
+              Text(
+                'Pickup Time Window (optional)',
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-              AppSpaces.verticalSpace10,
+              const SizedBox(height: 8),
               Row(
                 children: [
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('From'),
-                        AppSpaces.verticalSpace5,
-                        InkWell(
-                          onTap: () => _selectTime(context, true),
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: AppColors.shadeGreyAccentColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
+                    child: InkWell(
+                      onTap: () => _selectTime(context, true),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFF64748B)),
+                            const SizedBox(width: 8),
+                            Expanded(
                               child: Text(
-                                fromTime != null
-                                    ? fromTime!.format(context)
-                                    : '',
+                                fromTime != null ? fromTime!.format(context) : 'Start Time',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: fromTime != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                  AppSpaces.horizontalSpace10,
+                  const SizedBox(width: 12),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('To'),
-                        AppSpaces.verticalSpace5,
-                        InkWell(
-                          onTap: () => _selectTime(context, false),
-                          child: Container(
-                            height: 50,
-                            decoration: BoxDecoration(
-                              color: AppColors.shadeGreyAccentColor,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Center(
+                    child: InkWell(
+                      onTap: () => _selectTime(context, false),
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.access_time_filled_rounded, size: 16, color: Color(0xFF64748B)),
+                            const SizedBox(width: 8),
+                            Expanded(
                               child: Text(
-                                toTime != null ? toTime!.format(context) : '',
+                                toTime != null ? toTime!.format(context) : 'End Time',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: toTime != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                                ),
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],
               ),
-              AppSpaces.verticalSpace20,
-              const Text(
+
+              const SizedBox(height: 16),
+              Text(
                 'Delivery Date (optional)',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
+                style: GoogleFonts.dmSans(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: const Color(0xFF0F172A),
+                ),
               ),
-              AppSpaces.verticalSpace10,
+              const SizedBox(height: 8),
               InkWell(
                 onTap: () => _selectDeliveryDate(context),
+                borderRadius: BorderRadius.circular(12),
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(vertical: 20),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                   decoration: BoxDecoration(
-                    color: AppColors.shadeGreyAccentColor,
-                    borderRadius: BorderRadius.circular(10),
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE2E8F0)),
                   ),
-                  child: Center(
-                    child: Text(
-                      deliveryDate != null
-                          ? DateFormat('dd MMM yyyy')
-                              .format(deliveryDate!)
-                              .toUpperCase()
-                          : 'SELECT DELIVERY DATE',
-                      style: const TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.w500),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.local_shipping_outlined,
+                          size: 18,
+                          color: Color(0xFF10B981),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              deliveryDate != null
+                                  ? DateFormat('EEEE, MMMM d, yyyy').format(deliveryDate!)
+                                  : 'Select estimated delivery date',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.w700,
+                                color: deliveryDate != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
+                              ),
+                            ),
+                            Text(
+                              deliveryDate != null ? 'Tap to change delivery date' : 'Optional standard 2-3 day return',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 12,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+              // Order Summary Badge
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Total to Pay',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            color: const Color(0xFF64748B),
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text(
+                          widget.noFolding ? 'No Folding' : 'Standard Folding Included',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11.5,
+                            color: const Color(0xFF94A3B8),
+                          ),
+                        ),
+                      ],
                     ),
-                  ),
+                    Text(
+                      '₦${NumberFormat('#,###').format(widget.totalAmount > 0 ? widget.totalAmount : basketProvider.totalPrice)}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.primaryAccentColor,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               AppSpaces.verticalSpace40,

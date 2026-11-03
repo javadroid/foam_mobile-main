@@ -117,58 +117,117 @@ class _MainScreenState extends State<MainScreen> {
         ),
         extendBody: true,
         //<------like this
-        bottomNavigationBar: Container(
-          height: MediaQuery.of(context).size.height * 0.11,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            color: AppColors.primaryAccentColor,
-            gradient: LinearGradient(
-              begin: Alignment.bottomLeft,
-              end: Alignment.center,
-              colors: [
-                ...AppColors.gradientColor,
-              ],
-            ),
-          ),
-          child: UltimateBottomNavBar(
-            icons: [
-              currentIndex == 0 ? Icons.home : Icons.home_outlined,
-              currentIndex == 1
-                  ? Icons.access_time_filled
-                  : Icons.access_time_outlined,
-              currentIndex == 2
-                  ? Icons.shopping_bag_rounded
-                  : Icons.shopping_bag_outlined,
-              currentIndex == 3 ? Icons.person : Icons.person_outline,
-            ],
-            titles: const [
-              'Home',
-              'History',
-              'Basket',
-              'Profile',
-            ],
-            currentIndex: currentIndex,
-            onTap: (value) {
-              setState(() {
-                currentIndex = value;
-              });
-            },
-            showBackGroundStrokeAllSide: false,
-            backgroundStrokeBorderColor: Colors.transparent,
-            //<--------this very important for good design looking
-            showForeGround: false,
-            //<------------this too
-            animationType: Curves.elasticInOut,
-            animationDuration: const Duration(seconds: 2),
-            unselectedIconColor: AppColors.primaryBackgroundColor,
-            selectedIconColor: AppColors.blackAccentColor,
-            unselectedTextColor: AppColors.primaryBackgroundColor,
-            selectedTextColor: AppColors.blackAccentColor,
-            selectedIconSize: 30,
-            selectedTextSize: 12,
-            unselectedIconSize: 28,
-            unselectedTextSize: 11,
-          ),
+        bottomNavigationBar: Consumer<BasketProvider>(
+          builder: (context, basketProvider, child) {
+            final int basketCount = basketProvider.basketItems.fold<int>(
+              0,
+              (sum, item) => sum + item.quantity,
+            );
+
+            final double bottomPadding = MediaQuery.of(context).padding.bottom;
+            final double barHeight = 70.0 + (bottomPadding > 0 ? bottomPadding * 0.4 : 0.0);
+
+            return Container(
+              height: barHeight,
+              padding: EdgeInsets.only(
+                bottom: bottomPadding > 0 ? bottomPadding * 0.25 : 0.0,
+              ),
+              decoration: BoxDecoration(
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
+                color: AppColors.primaryAccentColor,
+                gradient: LinearGradient(
+                  begin: Alignment.bottomLeft,
+                  end: Alignment.center,
+                  colors: [
+                    ...AppColors.gradientColor,
+                  ],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.12),
+                    blurRadius: 16,
+                    offset: const Offset(0, -4),
+                  ),
+                ],
+              ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  UltimateBottomNavBar(
+                    icons: [
+                      currentIndex == 0 ? Icons.home : Icons.home_outlined,
+                      currentIndex == 1
+                          ? Icons.access_time_filled
+                          : Icons.access_time_outlined,
+                      currentIndex == 2
+                          ? Icons.shopping_bag_rounded
+                          : Icons.shopping_bag_outlined,
+                      currentIndex == 3 ? Icons.person : Icons.person_outline,
+                    ],
+                    titles: const [
+                      'Home',
+                      'History',
+                      'Basket',
+                      'Profile',
+                    ],
+                    currentIndex: currentIndex,
+                    onTap: (value) {
+                      setState(() {
+                        currentIndex = value;
+                      });
+                    },
+                    showBackGroundStrokeAllSide: false,
+                    backgroundStrokeBorderColor: Colors.transparent,
+                    showForeGround: false,
+                    animationType: Curves.easeOutCubic,
+                    animationDuration: const Duration(milliseconds: 240),
+                    unselectedIconColor: AppColors.primaryBackgroundColor,
+                    selectedIconColor: AppColors.blackAccentColor,
+                    unselectedTextColor: AppColors.primaryBackgroundColor,
+                    selectedTextColor: AppColors.blackAccentColor,
+                    selectedIconSize: 28,
+                    selectedTextSize: 11.5,
+                    unselectedIconSize: 26,
+                    unselectedTextSize: 11,
+                  ),
+                  if (basketCount > 0)
+                    Positioned(
+                      top: 6,
+                      left: (MediaQuery.of(context).size.width * 0.625) + 4,
+                      child: IgnorePointer(
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: Colors.white, width: 1.5),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                          child: Center(
+                            child: Text(
+                              basketCount > 99 ? '99+' : basketCount.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 9.5,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

@@ -1,22 +1,14 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:flutter_paystack_max/flutter_paystack_max.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:foam_mobile/core/Screens/basket/controller/order_controller.dart';
-import 'package:foam_mobile/core/Screens/basket/controller/remote_basket.dart';
-import 'package:foam_mobile/core/Screens/basket/model/basket.dart';
 import 'package:foam_mobile/core/Screens/basket/view/pickup_address_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/models/add_to_basket_model.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
-import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/utils/shimmer_effect.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
-import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:provider/provider.dart';
-import 'package:foam_mobile/widgets/click_button.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class BasketScreen extends StatefulWidget {
   const BasketScreen({super.key});
@@ -81,30 +73,37 @@ class _BasketScreenState extends State<BasketScreen> {
         }
       });
     }
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
         appBar: AppBar(
           elevation: 0,
-          bottomOpacity: 6,
+          backgroundColor: Colors.white,
           leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: AppColors.blackAccentColor,
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF0F172A),
+              size: 20,
             ),
-            onPressed: () => {
-              if (Navigator.canPop(context))
-                {Navigator.pop(context)}
-              else
-                {Navigator.pushNamed(context, MainScreen.id)}
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushNamed(context, MainScreen.id);
+              }
             },
           ),
           title: Text(
             'Basket',
             overflow: TextOverflow.ellipsis,
-            style: Constants.headingStyle,
+            style: GoogleFonts.dmSans(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              color: const Color(0xFF0F172A),
+            ),
           ),
+          centerTitle: true,
           actions: [
             if (basket.isNotEmpty)
               TextButton(
@@ -115,32 +114,34 @@ class _BasketScreenState extends State<BasketScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: const Text(
+                      title: Text(
                         'Clear Cart',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                        style: GoogleFonts.dmSans(fontWeight: FontWeight.w700),
                       ),
-                      content: const Text(
+                      content: Text(
                         'Are you sure you want to remove all items from your basket?',
+                        style: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
                       ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text(
+                          child: Text(
                             'Cancel',
-                            style: TextStyle(color: Colors.grey),
+                            style: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
                           ),
                         ),
                         ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.red.shade600,
+                            backgroundColor: const Color(0xFFEF4444),
+                            elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text(
+                          child: Text(
                             'Clear',
-                            style: TextStyle(
+                            style: GoogleFonts.dmSans(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -154,11 +155,12 @@ class _BasketScreenState extends State<BasketScreen> {
                     await basketProvider.clearBasket(scaffoldKey);
                   }
                 },
-                child: const Text(
+                child: Text(
                   'Clear Cart',
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
+                  style: GoogleFonts.dmSans(
+                    color: const Color(0xFFEF4444),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
                   ),
                 ),
               ),
@@ -168,24 +170,75 @@ class _BasketScreenState extends State<BasketScreen> {
             ? ShimmerEffect().basketLoadingCard()
             : basket.isEmpty
                 ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.shopping_basket_outlined,
-                          size: 100,
-                          color: Colors.grey,
-                        ),
-                        AppSpaces.verticalSpace20,
-                        const Text(
-                          'Your basket is empty',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 90,
+                            height: 90,
+                            decoration: BoxDecoration(
+                              color: AppColors.primaryAccentColor.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: Icon(
+                              Icons.shopping_bag_outlined,
+                              size: 44,
+                              color: AppColors.primaryAccentColor,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 20),
+                          Text(
+                            'Your basket is empty',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                              color: const Color(0xFF0F172A),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Looks like you haven\'t added any laundry items yet. Browse our services or schedule a pickup.',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 14,
+                              color: const Color(0xFF64748B),
+                              height: 1.4,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryAccentColor,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 24, vertical: 12),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pushNamed(context, ServicesScreen.id);
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Browse Services',
+                                  style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.arrow_forward_rounded, size: 16),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   )
                 : SingleChildScrollView(
@@ -193,24 +246,64 @@ class _BasketScreenState extends State<BasketScreen> {
                       children: [
                         ListView.builder(
                           shrinkWrap: true,
-                          padding: EdgeInsets.zero,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: basket.length + 1,
                           itemBuilder: ((context, index) {
                             if (index == 0) {
-                              return Padding(
-                                padding: const EdgeInsets.all(16.0),
+                              return Container(
+                                margin: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.02),
+                                      blurRadius: 6,
+                                      offset: const Offset(0, 2),
+                                    ),
+                                  ],
+                                ),
                                 child: Row(
                                   children: [
-                                    const Text(
-                                      'Include folding?',
-                                      style: TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                    Container(
+                                      padding: const EdgeInsets.all(8),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primaryAccentColor.withValues(alpha: 0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.checkroom_outlined,
+                                        size: 20,
+                                        color: AppColors.primaryAccentColor,
                                       ),
                                     ),
-                                    AppSpaces.horizontalSpace10,
-                                    Switch(
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Include folding?',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 15,
+                                              fontWeight: FontWeight.w700,
+                                              color: const Color(0xFF0F172A),
+                                            ),
+                                          ),
+                                          Text(
+                                            'Neatly folded & wrapped packaging',
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 12,
+                                              color: const Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    Switch.adaptive(
                                       value: isNoFolding,
                                       onChanged: isQuoteLoading
                                           ? null
@@ -228,7 +321,20 @@ class _BasketScreenState extends State<BasketScreen> {
                             }
                             final item = basket[index - 1];
                             return Container(
-                              padding: const EdgeInsets.all(16),
+                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.02),
+                                    blurRadius: 6,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
@@ -542,9 +648,32 @@ class _BasketScreenState extends State<BasketScreen> {
                         ),
                         // AppSpaces.verticalSpace20,
                         Container(
-                          padding: const EdgeInsets.all(16.0),
+                          margin: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                          padding: const EdgeInsets.all(18.0),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: const Color(0xFFE2E8F0)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.03),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              Text(
+                                'Order Summary',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF0F172A),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
                               if (isQuoteLoading)
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 12),
@@ -592,15 +721,19 @@ class _BasketScreenState extends State<BasketScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Subtotal',
-                                      style: TextStyle(fontSize: 16),
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14.5,
+                                        color: const Color(0xFF64748B),
+                                      ),
                                     ),
                                     Text(
                                       '₦${Constants().currencyFormat(totalAmount)}',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0F172A),
                                       ),
                                     ),
                                   ],
@@ -614,15 +747,19 @@ class _BasketScreenState extends State<BasketScreen> {
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
                                     children: [
-                                      const Text(
+                                      Text(
                                         'Folding Surcharge',
-                                        style: TextStyle(fontSize: 16),
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 14.5,
+                                          color: const Color(0xFF64748B),
+                                        ),
                                       ),
                                       Text(
                                         '₦${Constants().currencyFormat(noFoldingSurcharge)}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w700,
+                                          color: const Color(0xFF0F172A),
                                         ),
                                       ),
                                     ],
@@ -635,15 +772,19 @@ class _BasketScreenState extends State<BasketScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Delivery Charge',
-                                      style: TextStyle(fontSize: 16),
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 14.5,
+                                        color: const Color(0xFF64748B),
+                                      ),
                                     ),
                                     Text(
                                       '₦${Constants().currencyFormat(deliveryCharge)}',
-                                      style: const TextStyle(
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.bold,
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 15,
+                                        fontWeight: FontWeight.w700,
+                                        color: const Color(0xFF0F172A),
                                       ),
                                     ),
                                   ],
@@ -659,11 +800,12 @@ class _BasketScreenState extends State<BasketScreen> {
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    const Text(
+                                    Text(
                                       'Total Payable',
-                                      style: TextStyle(
+                                      style: GoogleFonts.dmSans(
                                         fontSize: 16,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w800,
+                                        color: const Color(0xFF0F172A),
                                       ),
                                     ),
                                     if (isQuoteLoading)
@@ -680,10 +822,10 @@ class _BasketScreenState extends State<BasketScreen> {
                                           const SizedBox(width: 6),
                                           Text(
                                             'Calculating...',
-                                            style: TextStyle(
+                                            style: GoogleFonts.dmSans(
                                               fontSize: 14,
                                               fontWeight: FontWeight.w600,
-                                              color: Colors.grey.shade600,
+                                              color: const Color(0xFF64748B),
                                             ),
                                           ),
                                         ],
@@ -691,52 +833,88 @@ class _BasketScreenState extends State<BasketScreen> {
                                     else
                                       Text(
                                         '₦${Constants().currencyFormat(totalPrice)}',
-                                        style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
+                                        style: GoogleFonts.dmSans(
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppColors.primaryAccentColor,
                                         ),
                                       ),
                                   ],
                                 ),
                               ),
 
-                              AppSpaces.verticalSpace40,
+                              const SizedBox(height: 20),
 
                               // Make Payment Button
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ClickButton(
-                                      text: isQuoteLoading
-                                          ? 'Calculating new price...'
-                                          : 'Make Payment',
-                                      textColor: Colors.white,
-                                      isLoading: isLoading,
-                                      onPressed: (isQuoteLoading || isLoading)
-                                          ? null
-                                          : () async {
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      PickupAddressScreen(
-                                                    totalAmount: totalPrice,
-                                                    noFolding: isNoFolding,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                      fontSize:
-                                          MediaQuery.sizeOf(context).height /
-                                              53,
-                                      color: isQuoteLoading
-                                          ? Colors.grey
-                                          : AppColors.secondaryBackgroundColor,
+                              SizedBox(
+                                width: double.infinity,
+                                height: 50,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: (isQuoteLoading || isLoading)
+                                        ? Colors.grey.shade400
+                                        : AppColors.secondaryBackgroundColor,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
                                     ),
                                   ),
-                                ],
+                                  onPressed: (isQuoteLoading || isLoading)
+                                      ? null
+                                      : () async {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) =>
+                                                  PickupAddressScreen(
+                                                totalAmount: totalPrice,
+                                                noFolding: isNoFolding,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                  child: isQuoteLoading
+                                      ? Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const SizedBox(
+                                              width: 18,
+                                              height: 18,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                color: Colors.white,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 10),
+                                            Text(
+                                              'Calculating new price...',
+                                              style: GoogleFonts.dmSans(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15,
+                                              ),
+                                            ),
+                                          ],
+                                        )
+                                      : Row(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            const Icon(Icons.lock_outline_rounded, size: 18),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'Proceed to Checkout',
+                                              style: GoogleFonts.dmSans(
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 15.5,
+                                              ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            const Icon(Icons.arrow_forward_rounded, size: 16),
+                                          ],
+                                        ),
+                                ),
                               ),
-                              SizedBox(height: 100),
+                              const SizedBox(height: 80),
                             ],
                           ),
                         ),

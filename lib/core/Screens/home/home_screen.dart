@@ -6,7 +6,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:http/http.dart' as http;
-import 'package:foam_mobile/core/Screens/basket/view/basket_screen.dart';
 import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
 import 'package:foam_mobile/core/Screens/billing/payment_success_screen.dart';
 import 'package:foam_mobile/core/Screens/drawer.dart';
@@ -23,6 +22,7 @@ import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HomePage extends StatefulWidget {
   final VoidCallback? toProfile;
@@ -354,11 +354,15 @@ class _HomePageState extends State<HomePage> {
                       end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      width: 1,
+                    ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1E3A8A).withValues(alpha: 0.25),
-                        blurRadius: 18,
-                        offset: const Offset(0, 6),
+                        color: const Color(0xFF0F172A).withValues(alpha: 0.18),
+                        blurRadius: 20,
+                        offset: const Offset(0, 8),
                       ),
                     ],
                   ),
@@ -811,12 +815,10 @@ class _HomePageState extends State<HomePage> {
               ),
               loadingBuilder: (context, child, loadingProgress) {
                 if (loadingProgress == null) return child;
-                return Container(
-                  color: const Color(0xFFE2E8F0),
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2, color: Color(0xFF0098A6)),
-                  ),
+                return Shimmer.fromColors(
+                  baseColor: const Color(0xFFE2E8F0),
+                  highlightColor: const Color(0xFFF1F5F9),
+                  child: Container(color: Colors.white),
                 );
               },
             ),
@@ -828,7 +830,7 @@ class _HomePageState extends State<HomePage> {
                   begin: Alignment.centerLeft,
                   end: Alignment.centerRight,
                   colors: [
-                    Colors.black.withValues(alpha: 0.80),
+                    Colors.black.withValues(alpha: 0.82),
                     Colors.black.withValues(alpha: 0.45),
                     Colors.black.withValues(alpha: 0.05),
                   ],
@@ -864,24 +866,38 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   const SizedBox(height: 14),
-                  InkWell(
-                    onTap: onTap,
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF0098A6),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        'Get Started',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 18, vertical: 9),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0098A6),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0098A6).withValues(alpha: 0.4),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Get Started',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Icon(
+                          Icons.arrow_forward_rounded,
+                          size: 14,
                           color: Colors.white,
                         ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
@@ -923,6 +939,7 @@ class _HomePageState extends State<HomePage> {
         subtitle: subtitle,
         price: price,
         services: features,
+        isPopular: isPopular,
         additionalBenefits: const [
           '10% discount on overflow laundry beyond quota',
         ],
