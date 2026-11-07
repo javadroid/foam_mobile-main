@@ -2,9 +2,9 @@ part of '../values.dart';
 
 class Constants {
   // URL
-  // static String url = "http://10.215.5.217:8545";
-  // static String url = "http://127.0.0.1:8545";
-  static String url = "http://192.168.0.75:8545";
+  static String url = "http://127.0.0.1:8545";
+  // static String url = "http://10.34.14.51:8545";
+  // static String url = "http://192.168.0.75:8545";
   // static String url = "http://localhost:8545";
   // static String url = "https://foamlaundryapp.com";
 
@@ -15,8 +15,8 @@ class Constants {
   // OneSignal App ID
   static String oneSignalAppId = "b3f03235-0ed2-4afa-8818-e38f36a453d8";
 
-  // Google API key
-  static const String googleAPIKey = 'AIzaSyA7hyiwzU6LHTHhtntU36tAPRi46DXrygo';
+  // Google API key (Working key with Geocoding, Places, Directions & Static Maps enabled)
+  static const String googleAPIKey = "AIzaSyB5O_2oARf0lU5YlGfDsxgeEj_l_HxOjNY";
   static const String googleMapsApiKey =
       "AIzaSyB5O_2oARf0lU5YlGfDsxgeEj_l_HxOjNY";
   // Google OAuth 2.0 Client IDs

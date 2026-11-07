@@ -1,6 +1,4 @@
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
-import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
-import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
@@ -10,20 +8,18 @@ import 'package:foam_mobile/feature/authentication/controller/provider/authprovi
 import 'package:foam_mobile/feature/authentication/model/change_password_model.dart';
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
-import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/gradient_button.dart';
 import 'package:foam_mobile/widgets/my_text_field.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
-import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:foam_mobile/core/Screens/billing/billing_screen.dart';
 import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
+import 'package:foam_mobile/widgets/partner_selection_modal.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? toHome;
@@ -643,9 +639,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             final String city = authProvider.addressCity;
             final bool isVendor = authProvider.role == 'VENDOR' || authProvider.businessName.isNotEmpty;
             final riderProvider = Provider.of<RiderProvider>(context);
-            final bool isRiderRegistered = authProvider.isRider || riderProvider.isRegistered;
             final bool isRiderApproved = riderProvider.isApproved || (authProvider.role == 'RIDER' && authProvider.isRiderVerified);
-            final bool isRiderPending = riderProvider.isPending || authProvider.isRiderPending;
 
             final String initials = (firstName.isNotEmpty && lastName.isNotEmpty)
                 ? '${firstName[0]}${lastName[0]}'.toUpperCase()
@@ -1004,116 +998,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                 const SizedBox(height: 20),
 
-                // Vendor / Business Section
-                _buildSectionHeader('Vendor & Business'),
+                // Partner Programs Section
+                _buildSectionHeader('Partner Programs'),
                 const SizedBox(height: 8),
                 _buildSectionCard([
-                  if (authProvider.isVendor)
-                    _buildDetailTile(
-                      icon: Icons.storefront_rounded,
-                      iconBgColor: const Color(0xFFE0F2FE),
-                      iconColor: const Color(0xFF0284C7),
-                      title: 'Vendor Management Portal',
-                      value: 'Manage laundry orders, stores & services',
-                      trailingWidget: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0284C7),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Open Portal',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
+                  _buildDetailTile(
+                    icon: Icons.handshake_outlined,
+                    iconBgColor: const Color(0xFFE5F7F8),
+                    iconColor: const Color(0xFF00AABC),
+                    title: 'Partner with Foam',
+                    value: 'List your laundry store or deliver with us',
+                    trailingWidget: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF001C1F),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        'Explore',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
                         ),
                       ),
-                      onTap: () => Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context),
-                    )
-                  else
-                    _buildDetailTile(
-                      icon: Icons.store_mall_directory_rounded,
-                      iconBgColor: const Color(0xFFFEF3C7),
-                      iconColor: const Color(0xFFD97706),
-                      title: 'Become a Foam Vendor',
-                      value: 'Partner with Foam & list your laundry business',
-                      trailingWidget: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFD97706),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Apply Now',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      onTap: () => Provider.of<VendorProvider>(context, listen: false).checkAndNavigateToVendor(context),
                     ),
-                ]),
-
-                const SizedBox(height: 20),
-
-                // Rider / Logistics Section
-                _buildSectionHeader('Logistics & Rider Partner'),
-                const SizedBox(height: 8),
-                _buildSectionCard([
-                  if (isRiderRegistered)
-                    _buildDetailTile(
-                      icon: Icons.two_wheeler_rounded,
-                      iconBgColor: const Color(0xFFDCFCE7),
-                      iconColor: const Color(0xFF16A34A),
-                      title: 'Rider Dashboard',
-                      value: isRiderPending
-                          ? 'Application under review · Pending verification'
-                          : 'Deliver laundry, accept rides & earn daily',
-                      trailingWidget: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: isRiderPending ? const Color(0xFFF59E0B) : const Color(0xFF16A34A),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          isRiderPending ? 'Pending' : 'Open',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      onTap: () => Provider.of<RiderProvider>(context, listen: false).checkAndNavigateToRider(context),
-                    )
-                  else
-                    _buildDetailTile(
-                      icon: Icons.two_wheeler_rounded,
-                      iconBgColor: const Color(0xFFDCFCE7),
-                      iconColor: const Color(0xFF16A34A),
-                      title: 'Become a Foam Rider',
-                      value: 'Deliver laundry, accept rides & earn daily',
-                      trailingWidget: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF16A34A),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          'Apply Now',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                      onTap: () => Provider.of<RiderProvider>(context, listen: false).checkAndNavigateToRider(context),
-                    ),
+                    onTap: () => PartnerSelectionModal.show(context),
+                  ),
                 ]),
 
                 const SizedBox(height: 20),

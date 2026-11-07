@@ -182,17 +182,7 @@ class _RiderCoverageMapWidgetState extends State<RiderCoverageMapWidget> {
       _radiusKm = clamped;
       _updateAreaDescription();
     });
-
-    if (_mapController != null) {
-      _mapController!.animateCamera(
-        CameraUpdate.newCameraPosition(
-          CameraPosition(
-            target: _center,
-            zoom: _calculateZoomForRadius(clamped),
-          ),
-        ),
-      );
-    }
+    // Do not animateCamera / zoom map when adjusting radius, keeping user's camera zoom level stable
   }
 
   Set<Circle> _buildCircles() {

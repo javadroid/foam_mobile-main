@@ -1,5 +1,3 @@
-import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
-import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -9,11 +7,10 @@ import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_regi
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_0.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/click_button.dart';
+import 'package:foam_mobile/widgets/partner_selection_modal.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_sign_up_screen.dart';
-import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/theme/theme_main_provider.dart';
 
 class OnBoardingScreen extends StatefulWidget {
@@ -169,91 +166,19 @@ class _OnBoardingScreenState extends State<OnBoardingScreen> {
                       ),
                     ),
                   ),
-                  // const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   InkWell(
-                    onTap: () =>
-                        Navigator.of(context, rootNavigator: true).pushNamed(
-                      VendorSignUpScreen.id,
-                    ),
+                    onTap: () => PartnerSelectionModal.show(context),
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.store_mall_directory_outlined,
-                            size: 16,
-                            color: AppColors.blackAccentColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Own a Laundry Service? Partner with us',
-                            style: GoogleFonts.dmSans(
-                              decoration: TextDecoration.underline,
-                              color: AppColors.blackAccentColor,
-                              fontSize: 12,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () =>
-                        Navigator.of(context, rootNavigator: true).pushNamed(
-                      VendorSignUpScreen.id,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.storefront_outlined,
-                            size: 16,
-                            color: AppColors.primaryAccentColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Partner with Foam · Vendor Portal',
-                            style: GoogleFonts.dmSans(
-                              color: AppColors.primaryAccentColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
-                      ),
-                  ),
-                    ),
-                  const SizedBox(height: 6),
-                  InkWell(
-                    onTap: () =>
-                        Navigator.of(context, rootNavigator: true).pushNamed(
-                      RiderRegistrationScreen.id,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 6.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.two_wheeler_outlined,
-                            size: 16,
-                            color: AppColors.secondaryBackgroundColor,
-                          ),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Deliver with Foam · Rider Portal',
-                            style: GoogleFonts.dmSans(
-                              color: AppColors.secondaryBackgroundColor,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ],
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: Text(
+                        'Partner with us',
+                        style: GoogleFonts.dmSans(
+                          color: AppColors.blackAccentColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          decoration: TextDecoration.underline,
+                        ),
                       ),
                     ),
                   ),
