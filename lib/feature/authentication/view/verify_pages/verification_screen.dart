@@ -106,28 +106,31 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   Column(
                     children: [
                       //sign in button
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          GradientButton(
-                            isLoading: loading,
-                            onPressed: () async {
-                              setState(() {
-                                loading = true;
-                              });
-                              String code = controllers.map((e) => e.text).join();
-                              if (widget.isForgotPassword) {
-                                await VerifyClass.verifyForgotPassword(code, context, _scaffoldKey);
-                              } else {
-                                await VerifyClass.verify(code, context, _scaffoldKey);
-                              }
-                              setState(() {
-                                loading = false;
-                              });
-                            },
-                            text: widget.isForgotPassword ? 'Create New Password' : 'Verify',
-                          ),
-                        ],
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                        child: GradientButton(
+                          isLoading: loading,
+                          onPressed: () async {
+                            setState(() {
+                              loading = true;
+                            });
+                            String code =
+                                controllers.map((e) => e.text).join();
+                            if (widget.isForgotPassword) {
+                              await VerifyClass.verifyForgotPassword(
+                                  code, context, _scaffoldKey);
+                            } else {
+                              await VerifyClass.verify(
+                                  code, context, _scaffoldKey);
+                            }
+                            setState(() {
+                              loading = false;
+                            });
+                          },
+                          text: widget.isForgotPassword
+                              ? 'Create New Password'
+                              : 'Verify',
+                        ),
                       ),
 
                       const SizedBox(

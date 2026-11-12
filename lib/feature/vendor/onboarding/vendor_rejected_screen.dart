@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_documents_screen.dart';
-import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/core/Screens/help/help_screen.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 class VendorRejectedScreen extends StatelessWidget {
   static const String id = '/vendor_rejected';
@@ -10,93 +12,109 @@ class VendorRejectedScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final vendorProvider = Provider.of<VendorProvider>(context);
+    final kyc = vendorProvider.kycStatus;
+
+    String docTag = 'CAC REGISTRATION';
+    String rejectionMessage =
+        "The certificate is cropped and the RC number isn't readable. Upload a clear scan of the full page.";
+
+    final reason = kyc.rejectionReason;
+    if (reason != null && reason.isNotEmpty) {
+      rejectionMessage = reason;
+      final lower = reason.toLowerCase();
+      if (lower.contains('id') ||
+          lower.contains('identity') ||
+          lower.contains('passport') ||
+          lower.contains('nin') ||
+          lower.contains('voter')) {
+        docTag = "OWNER'S VALID ID";
+      } else if (lower.contains('address') ||
+          lower.contains('utility') ||
+          lower.contains('bill')) {
+        docTag = 'PROOF OF BUSINESS ADDRESS';
+      }
+    }
+
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VendorColors.textMain),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+          padding: const EdgeInsets.fromLTRB(16.0, 36.0, 16.0, 32.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // 88px Amber Exclamation Circle
               Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: VendorColors.urgentBg,
-                  borderRadius: BorderRadius.circular(12),
+                width: 88,
+                height: 88,
+                decoration: const BoxDecoration(
+                  color: Color(0xFFFDF0E2),
+                  shape: BoxShape.circle,
                 ),
-                child: const Icon(
-                  Icons.priority_high_rounded,
-                  color: VendorColors.urgentText,
-                  size: 26,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                'One document needs another look',
-                style: GoogleFonts.dmSans(
-                  color: VendorColors.textMain,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Fix the item below and resubmit. Everything else you sent was approved.',
-                style: GoogleFonts.dmSans(
-                  color: VendorColors.textMuted,
-                  fontSize: 14,
-                  height: 1.4,
+                alignment: Alignment.center,
+                child: Text(
+                  '!',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 40,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFFCF7B0C),
+                    height: 1.0,
+                  ),
                 ),
               ),
               const SizedBox(height: 32),
 
-              // Rejection Card
+              // Title
+              Text(
+                'One document needs another look',
+                style: GoogleFonts.dmSans(
+                  color: const Color(0xFF212828),
+                  fontSize: 31,
+                  fontWeight: FontWeight.w500,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 10),
+
+              // Subtitle
+              Text(
+                'Fix the item below and resubmit. Everything else you sent is saved.',
+                style: GoogleFonts.dmSans(
+                  color: const Color(0xFF5E5E5E),
+                  fontSize: 16,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 32),
+
+              // Rejection Card (#FDF0E2 container)
               Container(
-                padding: const EdgeInsets.all(18),
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
-                  color: VendorColors.urgentBg.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: VendorColors.urgentText.withValues(alpha: 0.2)),
+                  color: const Color(0xFFFDF0E2),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: VendorColors.urgentText,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'CAC REGISTRATION',
-                          style: GoogleFonts.dmSans(
-                            color: VendorColors.urgentText,
-                            fontSize: 12,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 10),
                     Text(
-                      "The certificate is cropped and the RC number isn't visible. Please upload the full page clearly showing your company number.",
+                      docTag,
                       style: GoogleFonts.dmSans(
-                        color: VendorColors.textMain,
-                        fontSize: 14,
-                        height: 1.5,
+                        color: const Color(0xFFCF7B0C),
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.04,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      rejectionMessage,
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFF212828),
+                        fontSize: 16,
+                        height: 1.45,
                       ),
                     ),
                   ],
@@ -105,34 +123,73 @@ class VendorRejectedScreen extends StatelessWidget {
 
               const Spacer(),
 
-              VendorButton(
-                text: 'Fix and resubmit',
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const VendorDocumentsScreen(),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 14),
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    // Contact support action
-                  },
-                  child: Text(
-                    'Questions? Contact Foam support',
-                    style: GoogleFonts.dmSans(
-                      color: VendorColors.primary,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
+              // Primary CTA Button: Fix and resubmit
+              Container(
+                width: double.infinity,
+                height: 53,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF001C1F),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      final vendor =
+                          Provider.of<VendorProvider>(context, listen: false);
+                      vendor.setOnboardingStep(1);
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const VendorOnboardingStepperScreen(),
+                        ),
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(8),
+                    child: Center(
+                      child: Text(
+                        'Fix and resubmit',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          letterSpacing: 1.44,
+                        ),
+                      ),
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 16),
+
+              // Footer: Questions? Contact Foam support
+              Center(
+                child: GestureDetector(
+                  onTap: () {
+                    Navigator.pushNamed(context, HelpScreen.id);
+                  },
+                  child: Text.rich(
+                    TextSpan(
+                      text: 'Questions? ',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 16,
+                        color: const Color(0xFF5E5E5E),
+                      ),
+                      children: [
+                        TextSpan(
+                          text: 'Contact Foam support',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF00AABC),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

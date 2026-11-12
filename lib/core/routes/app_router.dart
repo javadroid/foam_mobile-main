@@ -188,8 +188,8 @@ class AppRouter {
           settings: settings,
         );
 
-      case LoginOrRegisterPage
-            .id: // Login screen route (with optional parameter)
+      case LoginOrRegisterPage.id:
+      case '/log_in': // Fallback alias for login route
         return MaterialPageRoute(
           builder: (_) => const LoginOrRegisterPage(),
           settings: settings,

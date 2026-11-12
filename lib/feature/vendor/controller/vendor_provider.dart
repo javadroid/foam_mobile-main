@@ -6,6 +6,7 @@ import 'package:foam_mobile/feature/authentication/controller/provider/authprovi
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:http/http.dart' as http;
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
@@ -167,6 +168,52 @@ class VendorProvider extends ChangeNotifier {
   final Map<String, Map<String, double>> _pricingMap = {};
   final Map<String, bool> _storeFoldingSetting = {};
 
+  // Per-Item Folding Status: StoreId_ServiceType_ItemName -> bool (default: true)
+  final Map<String, bool> _itemFoldingMap = {};
+
+  bool isItemFoldingIncluded(String storeId, String service, String item) {
+    final key = '${storeId}_${service}_$item';
+    return _itemFoldingMap[key] ?? true;
+  }
+
+  void setItemFoldingIncluded(String storeId, String service, String item, bool included) {
+    final key = '${storeId}_${service}_$item';
+    _itemFoldingMap[key] = included;
+    notifyListeners();
+  }
+
+  // Custom Items added by vendor: StoreId_ServiceType -> List<String>
+  final Map<String, List<String>> _customItemsMap = {};
+
+  List<String> getCustomItems(String storeId, String service) {
+    final key = '${storeId}_$service';
+    return List<String>.from(_customItemsMap[key] ?? []);
+  }
+
+  void addCustomItem(String storeId, String service, String item) {
+    final key = '${storeId}_$service';
+    _customItemsMap.putIfAbsent(key, () => []);
+    if (!_customItemsMap[key]!.contains(item)) {
+      _customItemsMap[key]!.add(item);
+      final itemKey = '${storeId}_${service}_$item';
+      _itemFoldingMap[itemKey] = true;
+      notifyListeners();
+    }
+  }
+
+  void removeCustomItem(String storeId, String service, String item) {
+    final key = '${storeId}_$service';
+    _customItemsMap[key]?.remove(item);
+    final itemKey = '${storeId}_${service}_$item';
+    _itemFoldingMap.remove(itemKey);
+    for (final k in _pricingMap.keys) {
+      if (k.startsWith('${storeId}_${service}_')) {
+        _pricingMap[k]?.remove(item);
+      }
+    }
+    notifyListeners();
+  }
+
   bool getStoreIncludeFolding(String storeId) {
     return _storeFoldingSetting[storeId] ?? true;
   }
@@ -176,10 +223,69 @@ class VendorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Foam Commission Percentage configured by Admin (defaults to 15%)
+  double _foamCommissionPercentage = 15.0;
+  double get foamCommissionPercentage => _foamCommissionPercentage;
+
+  Future<double> fetchFoamCommission() async {
+    try {
+      final token = HiveClass.getToken();
+      final headers = <String, String>{
+        'Accept': 'application/json',
+      };
+      if (token.isNotEmpty) {
+        headers['Authorization'] = 'Bearer $token';
+      }
+      final res = await http.get(
+        Uri.parse('${Constants.url}/api/vendor/commission'),
+        headers: headers,
+      );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['commissionPercentage'] != null) {
+          _foamCommissionPercentage =
+              (data['commissionPercentage'] as num).toDouble();
+          notifyListeners();
+          return _foamCommissionPercentage;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching admin commission: $e');
+    }
+    return _foamCommissionPercentage;
+  }
+
   // Wallet
   double _availableBalance = 0.0;
   final double _onHoldBalance = 0.0;
   final List<VendorTransactionItem> _transactions = [];
+
+  String? _vendorAvatarUrl;
+  String? get vendorAvatarUrl => _vendorAvatarUrl;
+
+  Future<bool> updateVendorProfileImage(String photoUrl) async {
+    try {
+      final token = HiveClass.getToken();
+      if (token.isEmpty) return false;
+      final res = await http.put(
+        Uri.parse('${Constants.url}/api/user/profile'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({'avatarUrl': photoUrl}),
+      );
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        _vendorAvatarUrl = photoUrl;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error updating vendor profile image: $e');
+    }
+    return false;
+  }
 
   VendorProvider() {
     _selectedStoreId = _stores.isNotEmpty ? _stores.first.id : null;
@@ -211,6 +317,15 @@ class VendorProvider extends ChangeNotifier {
 
   // Getters
   List<VendorStore> get stores => _stores;
+
+  void addStore(VendorStore store) {
+    _stores.add(store);
+    if (_selectedStoreId == null) {
+      _selectedStoreId = store.id;
+    }
+    notifyListeners();
+  }
+
   VendorKycStatus get kycStatus => _kycStatus;
   double get availableBalance => _availableBalance;
   double get onHoldBalance => _onHoldBalance;
@@ -451,6 +566,57 @@ class VendorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<bool> saveStorePricing({
+    required String storeId,
+    required String serviceType,
+    required Map<String, double> itemPrices,
+    required Map<String, bool> itemFolding,
+  }) async {
+    // 1. Update local cache
+    for (final entry in itemPrices.entries) {
+      final item = entry.key;
+      final price = entry.value;
+      final isFolding = itemFolding[item] ?? true;
+
+      setItemPrice(storeId, serviceType, 'Folding', item, price);
+      setItemPrice(storeId, serviceType, 'Non-folding', item, price);
+      setItemPrice(storeId, serviceType, 'Standard', item, price);
+      setItemFoldingIncluded(storeId, serviceType, item, isFolding);
+    }
+
+    // 2. Sync to Backend if connected
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty && int.tryParse(storeId) != null) {
+        final backendServiceType =
+            serviceType == 'Dry cleaning' ? 'DRY_CLEANING' : 'LAUNDRY';
+        final itemsPayload = itemPrices.entries.map((entry) {
+          final isFolding = itemFolding[entry.key] ?? true;
+          return {
+            'serviceType': backendServiceType,
+            'foldType': isFolding ? 'FOLDING' : 'NON_FOLDING',
+            'itemName': entry.key,
+            'price': entry.value,
+          };
+        }).toList();
+
+        final res = await http.put(
+          Uri.parse('${Constants.url}/api/vendor/stores/$storeId/pricing'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'items': itemsPayload}),
+        );
+        return res.statusCode == 200;
+      }
+    } catch (e) {
+      debugPrint('Error syncing store pricing to backend: $e');
+    }
+    return true;
+  }
+
   bool withdraw(double amount, String ref) {
     if (amount > 0 && amount <= _availableBalance) {
       _availableBalance -= amount;
@@ -669,11 +835,18 @@ class VendorProvider extends ChangeNotifier {
     String sat = '9:00 AM – 5:00 PM';
     String sun = 'Closed';
 
+    Map<String, dynamic>? hoursMap;
     if (json['operatingHours'] != null) {
-      if (json['operatingHours'] is Map) {
-        monFri = json['operatingHours']['monFri']?.toString() ?? monFri;
-        sat = json['operatingHours']['sat']?.toString() ?? sat;
-        sun = json['operatingHours']['sun']?.toString() ?? sun;
+      if (json['operatingHours'] is Map<String, dynamic>) {
+        hoursMap = json['operatingHours'] as Map<String, dynamic>;
+        monFri = hoursMap['monFri']?.toString() ?? monFri;
+        sat = hoursMap['sat']?.toString() ?? sat;
+        sun = hoursMap['sun']?.toString() ?? sun;
+      } else if (json['operatingHours'] is Map) {
+        hoursMap = Map<String, dynamic>.from(json['operatingHours'] as Map);
+        monFri = hoursMap['monFri']?.toString() ?? monFri;
+        sat = hoursMap['sat']?.toString() ?? sat;
+        sun = hoursMap['sun']?.toString() ?? sun;
       } else if (json['operatingHours'] is String) {
         monFri = json['operatingHours'].toString();
       }
@@ -682,6 +855,26 @@ class VendorProvider extends ChangeNotifier {
     int pricedCount = 0;
     if (json['pricing'] is List) {
       pricedCount = (json['pricing'] as List).length;
+    }
+
+    double basicPct = 0;
+    double balancePct = 15;
+    double premiumPct = 35;
+    List<dynamic>? turnaroundOptions;
+
+    if (json['turnaroundOptions'] is List) {
+      turnaroundOptions = json['turnaroundOptions'] as List;
+      for (final opt in turnaroundOptions) {
+        if (opt is Map) {
+          final pkg = (opt['package'] ?? opt['name'])?.toString().toUpperCase();
+          final pct = (opt['percentage'] is num) ? (opt['percentage'] as num).toDouble() : null;
+          if (pct != null) {
+            if (pkg == 'BASIC') basicPct = pct;
+            if (pkg == 'BALANCE') balancePct = pct;
+            if (pkg == 'PREMIUM') premiumPct = pct;
+          }
+        }
+      }
     }
 
     return VendorStore(
@@ -697,6 +890,7 @@ class VendorProvider extends ChangeNotifier {
       hoursMonFri: monFri,
       hoursSat: sat,
       hoursSun: sun,
+      operatingHoursMap: hoursMap,
       latitude: (json['latitude'] is num)
           ? (json['latitude'] as num).toDouble()
           : null,
@@ -707,6 +901,10 @@ class VendorProvider extends ChangeNotifier {
       turnaroundDays: (json['turnaroundDays'] is num)
           ? (json['turnaroundDays'] as num).toInt()
           : 2,
+      turnaroundOptions: turnaroundOptions,
+      basicPercentage: basicPct,
+      balancePercentage: balancePct,
+      premiumPercentage: premiumPct,
     );
   }
 
@@ -761,6 +959,8 @@ class VendorProvider extends ChangeNotifier {
     String sat = '9:00 AM – 5:00 PM',
     String sun = 'Closed',
     int turnaroundDays = 2,
+    Map<String, dynamic>? operatingHours,
+    List<Map<String, dynamic>>? turnaroundOptions,
   }) async {
     if (!canAddStore) {
       return {
@@ -789,11 +989,12 @@ class VendorProvider extends ChangeNotifier {
           'longitude': lng,
           'photoUrl': photoUrl,
           'turnaroundDays': turnaroundDays,
-          'operatingHours': {
+          'operatingHours': operatingHours ?? {
             'monFri': monFri,
             'sat': sat,
             'sun': sun,
           },
+          if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
 
@@ -827,6 +1028,9 @@ class VendorProvider extends ChangeNotifier {
         hoursMonFri: monFri,
         hoursSat: sat,
         hoursSun: sun,
+        operatingHoursMap: operatingHours,
+        turnaroundDays: turnaroundDays,
+        turnaroundOptions: turnaroundOptions,
       );
       _stores.add(newStore);
       _selectedStoreId = newStore.id;
@@ -848,6 +1052,8 @@ class VendorProvider extends ChangeNotifier {
     String sat = '9:00 AM – 5:00 PM',
     String sun = 'Closed',
     int turnaroundDays = 2,
+    Map<String, dynamic>? operatingHours,
+    List<Map<String, dynamic>>? turnaroundOptions,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -868,11 +1074,12 @@ class VendorProvider extends ChangeNotifier {
           'longitude': lng,
           'photoUrl': photoUrl,
           'turnaroundDays': turnaroundDays,
-          'operatingHours': {
+          'operatingHours': operatingHours ?? {
             'monFri': monFri,
             'sat': sat,
             'sun': sun,
           },
+          if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
 
@@ -932,6 +1139,7 @@ class VendorProvider extends ChangeNotifier {
         final data = jsonDecode(res.body);
 
         _draftBusinessName = data['businessName']?.toString() ?? '';
+        _vendorAvatarUrl = data['avatarUrl']?.toString();
         final firstName = data['firstName']?.toString() ?? '';
         final lastName = data['lastName']?.toString() ?? '';
         _draftOwnerName = '$firstName $lastName'.trim();
@@ -1119,6 +1327,7 @@ class VendorProvider extends ChangeNotifier {
     );
 
     await fetchVendorProfile();
+    await fetchStores();
 
     if (!context.mounted) return;
     Navigator.of(context, rootNavigator: true).pop(); // dismiss loader
@@ -1128,7 +1337,11 @@ class VendorProvider extends ChangeNotifier {
 
     // Check if the vendor is approved, actively in review, or starting onboarding
     if (status == 'APPROVED') {
-      Navigator.pushNamed(context, VendorMainScreen.id);
+      if (_stores.isEmpty) {
+        Navigator.pushNamed(context, VendorApprovedScreen.id);
+      } else {
+        Navigator.pushNamed(context, VendorMainScreen.id);
+      }
     } else if (status == 'PENDING' &&
         (auth.isVendor ||
             _kycStatus.cacUploaded ||

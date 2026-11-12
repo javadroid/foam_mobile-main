@@ -19,6 +19,7 @@ class AuthProvider extends ChangeNotifier {
   String businessName = '';
   String vendorStatus = 'NOT_STARTED';
   String? vendorRejectionReason;
+  String avatarUrl = '';
 
   bool get isVendor => role.toUpperCase() == 'VENDOR';
   bool get isVendorVerified => isVendor && vendorStatus == 'APPROVED';
@@ -57,6 +58,7 @@ class AuthProvider extends ChangeNotifier {
       'middleName': middleName,
       'phoneNumber': phoneNumber,
       'email': email,
+      'avatarUrl': avatarUrl,
       'role': role,
       'businessName': businessName,
       'vendorStatus': vendorStatus,
@@ -76,6 +78,7 @@ class AuthProvider extends ChangeNotifier {
     phoneNumber = '';
     email = '';
     password = '';
+    avatarUrl = '';
     role = 'USER';
     businessName = '';
     vendorStatus = 'NOT_STARTED';
@@ -100,6 +103,7 @@ class AuthProvider extends ChangeNotifier {
     String? businessName,
     String? vendorStatus,
     String? vendorRejectionReason,
+    String? avatarUrl,
     dynamic rider,
   }) {
     firstName = userFirstName;
@@ -113,10 +117,16 @@ class AuthProvider extends ChangeNotifier {
     if (vendorRejectionReason != null) {
       this.vendorRejectionReason = vendorRejectionReason;
     }
+    if (avatarUrl != null) this.avatarUrl = avatarUrl;
     if (rider != null && rider is Map) {
       isRiderRegistered = true;
       riderStatus = (rider['approvalStatus'] ?? 'PENDING').toString().toUpperCase();
     }
+    notifyListeners();
+  }
+
+  void updateAvatarUrl(String url) {
+    avatarUrl = url;
     notifyListeners();
   }
 

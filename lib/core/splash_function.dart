@@ -52,6 +52,7 @@ class SplashFunction {
           businessName: user["businessName"] ?? '',
           vendorStatus: user["vendorStatus"] ?? 'NOT_STARTED',
           vendorRejectionReason: user["vendorRejectionReason"],
+          avatarUrl: user["avatarUrl"],
           rider: user["rider"],
         );
 

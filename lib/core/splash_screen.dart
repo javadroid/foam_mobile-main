@@ -6,6 +6,8 @@ import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/splash_function.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
@@ -67,7 +69,15 @@ class _SplashScreenState extends State<SplashScreen> {
       } else if (authProvider.isVendor) {
         // Vendor routing based on status
         if (authProvider.vendorStatus == 'APPROVED') {
-          Navigator.pushReplacementNamed(context, VendorMainScreen.id);
+          final vendorProvider = Provider.of<VendorProvider>(context, listen: false);
+          await vendorProvider.fetchStores();
+          if (mounted) {
+            if (vendorProvider.stores.isEmpty) {
+              Navigator.pushReplacementNamed(context, VendorApprovedScreen.id);
+            } else {
+              Navigator.pushReplacementNamed(context, VendorMainScreen.id);
+            }
+          }
         } else if (authProvider.vendorStatus == 'REJECTED') {
           Navigator.pushReplacementNamed(context, VendorRejectedScreen.id);
         } else if (authProvider.vendorStatus == 'PENDING') {

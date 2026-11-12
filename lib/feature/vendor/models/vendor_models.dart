@@ -9,10 +9,15 @@ class VendorStore {
   String hoursMonFri;
   String hoursSat;
   String hoursSun;
+  Map<String, dynamic>? operatingHoursMap;
   double? latitude;
   double? longitude;
   String? photoUrl;
   int turnaroundDays;
+  List<dynamic>? turnaroundOptions;
+  double basicPercentage;
+  double balancePercentage;
+  double premiumPercentage;
 
   VendorStore({
     required this.id,
@@ -25,10 +30,15 @@ class VendorStore {
     this.hoursMonFri = '7:00 AM – 7:00 PM',
     this.hoursSat = '8:00 AM – 5:00 PM',
     this.hoursSun = 'Closed',
+    this.operatingHoursMap,
     this.latitude,
     this.longitude,
     this.photoUrl,
     this.turnaroundDays = 2,
+    this.turnaroundOptions,
+    this.basicPercentage = 0,
+    this.balancePercentage = 15,
+    this.premiumPercentage = 35,
   });
 
   String get turnaroundText => turnaroundDays <= 1 ? 'Next-day' : 'Ready in $turnaroundDays days';

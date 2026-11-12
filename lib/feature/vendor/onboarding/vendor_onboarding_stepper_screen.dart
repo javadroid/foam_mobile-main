@@ -630,6 +630,7 @@ class _VendorOnboardingStepperScreenState
   }
 
   Future<void> _handleStep3Submit() async {
+    FocusScope.of(context).unfocus();
     final cleanAcc = _accountNumberController.text.replaceAll(' ', '');
     if (_selectedBank == null) {
       const err = 'Please select your payout bank';
@@ -1443,7 +1444,9 @@ class _VendorOnboardingStepperScreenState
               },
               style: GoogleFonts.dmSans(
                 fontSize: 16,
-                color: readOnly ? const Color(0xFF5E5E5E) : const Color(0xFF212828),
+                color: readOnly
+                    ? const Color(0xFF5E5E5E)
+                    : const Color(0xFF212828),
               ),
               decoration: InputDecoration(
                 hintText: hint,

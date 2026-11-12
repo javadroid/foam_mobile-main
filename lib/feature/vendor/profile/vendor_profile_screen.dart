@@ -32,7 +32,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       context: context,
       builder: (BuildContext dialogContext) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           title: Text(
             'Log Out',
             style: GoogleFonts.dmSans(
@@ -112,8 +113,11 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
 
     final initials = businessName.trim().isNotEmpty
         ? (businessName.trim().split(' ').length > 1
-            ? '${businessName.trim().split(' ')[0][0]}${businessName.trim().split(' ')[1][0]}'.toUpperCase()
-            : businessName.substring(0, businessName.length >= 2 ? 2 : 1).toUpperCase())
+            ? '${businessName.trim().split(' ')[0][0]}${businessName.trim().split(' ')[1][0]}'
+                .toUpperCase()
+            : businessName
+                .substring(0, businessName.length >= 2 ? 2 : 1)
+                .toUpperCase())
         : 'VD';
 
     final email = auth.email.isNotEmpty ? auth.email : 'Not set';
@@ -147,7 +151,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
         body: SafeArea(
           child: ListView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
             children: [
               // 1. Business Profile Card
               Container(
@@ -181,7 +186,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                             shape: BoxShape.circle,
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFF0F172A).withValues(alpha: 0.2),
+                                color: const Color(0xFF0F172A)
+                                    .withValues(alpha: 0.2),
                                 blurRadius: 14,
                                 offset: const Offset(0, 5),
                               ),
@@ -235,10 +241,12 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 18),
-                    const Divider(height: 1, thickness: 0.6, color: Color(0xFFF1F5F9)),
+                    const Divider(
+                        height: 1, thickness: 0.6, color: Color(0xFFF1F5F9)),
                     const SizedBox(height: 14),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
@@ -265,14 +273,6 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                             ],
                           ),
                         ),
-                        Text(
-                          'Store: ${currentStore.name}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: VendorColors.textMuted,
-                          ),
-                        ),
                       ],
                     ),
                   ],
@@ -283,7 +283,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
 
               // 2. Store Branches & Capacity Section
               _buildSectionHeader('Store Branches & Capacity',
-                  actionText: '${vendor.stores.length} / ${vendor.maxStores} Branches'),
+                  actionText:
+                      '${vendor.stores.length} / ${vendor.maxStores} Branches'),
               const SizedBox(height: 8),
 
               // Capacity Progress Card
@@ -312,7 +313,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                             color: const Color(0xFFE0F2FE),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.hub_rounded, color: Color(0xFF0284C7), size: 18),
+                          child: const Icon(Icons.hub_rounded,
+                              color: Color(0xFF0284C7), size: 18),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -340,10 +342,12 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                       borderRadius: BorderRadius.circular(8),
                       child: LinearProgressIndicator(
                         value: vendor.maxStores > 0
-                            ? (vendor.stores.length / vendor.maxStores).clamp(0.0, 1.0)
+                            ? (vendor.stores.length / vendor.maxStores)
+                                .clamp(0.0, 1.0)
                             : 0.0,
                         backgroundColor: const Color(0xFFF1F5F9),
-                        valueColor: const AlwaysStoppedAnimation<Color>(VendorColors.primary),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            VendorColors.primary),
                         minHeight: 7,
                       ),
                     ),
@@ -391,7 +395,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const VendorStoreDetailsScreen(),
+                          builder: (context) =>
+                              const VendorStoreDetailsScreen(),
                         ),
                       );
                     } else {
@@ -399,7 +404,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                         SnackBar(
                           content: Text(
                             'Store capacity reached (${vendor.stores.length}/${vendor.maxStores}). Contact admin to increase limit.',
-                            style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                            style:
+                                GoogleFonts.dmSans(fontWeight: FontWeight.w600),
                           ),
                           backgroundColor: const Color(0xFFEF4444),
                           behavior: SnackBarBehavior.floating,
@@ -609,8 +615,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       child: InkWell(
         onTap: onTap,
         child: Padding(
-          padding:
-              const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
           child: Row(
             children: [
               Container(

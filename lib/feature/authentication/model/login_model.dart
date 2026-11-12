@@ -15,14 +15,17 @@ import 'package:foam_mobile/core/splash_function.dart';
 import 'package:foam_mobile/feature/authentication/view/sign_up_pages/sign_up_1.dart';
 import 'package:foam_mobile/core/services/notification_service.dart';
 import 'package:foam_mobile/core/services/socket_service.dart';
+import 'package:foam_mobile/feature/vendor/onboarding/vendor_approved_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_rejected_screen.dart';
 import 'package:foam_mobile/feature/vendor/vendor_main_screen.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_onboarding_stepper_screen.dart';
+import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/widgets/app_fullscreen_loader.dart';
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
 import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
+import 'package:foam_mobile/feature/authentication/view/verify_pages/verification_screen.dart';
 
 class LoginClass {
   static Future<void> login(BuildContext context, String email, String password,
@@ -59,20 +62,29 @@ class LoginClass {
 
         debugPrint(response.toString());
 
-        if (res.statusCode == 200) {
+        final bool requiresVerification = response is Map &&
+            (response["requiresVerification"] == true ||
+                response["isVerified"] == false);
+
+        if (res.statusCode == 200 && !requiresVerification) {
           // if status code is 200 show the message
-          MyMessageHandler.showSnackBar(scaffoldKey, response["message"] ?? "Welcome");
+          MyMessageHandler.showSnackBar(
+              scaffoldKey, response["message"] ?? "Welcome");
           // then insert user token
           HiveClass.insertToken(
             response["token"],
           );
 
-          if (response["isRider"] == true || response["userType"] == "RIDER" || response["role"] == "RIDER") {
+          if (response["isRider"] == true ||
+              response["userType"] == "RIDER" ||
+              response["role"] == "RIDER") {
             AppFullScreenLoader.hide(context);
-            final riderProvider = Provider.of<RiderProvider>(context, listen: false);
+            final riderProvider =
+                Provider.of<RiderProvider>(context, listen: false);
             if (response["rider"] != null) {
               final riderProfile = RiderProfile.fromJson(response["rider"]);
-              riderProvider.setCurrentRiderForTesting(riderProfile, token: response["token"]);
+              riderProvider.setCurrentRiderForTesting(riderProfile,
+                  token: response["token"]);
             }
             Navigator.of(context, rootNavigator: true).pushNamedAndRemoveUntil(
               RiderDashboardScreen.id,
@@ -82,9 +94,27 @@ class LoginClass {
           }
 
           getProfile(context, scaffoldKey, isSignup: isSignup);
+        } else if (requiresVerification) {
+          AppFullScreenLoader.hide(context);
+          MyMessageHandler.showSnackBar(
+            scaffoldKey,
+            response["message"] ??
+                "Your email is not verified. A 6-digit verification code has been sent.",
+          );
+
+          final authProvider =
+              Provider.of<AuthProvider>(context, listen: false);
+          authProvider.email = email.trim();
+          authProvider.password = password;
+
+          Navigator.of(context).pushNamed(VerificationScreen.id);
         } else {
           AppFullScreenLoader.hide(context);
-          MyMessageHandler.showSnackBar(scaffoldKey, response["error"]);
+          MyMessageHandler.showSnackBar(
+              scaffoldKey,
+              response["error"] ??
+                  response["message"] ??
+                  "Invalid email or password");
         }
       } catch (e) {
         AppFullScreenLoader.hide(context);
@@ -127,6 +157,7 @@ class LoginClass {
         businessName: user["businessName"] ?? '',
         vendorStatus: user["vendorStatus"] ?? 'NOT_STARTED',
         vendorRejectionReason: user["vendorRejectionReason"],
+        avatarUrl: user["avatarUrl"],
       );
 
       // Register user with OneSignal using their Foam userId as external_id & connect live socket
@@ -158,10 +189,21 @@ class LoginClass {
       if (authProvider.isVendor) {
         AppFullScreenLoader.hide(context);
         if (authProvider.vendorStatus == 'APPROVED') {
-          Navigator.of(context).pushNamedAndRemoveUntil(
-            VendorMainScreen.id,
-            (Route<dynamic> route) => false,
-          );
+          final vendorProvider = Provider.of<VendorProvider>(context, listen: false);
+          await vendorProvider.fetchStores();
+          if (context.mounted) {
+            if (vendorProvider.stores.isEmpty) {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                VendorApprovedScreen.id,
+                (Route<dynamic> route) => false,
+              );
+            } else {
+              Navigator.of(context).pushNamedAndRemoveUntil(
+                VendorMainScreen.id,
+                (Route<dynamic> route) => false,
+              );
+            }
+          }
         } else if (authProvider.vendorStatus == 'REJECTED') {
           Navigator.of(context).pushNamedAndRemoveUntil(
             VendorRejectedScreen.id,

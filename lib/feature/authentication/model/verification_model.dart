@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/create_new_password.dart';
@@ -8,6 +7,7 @@ import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/authentication/model/login_model.dart';
 
 class VerifyClass {
@@ -34,10 +34,15 @@ class VerifyClass {
       if (res.statusCode == 200 || res.statusCode == 201) {
         MyMessageHandler.showSnackBar(
             scaffoldKey, response["message"] ?? "Verification successful");
-        // After successful verification, login the user and indicate it's a signup
-        LoginClass.login(
-            context, authProvider.email, authProvider.password, scaffoldKey,
-            isSignup: true);
+        if (response["token"] != null) {
+          HiveClass.insertToken(response["token"]);
+          LoginClass.getProfile(context, scaffoldKey, isSignup: true);
+        } else {
+          // After successful verification, login the user and indicate it's a signup
+          LoginClass.login(
+              context, authProvider.email, authProvider.password, scaffoldKey,
+              isSignup: true);
+        }
       } else {
         MyMessageHandler.showSnackBar(
             scaffoldKey, response["error"] ?? "Wrong code");
