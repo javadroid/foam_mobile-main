@@ -11,10 +11,10 @@ import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_documents_screen.dart';
 import 'package:foam_mobile/feature/vendor/profile/vendor_bank_settings_screen.dart';
-import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_stores_list_screen.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_wallet_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/widgets/safe_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -185,30 +185,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
   }
 
   Widget _buildVerifiedPartnerBadge() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFDCFCE7)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.check_circle_rounded,
-              size: 12.5, color: Color(0xFF16A34A)),
-          const SizedBox(width: 4),
-          Text(
-            'Verified Partner',
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF15803D),
-            ),
-          ),
-        ],
-      ),
-    );
+    return const Icon(Icons.check_circle_rounded,
+        size: 18.5, color: Color(0xFF16A34A));
   }
 
   void _showLogoutDialog() {
@@ -391,35 +369,24 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                                         ),
                                       ),
                                     )
-                                  : (avatarUrl.isNotEmpty
-                                      ? Image.network(
-                                          avatarUrl,
-                                          fit: BoxFit.cover,
-                                          width: 64,
-                                          height: 64,
-                                          errorBuilder: (_, __, ___) => Center(
-                                            child: Text(
-                                              initials,
-                                              style: GoogleFonts.dmSans(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 22,
-                                                letterSpacing: 0.5,
-                                              ),
-                                            ),
+                                  : SafeNetworkImage(
+                                      imageUrl: avatarUrl,
+                                      width: 64,
+                                      height: 64,
+                                      fit: BoxFit.cover,
+                                      shape: BoxShape.circle,
+                                      fallbackBuilder: (_) => Center(
+                                        child: Text(
+                                          initials,
+                                          style: GoogleFonts.dmSans(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 22,
+                                            letterSpacing: 0.5,
                                           ),
-                                        )
-                                      : Center(
-                                          child: Text(
-                                            initials,
-                                            style: GoogleFonts.dmSans(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.bold,
-                                              fontSize: 22,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        )),
+                                        ),
+                                      ),
+                                    ),
                             ),
                           ),
                           Positioned(
@@ -504,8 +471,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
               _buildMenuCard([
                 _buildMenuItem(
                   icon: Icons.storefront_rounded,
-                  iconBgColor: const Color(0xFFE0F2FE),
-                  iconColor: const Color(0xFF0284C7),
+                  iconBgColor: VendorColors.primary.withValues(alpha: 0.1),
+                  iconColor: VendorColors.primary,
                   title: 'Manage All Branches (${vendor.stores.length})',
                   subtitle: 'Switch, edit profiles, locations & catalog',
                   onTap: () {

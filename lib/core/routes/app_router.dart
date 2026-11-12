@@ -29,6 +29,7 @@ import 'package:foam_mobile/core/Screens/home/services_screen/views/service_deta
 import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/Screens/profile/profile_screen.dart';
+import 'package:foam_mobile/core/Screens/profile/customer_address_screen.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/splash_screen.dart';
 import 'package:foam_mobile/feature/authentication/view/auth_pages/login_or_register_page.dart';
@@ -233,6 +234,12 @@ class AppRouter {
       case ProfileScreen.id: // Profile screen route (with optional parameter)
         return MaterialPageRoute(
           builder: (_) => const ProfileScreen(),
+          settings: settings,
+        );
+
+      case CustomerAddressScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const CustomerAddressScreen(),
           settings: settings,
         );
 

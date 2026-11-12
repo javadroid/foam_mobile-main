@@ -89,20 +89,27 @@ class _ProfileImageState extends State<ProfileImage> {
                 borderRadius: BorderRadius.circular(avatarSize),
                 child: Container(
                   color: Colors.white,
-                  child: Container(
-                    color: AppColors.fadeBlueAccentColor,
-                    alignment: Alignment.center,
-                    child: Text(
-                      widget.initials.trim().isEmpty
-                          ? 'U'
-                          : widget.initials.trim(),
-                      style: GoogleFonts.dmSans(
-                        fontSize: widget.radius * 0.75,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.primaryAccentColor,
-                      ),
-                    ),
-                  ),
+                  child: _image != null
+                      ? Image.file(
+                          _image!,
+                          width: avatarSize,
+                          height: avatarSize,
+                          fit: BoxFit.cover,
+                        )
+                      : Container(
+                          color: AppColors.fadeBlueAccentColor,
+                          alignment: Alignment.center,
+                          child: Text(
+                            widget.initials.trim().isEmpty
+                                ? 'U'
+                                : widget.initials.trim(),
+                            style: GoogleFonts.dmSans(
+                              fontSize: widget.radius * 0.75,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.primaryAccentColor,
+                            ),
+                          ),
+                        ),
                 ),
               ),
             ),

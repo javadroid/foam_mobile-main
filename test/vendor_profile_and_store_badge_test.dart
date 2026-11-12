@@ -47,11 +47,11 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    // 1. Verify business name, email, phone, and Verified Partner badge
+    // 1. Verify business name, email, phone, and verified partner check icon
     expect(find.text('Bubble Express Laundry'), findsOneWidget);
     expect(find.text('bubble@express.com'), findsOneWidget);
     expect(find.text('+2348012345678'), findsOneWidget);
-    expect(find.text('Verified Partner'), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_rounded), findsWidgets);
 
     // 2. Verify avatar has camera icon for photo update
     expect(find.byIcon(Icons.camera_alt_rounded), findsOneWidget);

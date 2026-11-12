@@ -50,8 +50,9 @@ class LocationService {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        debugPrint('Location services are disabled.');
-        return await Geolocator.getLastKnownPosition();
+        debugPrint('Location services are disabled, trying last known position');
+        final last = await Geolocator.getLastKnownPosition();
+        if (last != null) return last;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
@@ -59,27 +60,37 @@ class LocationService {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           debugPrint('Location permissions are denied');
-          return null;
+          return await Geolocator.getLastKnownPosition();
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
         debugPrint('Location permissions are permanently denied');
-        return null;
+        return await Geolocator.getLastKnownPosition();
       }
 
+      // Try high/medium accuracy first
       try {
         final Position pos = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(
             accuracy: LocationAccuracy.medium,
-            timeLimit: Duration(seconds: 8),
+            timeLimit: Duration(seconds: 7),
           ),
         );
         return pos;
       } catch (timeoutErr) {
-        debugPrint(
-            'High accuracy GPS timed out, trying last known position: $timeoutErr');
-        return await Geolocator.getLastKnownPosition();
+        debugPrint('GPS medium accuracy timed out, trying low accuracy: $timeoutErr');
+        try {
+          final Position fastPos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(
+              accuracy: LocationAccuracy.low,
+              timeLimit: Duration(seconds: 5),
+            ),
+          );
+          return fastPos;
+        } catch (_) {
+          return await Geolocator.getLastKnownPosition();
+        }
       }
     } catch (e) {
       debugPrint('Error getting position: $e');
@@ -89,6 +100,50 @@ class LocationService {
         return null;
       }
     }
+  }
+
+  /// IP-based location fallback if device GPS is disabled, denied, or unavailable
+  static Future<UserLocationDetails?> getIpLocationFallback() async {
+    try {
+      final Uri uri = Uri.parse('http://ip-api.com/json');
+      final http.Response res =
+          await http.get(uri).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final dynamic data = json.decode(res.body);
+        if (data['status'] == 'success') {
+          final double lat = (data['lat'] as num?)?.toDouble() ?? 4.8156;
+          final double lon = (data['lon'] as num?)?.toDouble() ?? 7.0498;
+          final String city = data['city'] ?? 'Port Harcourt';
+          final String state = data['regionName'] ?? 'Rivers State';
+          final String country = data['country'] ?? 'Nigeria';
+
+          if (lat != 0.0 && lon != 0.0) {
+            try {
+              final reverse = await reverseGeocode(latitude: lat, longitude: lon);
+              if (reverse != null &&
+                  (reverse.street.isNotEmpty || reverse.city.isNotEmpty)) {
+                return reverse;
+              }
+            } catch (_) {}
+          }
+
+          return UserLocationDetails(
+            street: city.isNotEmpty ? city : state,
+            city: city.isNotEmpty ? city : 'Port Harcourt',
+            state: state.isNotEmpty ? state : 'Rivers State',
+            lga: city.isNotEmpty ? city : 'Port Harcourt',
+            postalCode: '',
+            country: country,
+            latitude: lat,
+            longitude: lon,
+            formattedAddress: '$city, $state, $country',
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('IP location fallback error: $e');
+    }
+    return null;
   }
 
   /// Reverse geocode coordinates using Google Geocoding API with OpenStreetMap Nominatim fallback
@@ -108,43 +163,59 @@ class LocationService {
       if (response.statusCode == 200) {
         final dynamic data = json.decode(response.body);
         if (data['status'] == 'OK' && (data['results'] as List).isNotEmpty) {
-          final dynamic result = data['results'][0];
-          final String formattedAddress = result['formatted_address'] ?? '';
-          final List<dynamic> components =
-              result['address_components'] as List<dynamic>? ?? <dynamic>[];
+          final List<dynamic> resultsList = data['results'] as List<dynamic>;
 
           String streetNumber = '';
           String route = '';
+          String premise = '';
           String sublocality = '';
           String locality = '';
-          String adminArea2 = ''; // Typically LGA in Nigeria
+          String adminArea2 = ''; // LGA
           String adminArea1 = ''; // State
           String country = 'Nigeria';
           String postalCode = '';
+          String formattedAddress = '';
 
-          for (dynamic comp in components) {
-            final List<String> types =
-                (comp['types'] as List<dynamic>).cast<String>();
-            final String longName = comp['long_name'] ?? '';
-
-            if (types.contains('street_number')) {
-              streetNumber = longName;
-            } else if (types.contains('route')) {
-              route = longName;
-            } else if (types.contains('sublocality') ||
-                types.contains('sublocality_level_1')) {
-              sublocality = longName;
-            } else if (types.contains('locality')) {
-              locality = longName;
-            } else if (types.contains('administrative_area_level_2')) {
-              adminArea2 = longName;
-            } else if (types.contains('administrative_area_level_1')) {
-              adminArea1 = longName;
-            } else if (types.contains('country')) {
-              country = longName;
-            } else if (types.contains('postal_code')) {
-              postalCode = longName;
+          for (dynamic res in resultsList) {
+            final String fmt = res['formatted_address'] ?? '';
+            if (formattedAddress.isEmpty && fmt.isNotEmpty && !fmt.startsWith('+')) {
+              formattedAddress = fmt;
             }
+            final List<dynamic> comps =
+                res['address_components'] as List<dynamic>? ?? <dynamic>[];
+            for (dynamic comp in comps) {
+              final List<String> types =
+                  (comp['types'] as List<dynamic>).cast<String>();
+              final String longName = comp['long_name'] ?? '';
+
+              if (types.contains('street_number') && streetNumber.isEmpty) {
+                streetNumber = longName;
+              } else if (types.contains('route') && route.isEmpty) {
+                route = longName;
+              } else if (types.contains('premise') && premise.isEmpty) {
+                premise = longName;
+              } else if ((types.contains('sublocality') ||
+                      types.contains('sublocality_level_1')) &&
+                  sublocality.isEmpty) {
+                sublocality = longName;
+              } else if (types.contains('locality') && locality.isEmpty) {
+                locality = longName;
+              } else if (types.contains('administrative_area_level_2') &&
+                  adminArea2.isEmpty) {
+                adminArea2 = longName;
+              } else if (types.contains('administrative_area_level_1') &&
+                  adminArea1.isEmpty) {
+                adminArea1 = longName;
+              } else if (types.contains('country') && country == 'Nigeria') {
+                country = longName;
+              } else if (types.contains('postal_code') && postalCode.isEmpty) {
+                postalCode = longName;
+              }
+            }
+          }
+
+          if (formattedAddress.isEmpty && resultsList.isNotEmpty) {
+            formattedAddress = resultsList[0]['formatted_address'] ?? '';
           }
 
           String street = '';
@@ -152,30 +223,45 @@ class LocationService {
             street = '$streetNumber $route';
           } else if (route.isNotEmpty) {
             street = route;
+          } else if (premise.isNotEmpty) {
+            street = premise;
           } else if (sublocality.isNotEmpty) {
             street = sublocality;
-          } else {
-            street = formattedAddress.split(',').first.trim();
+          } else if (formattedAddress.isNotEmpty) {
+            String clean = formattedAddress;
+            if (clean.contains('+')) {
+              final parts = clean.split(',');
+              if (parts.isNotEmpty && parts.first.contains('+')) {
+                clean = parts.sublist(1).join(',').trim();
+              }
+            }
+            street = clean.split(',').first.trim();
           }
 
           final String city = locality.isNotEmpty
               ? locality
-              : sublocality.isNotEmpty
-                  ? sublocality
-                  : adminArea2;
+              : (sublocality.isNotEmpty ? sublocality : adminArea2);
           final String lga = adminArea2.isNotEmpty ? adminArea2 : city;
           final String state = adminArea1;
 
+          if (street.isEmpty) {
+            street = city.isNotEmpty
+                ? city
+                : (state.isNotEmpty ? state : 'Current Location');
+          }
+
           return UserLocationDetails(
             street: street,
-            city: city,
-            state: state,
-            lga: lga,
+            city: city.isNotEmpty ? city : 'Port Harcourt',
+            state: state.isNotEmpty ? state : 'Rivers State',
+            lga: lga.isNotEmpty ? lga : city,
             postalCode: postalCode,
             country: country.isNotEmpty ? country : 'Nigeria',
             latitude: latitude,
             longitude: longitude,
-            formattedAddress: formattedAddress,
+            formattedAddress: formattedAddress.isNotEmpty
+                ? formattedAddress
+                : '$street, $city, $state',
           );
         }
       }
@@ -220,49 +306,67 @@ class LocationService {
           street = road;
         } else if (suburb.isNotEmpty) {
           street = suburb;
-        } else {
+        } else if (displayName.isNotEmpty) {
           street = displayName.split(',').first.trim();
+        } else {
+          street = city.isNotEmpty ? city : 'Current Location';
         }
 
         return UserLocationDetails(
           street: street,
-          city: city.isNotEmpty ? city : lga,
-          state: state,
+          city: city.isNotEmpty ? city : (lga.isNotEmpty ? lga : 'Port Harcourt'),
+          state: state.isNotEmpty ? state : 'Rivers State',
           lga: lga.isNotEmpty ? lga : city,
           postalCode: postcode,
-          country: country,
+          country: country.isNotEmpty ? country : 'Nigeria',
           latitude: latitude,
           longitude: longitude,
-          formattedAddress: displayName,
+          formattedAddress: displayName.isNotEmpty
+              ? displayName
+              : '$street, $city, $state',
         );
       }
     } catch (osmErr) {
       debugPrint('OpenStreetMap Nominatim reverse geocoding error: $osmErr');
     }
 
-    // 3. Fallback: return coordinates with default structure
+    // 3. Fallback: return coordinates with non-empty default structure
     return UserLocationDetails(
-      street: '',
-      city: '',
-      state: '',
-      lga: '',
+      street: 'Current Location',
+      city: 'Port Harcourt',
+      state: 'Rivers State',
+      lga: 'Port Harcourt',
       postalCode: '',
       country: 'Nigeria',
       latitude: latitude,
       longitude: longitude,
-      formattedAddress: 'Lat: $latitude, Lng: $longitude',
+      formattedAddress:
+          'Lat: ${latitude.toStringAsFixed(4)}, Lng: ${longitude.toStringAsFixed(4)}',
     );
   }
 
-  /// Full auto-detect workflow: gets GPS position and reverse-geocodes it
+  /// Full auto-detect workflow: gets GPS position (or IP fallback) and reverse-geocodes it
   static Future<UserLocationDetails?> autoDetectLocation() async {
-    final Position? position = await getCurrentPosition();
-    if (position == null) return null;
+    try {
+      final Position? position = await getCurrentPosition();
+      if (position != null) {
+        final details = await reverseGeocode(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
+        if (details != null &&
+            (details.street.isNotEmpty ||
+                details.city.isNotEmpty ||
+                details.state.isNotEmpty)) {
+          return details;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error during GPS autoDetect: $e');
+    }
 
-    return await reverseGeocode(
-      latitude: position.latitude,
-      longitude: position.longitude,
-    );
+    // Fall back to IP-based location if device GPS is off/unavailable
+    return await getIpLocationFallback();
   }
 
   /// Search address suggestions with autocomplete (Google Places primary + OpenStreetMap Nominatim fallback)

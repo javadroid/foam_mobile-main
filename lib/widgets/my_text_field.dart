@@ -17,6 +17,7 @@ class MyTextField extends StatefulWidget {
   final int maxLines;
   final bool readOnly;
   final VoidCallback? onTap;
+  final EdgeInsetsGeometry? padding;
 
   const MyTextField({
     super.key,
@@ -34,6 +35,7 @@ class MyTextField extends StatefulWidget {
     this.maxLines = 1,
     this.readOnly = false,
     this.onTap,
+    this.padding,
   });
 
   @override
@@ -46,7 +48,7 @@ class _MyTextFieldState extends State<MyTextField> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18.0),
+      padding: widget.padding ?? const EdgeInsets.symmetric(horizontal: 18.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

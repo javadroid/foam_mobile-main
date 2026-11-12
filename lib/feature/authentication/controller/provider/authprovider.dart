@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 
@@ -12,8 +11,12 @@ class AuthProvider extends ChangeNotifier {
   String password = '';
   String addressStreet = '';
   String addressCity = '';
+  String addressState = '';
+  String addressLga = '';
   String addressPostalCode = '';
   String addressCountry = '';
+  double? addressLatitude;
+  double? addressLongitude;
 
   String role = 'USER';
   String businessName = '';
@@ -87,8 +90,12 @@ class AuthProvider extends ChangeNotifier {
     riderStatus = 'NOT_REGISTERED';
     addressStreet = '';
     addressCity = '';
+    addressState = '';
+    addressLga = '';
     addressPostalCode = '';
     addressCountry = '';
+    addressLatitude = null;
+    addressLongitude = null;
     user = {};
     notifyListeners();
   }
@@ -146,12 +153,20 @@ class AuthProvider extends ChangeNotifier {
     String userAddressStreet,
     String userAddressCity,
     String userAddressPostalCode,
-    String userAddressCountry,
-  ) {
+    String userAddressCountry, {
+    String? state,
+    String? lga,
+    double? latitude,
+    double? longitude,
+  }) {
     addressStreet = userAddressStreet;
     addressCity = userAddressCity;
     addressPostalCode = userAddressPostalCode;
     addressCountry = userAddressCountry;
+    if (state != null) addressState = state;
+    if (lga != null) addressLga = lga;
+    if (latitude != null) addressLatitude = latitude;
+    if (longitude != null) addressLongitude = longitude;
     notifyListeners();
   }
 }

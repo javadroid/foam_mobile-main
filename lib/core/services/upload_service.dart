@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/utils/values.dart';
+import 'package:foam_mobile/widgets/safe_network_image.dart';
 import 'package:http/http.dart' as http;
 
 class UploadService {
@@ -29,8 +30,9 @@ class UploadService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         if (data['url'] != null) {
-          debugPrint('Upload success: ${data['url']}');
-          return data['url'] as String;
+          final resolved = resolveImageUrl(data['url'] as String);
+          debugPrint('Upload success: $resolved (raw: ${data['url']})');
+          return resolved;
         }
       } else {
         debugPrint('Upload failed (${response.statusCode}): ${response.body}');
@@ -70,7 +72,7 @@ class UploadService {
         if (data['files'] is List) {
           for (final item in data['files']) {
             if (item['url'] != null) {
-              urls.add(item['url'] as String);
+              urls.add(resolveImageUrl(item['url'] as String));
             }
           }
         }

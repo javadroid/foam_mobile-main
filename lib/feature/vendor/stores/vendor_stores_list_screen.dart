@@ -4,6 +4,7 @@ import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_scre
 import 'package:foam_mobile/feature/vendor/stores/vendor_manage_store_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
+import 'package:foam_mobile/widgets/safe_network_image.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -228,10 +229,13 @@ class VendorStoresListScreen extends StatelessWidget {
                                         height: 58,
                                         color: const Color(0xFFF1F5F9),
                                         child: hasPhoto
-                                            ? Image.network(
-                                                store.photoUrl!,
+                                            ? SafeNetworkImage(
+                                                imageUrl: store.photoUrl,
+                                                width: 58,
+                                                height: 58,
                                                 fit: BoxFit.cover,
-                                                errorBuilder: (_, __, ___) => const Icon(
+                                                borderRadius: BorderRadius.circular(12),
+                                                fallbackBuilder: (_) => const Icon(
                                                   Icons.storefront,
                                                   color: VendorColors.primary,
                                                   size: 28,

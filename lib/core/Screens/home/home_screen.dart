@@ -21,6 +21,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
+import 'package:foam_mobile/widgets/safe_network_image.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
 import 'package:shimmer/shimmer.dart';
 
@@ -803,24 +804,21 @@ class _HomePageState extends State<HomePage> {
           fit: StackFit.expand,
           children: [
             // Background Image
-            Image.network(
-              imageUrl,
+            SafeNetworkImage(
+              imageUrl: imageUrl,
               fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
+              fallbackBuilder: (_) => Container(
                 color: const Color(0xFF1E293B),
                 child: const Center(
                   child: Icon(Icons.local_laundry_service,
                       color: Colors.white54, size: 40),
                 ),
               ),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return Shimmer.fromColors(
-                  baseColor: const Color(0xFFE2E8F0),
-                  highlightColor: const Color(0xFFF1F5F9),
-                  child: Container(color: Colors.white),
-                );
-              },
+              placeholder: Shimmer.fromColors(
+                baseColor: const Color(0xFFE2E8F0),
+                highlightColor: const Color(0xFFF1F5F9),
+                child: Container(color: Colors.white),
+              ),
             ),
 
             // Gradient Overlay
