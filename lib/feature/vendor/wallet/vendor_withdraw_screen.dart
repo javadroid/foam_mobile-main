@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_payout_bank_screen.dart';
+import 'package:foam_mobile/feature/vendor/profile/vendor_bank_settings_screen.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_withdrawal_sent_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:foam_mobile/utils/values.dart';
@@ -65,7 +65,7 @@ class _VendorWithdrawScreenState extends State<VendorWithdrawScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const VendorPayoutBankScreen(),
+                  builder: (context) => const VendorBankSettingsScreen(),
                 ),
               );
             },
@@ -386,7 +386,7 @@ class _VendorWithdrawScreenState extends State<VendorWithdrawScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const VendorPayoutBankScreen(),
+                            builder: (context) => const VendorBankSettingsScreen(),
                           ),
                         );
                       },
@@ -470,7 +470,7 @@ class _VendorWithdrawScreenState extends State<VendorWithdrawScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const VendorPayoutBankScreen(),
+                        builder: (context) => const VendorBankSettingsScreen(),
                       ),
                     );
                   },

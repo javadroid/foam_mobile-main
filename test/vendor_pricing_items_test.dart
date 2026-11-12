@@ -59,7 +59,7 @@ void main() {
 
     // 3. Verify Folding Service is per-item and ON by default
     expect(find.text('Folding included'), findsWidgets);
-    expect(find.text('Included for customer without extra cost'), findsWidgets);
+    expect(find.text('· Included at no extra cost'), findsWidgets);
 
     // 4. Verify we can enter price for Shirt
     final shirtFieldFinder = find.byType(TextField).first;
@@ -100,7 +100,7 @@ void main() {
 
     expect(tester.widget<Switch>(switchFinder).value, isFalse);
     expect(find.text('Folding optional'), findsOneWidget);
-    expect(find.text('Customer can choose to add folding'), findsOneWidget);
+    expect(find.text('· Customer chooses at checkout'), findsOneWidget);
 
     provider.dispose();
   });

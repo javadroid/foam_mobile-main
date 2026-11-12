@@ -70,6 +70,64 @@ class VendorManageStoreScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Branch Info & Verified Partner Badge
+              Container(
+                margin: const EdgeInsets.only(bottom: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.location_on_outlined,
+                        size: 15, color: VendorColors.textMuted),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        store.address.isNotEmpty
+                            ? store.address
+                            : 'Branch location',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12.5,
+                          color: VendorColors.textMuted,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 3.5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0FDF4),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFDCFCE7)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.check_circle_rounded,
+                              size: 12, color: Color(0xFF16A34A)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Verified Partner',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF15803D),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
               // Store Status Toggle (Live vs Paused)
               Container(
                 padding: const EdgeInsets.all(4),
@@ -237,7 +295,7 @@ class VendorManageStoreScreen extends StatelessWidget {
                     ),
                     Switch(
                       value: provider.getStoreIncludeFolding(store.id),
-                      activeColor: const Color(0xFF16A34A),
+                      activeThumbColor: const Color(0xFF16A34A),
                       onChanged: (val) {
                         provider.setStoreIncludeFolding(store.id, val);
                       },

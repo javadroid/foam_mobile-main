@@ -1,19 +1,22 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/services/notification_service.dart';
 import 'package:foam_mobile/core/services/socket_service.dart';
+import 'package:foam_mobile/core/services/upload_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/model/log_out_model.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_documents_screen.dart';
-import 'package:foam_mobile/feature/vendor/onboarding/vendor_payout_bank_screen.dart';
+import 'package:foam_mobile/feature/vendor/profile/vendor_bank_settings_screen.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_store_details_screen.dart';
 import 'package:foam_mobile/feature/vendor/stores/vendor_stores_list_screen.dart';
 import 'package:foam_mobile/feature/vendor/wallet/vendor_wallet_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class VendorProfileScreen extends StatefulWidget {
@@ -26,6 +29,187 @@ class VendorProfileScreen extends StatefulWidget {
 class _VendorProfileScreenState extends State<VendorProfileScreen> {
   final GlobalKey<ScaffoldMessengerState> _scaffoldKey =
       GlobalKey<ScaffoldMessengerState>();
+
+  bool _isUploadingPhoto = false;
+  final ImagePicker _picker = ImagePicker();
+
+  void _showPhotoOptions() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                child: Text(
+                  'Update Profile / Brand Photo',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    color: VendorColors.textMain,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.photo_library_outlined,
+                      color: VendorColors.primary),
+                ),
+                title: Text(
+                  'Choose from Gallery',
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadPhoto(ImageSource.gallery);
+                },
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFEFF6FF),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.camera_alt_outlined,
+                      color: VendorColors.primary),
+                ),
+                title: Text(
+                  'Take Photo',
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 15,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _pickAndUploadPhoto(ImageSource.camera);
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+      if (image == null) return;
+
+      setState(() => _isUploadingPhoto = true);
+
+      final uploadUrl = await UploadService.uploadImage(File(image.path));
+      if (!mounted) return;
+
+      if (uploadUrl != null && uploadUrl.isNotEmpty) {
+        final auth = Provider.of<AuthProvider>(context, listen: false);
+        final vendor = Provider.of<VendorProvider>(context, listen: false);
+        auth.updateAvatarUrl(uploadUrl);
+        await vendor.updateVendorProfileImage(uploadUrl);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Profile photo updated successfully!',
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: const Color(0xFF10B981),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to upload photo. Please try again.',
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+              ),
+              backgroundColor: const Color(0xFFEF4444),
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Error in _pickAndUploadPhoto: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Error selecting photo: $e',
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+            ),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
+      }
+    }
+  }
+
+  Widget _buildVerifiedPartnerBadge() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFDCFCE7)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.check_circle_rounded,
+              size: 12.5, color: Color(0xFF16A34A)),
+          const SizedBox(width: 4),
+          Text(
+            'Verified Partner',
+            style: GoogleFonts.dmSans(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: const Color(0xFF15803D),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showLogoutDialog() {
     showDialog(
@@ -123,6 +307,9 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
     final email = auth.email.isNotEmpty ? auth.email : 'Not set';
     final phone = auth.phoneNumber.isNotEmpty ? auth.phoneNumber : 'Not set';
     final hasBank = kyc.bankName.isNotEmpty && kyc.accountNumber.isNotEmpty;
+    final avatarUrl = auth.avatarUrl.isNotEmpty
+        ? auth.avatarUrl
+        : (vendor.vendorAvatarUrl ?? (currentStore.photoUrl ?? ''));
 
     return ScaffoldMessenger(
       key: _scaffoldKey,
@@ -157,214 +344,163 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
               // 1. Business Profile Card
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(22.0),
+                padding: const EdgeInsets.all(20.0),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24.0),
                   border: Border.all(color: const Color(0xFFF1F5F9)),
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                      color: VendorColors.primary.withValues(alpha: 0.05),
                       blurRadius: 20,
                       offset: const Offset(0, 6),
                     ),
                   ],
                 ),
-                child: Column(
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 60,
-                          height: 60,
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFF0F172A), Color(0xFF334155)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                    GestureDetector(
+                      onTap: _isUploadingPhoto ? null : _showPhotoOptions,
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 64,
+                            height: 64,
+                            decoration: BoxDecoration(
+                              color: VendorColors.primary,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: VendorColors.primary
+                                      .withValues(alpha: 0.25),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
                             ),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF0F172A)
-                                    .withValues(alpha: 0.2),
-                                blurRadius: 14,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
+                            child: ClipOval(
+                              child: _isUploadingPhoto
+                                  ? const Center(
+                                      child: SizedBox(
+                                        width: 24,
+                                        height: 24,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    )
+                                  : (avatarUrl.isNotEmpty
+                                      ? Image.network(
+                                          avatarUrl,
+                                          fit: BoxFit.cover,
+                                          width: 64,
+                                          height: 64,
+                                          errorBuilder: (_, __, ___) => Center(
+                                            child: Text(
+                                              initials,
+                                              style: GoogleFonts.dmSans(
+                                                color: Colors.white,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 22,
+                                                letterSpacing: 0.5,
+                                              ),
+                                            ),
+                                          ),
+                                        )
+                                      : Center(
+                                          child: Text(
+                                            initials,
+                                            style: GoogleFonts.dmSans(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.bold,
+                                              fontSize: 22,
+                                              letterSpacing: 0.5,
+                                            ),
+                                          ),
+                                        )),
+                            ),
                           ),
-                          child: Center(
-                            child: Text(
-                              initials,
-                              style: const TextStyle(
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(5),
+                              decoration: BoxDecoration(
+                                color: VendorColors.primary,
+                                shape: BoxShape.circle,
+                                border:
+                                    Border.all(color: Colors.white, width: 2),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withValues(alpha: 0.15),
+                                    blurRadius: 4,
+                                  ),
+                                ],
+                              ),
+                              child: const Icon(
+                                Icons.camera_alt_rounded,
+                                size: 12,
                                 color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 21,
-                                letterSpacing: 0.5,
                               ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                businessName,
-                                style: GoogleFonts.dmSans(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 18,
-                                  color: VendorColors.textMain,
-                                  letterSpacing: -0.3,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                email,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 13,
-                                  color: VendorColors.textMuted,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                phone,
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 12.5,
-                                  color: VendorColors.textMuted,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 18),
-                    const Divider(
-                        height: 1, thickness: 0.6, color: Color(0xFFF1F5F9)),
-                    const SizedBox(height: 14),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF0FDF4),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(color: const Color(0xFFDCFCE7)),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              const Icon(Icons.check_circle_rounded,
-                                  size: 14, color: Color(0xFF16A34A)),
-                              const SizedBox(width: 5),
-                              Text(
-                                'Verified Partner',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 11.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: const Color(0xFF15803D),
+                              Flexible(
+                                child: Text(
+                                  businessName,
+                                  style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                    color: VendorColors.textMain,
+                                    letterSpacing: -0.3,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              _buildVerifiedPartnerBadge(),
                             ],
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 4),
+                          Text(
+                            email,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color: VendorColors.textMuted,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            phone,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12.5,
+                              color: VendorColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
               ),
 
               const SizedBox(height: 20),
-
-              // 2. Store Branches & Capacity Section
-              _buildSectionHeader('Store Branches & Capacity',
-                  actionText:
-                      '${vendor.stores.length} / ${vendor.maxStores} Branches'),
+              _buildSectionHeader('Manage Branches'),
               const SizedBox(height: 8),
-
-              // Capacity Progress Card
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: const Color(0xFFF1F5F9)),
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                      blurRadius: 14,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE0F2FE),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.hub_rounded,
-                              color: Color(0xFF0284C7), size: 18),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Branch Allocation',
-                            style: GoogleFonts.dmSans(
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                              color: VendorColors.textMain,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          '${vendor.stores.length} of ${vendor.maxStores} slots',
-                          style: GoogleFonts.dmSans(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 13,
-                            color: VendorColors.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: LinearProgressIndicator(
-                        value: vendor.maxStores > 0
-                            ? (vendor.stores.length / vendor.maxStores)
-                                .clamp(0.0, 1.0)
-                            : 0.0,
-                        backgroundColor: const Color(0xFFF1F5F9),
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                            VendorColors.primary),
-                        minHeight: 7,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Default max is 10 stores. System administrators can increase your branch capacity as your business scales.',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        color: const Color(0xFF64748B),
-                        height: 1.35,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-
               _buildMenuCard([
                 _buildMenuItem(
                   icon: Icons.storefront_rounded,
@@ -382,51 +518,17 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                   },
                 ),
                 _buildCardDivider(),
-                _buildMenuItem(
-                  icon: Icons.add_business_rounded,
-                  iconBgColor: const Color(0xFFDCFCE7),
-                  iconColor: const Color(0xFF16A34A),
-                  title: 'Add New Store Branch',
-                  subtitle: vendor.canAddStore
-                      ? '${vendor.maxStores - vendor.stores.length} branch slots remaining'
-                      : 'Limit reached (${vendor.maxStores} max) · Contact admin',
-                  onTap: () {
-                    if (vendor.canAddStore) {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              const VendorStoreDetailsScreen(),
-                        ),
-                      );
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'Store capacity reached (${vendor.stores.length}/${vendor.maxStores}). Contact admin to increase limit.',
-                            style:
-                                GoogleFonts.dmSans(fontWeight: FontWeight.w600),
-                          ),
-                          backgroundColor: const Color(0xFFEF4444),
-                          behavior: SnackBarBehavior.floating,
-                        ),
-                      );
-                    }
-                  },
-                ),
               ]),
-
               const SizedBox(height: 20),
-
-              // 3. Payouts & Finance Section
+              // 2. Payouts & Finance Section
               _buildSectionHeader('Payouts & Finance'),
               const SizedBox(height: 8),
 
               _buildMenuCard([
                 _buildMenuItem(
                   icon: Icons.account_balance_rounded,
-                  iconBgColor: const Color(0xFFFEF3C7),
-                  iconColor: const Color(0xFFD97706),
+                  iconBgColor: VendorColors.primary.withValues(alpha: 0.1),
+                  iconColor: VendorColors.primary,
                   title: 'Payout Bank Account',
                   subtitle: hasBank
                       ? '${kyc.bankName} •••• ${kyc.accountNumber.length >= 4 ? kyc.accountNumber.substring(kyc.accountNumber.length - 4) : kyc.accountNumber}'
@@ -436,7 +538,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => const VendorPayoutBankScreen(),
+                        builder: (context) => const VendorBankSettingsScreen(),
                       ),
                     );
                   },
@@ -444,8 +546,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                 _buildCardDivider(),
                 _buildMenuItem(
                   icon: Icons.account_balance_wallet_rounded,
-                  iconBgColor: const Color(0xFFCCFBF1),
-                  iconColor: const Color(0xFF0D9488),
+                  iconBgColor: VendorColors.primary.withValues(alpha: 0.1),
+                  iconColor: VendorColors.primary,
                   title: 'Wallet & Withdrawals',
                   subtitle:
                       'Available: ₦${vendor.availableBalance.toInt().toString()}',
@@ -461,8 +563,8 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                 _buildCardDivider(),
                 _buildMenuItem(
                   icon: Icons.description_rounded,
-                  iconBgColor: const Color(0xFFEDE9FE),
-                  iconColor: const Color(0xFF7C3AED),
+                  iconBgColor: VendorColors.primary.withValues(alpha: 0.1),
+                  iconColor: VendorColors.primary,
                   title: 'Business KYC Documents',
                   subtitle: 'CAC registration & identity documents',
                   onTap: () {
@@ -478,15 +580,15 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
 
               const SizedBox(height: 20),
 
-              // 4. Mode Switch & Account
+              // 3. Mode Switch & Account
               _buildSectionHeader('App Mode & Preferences'),
               const SizedBox(height: 8),
 
               _buildMenuCard([
                 _buildMenuItem(
                   icon: Icons.swap_horiz_rounded,
-                  iconBgColor: const Color(0xFFF1F5F9),
-                  iconColor: const Color(0xFF334155),
+                  iconBgColor: VendorColors.primary.withValues(alpha: 0.1),
+                  iconColor: VendorColors.primary,
                   title: 'Switch to Customer App',
                   subtitle: 'Browse laundry services as a customer',
                   onTap: () {
@@ -497,7 +599,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
 
               const SizedBox(height: 28),
 
-              // 5. Logout Button
+              // 4. Logout Button
               Material(
                 color: Colors.transparent,
                 child: InkWell(
@@ -545,16 +647,21 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            title,
-            style: GoogleFonts.dmSans(
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-              color: const Color(0xFF475569),
-              letterSpacing: -0.2,
+          Expanded(
+            child: Text(
+              title,
+              style: GoogleFonts.dmSans(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: const Color(0xFF475569),
+                letterSpacing: -0.2,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
-          if (actionText != null)
+          if (actionText != null) ...[
+            const SizedBox(width: 8),
             Text(
               actionText,
               style: GoogleFonts.dmSans(
@@ -563,6 +670,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                 color: VendorColors.primary,
               ),
             ),
+          ],
         ],
       ),
     );
@@ -661,7 +769,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFE0F2FE),
+                    color: VendorColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
@@ -669,7 +777,7 @@ class _VendorProfileScreenState extends State<VendorProfileScreen> {
                     style: GoogleFonts.dmSans(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: const Color(0xFF0284C7),
+                      color: VendorColors.primary,
                     ),
                   ),
                 ),

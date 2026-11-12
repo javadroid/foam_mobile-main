@@ -734,11 +734,11 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
                           ],
                         ),
 
-                        const SizedBox(height: 10),
+                        const SizedBox(height: 6),
                         const Divider(height: 1, color: Color(0xFFF1F5F9)),
-                        const SizedBox(height: 8),
+                        const SizedBox(height: 6),
 
-                        // Row 2: Folding Service per item (default ON, user can disable)
+                        // Row 2: Smaller compact Folding Service toggle
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -747,52 +747,49 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
                                 children: [
                                   Icon(
                                     isFolding
-                                        ? Icons.checkroom_rounded
-                                        : Icons.checkroom_outlined,
-                                    size: 16,
+                                        ? Icons.check_circle_rounded
+                                        : Icons.radio_button_unchecked_rounded,
+                                    size: 13,
                                     color: isFolding
                                         ? const Color(0xFF16A34A)
                                         : VendorColors.textMuted,
                                   ),
-                                  const SizedBox(width: 6),
+                                  const SizedBox(width: 5),
+                                  Text(
+                                    isFolding
+                                        ? 'Folding included'
+                                        : 'Folding optional',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 11,
+                                      fontWeight: isFolding
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
+                                      color: isFolding
+                                          ? const Color(0xFF15803D)
+                                          : VendorColors.textMuted,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
                                   Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          isFolding
-                                              ? 'Folding included'
-                                              : 'Folding optional',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 12.5,
-                                            fontWeight: FontWeight.w700,
-                                            color: isFolding
-                                                ? const Color(0xFF15803D)
-                                                : VendorColors.textMain,
-                                          ),
-                                        ),
-                                        Text(
-                                          isFolding
-                                              ? 'Included for customer without extra cost'
-                                              : 'Customer can choose to add folding',
-                                          style: GoogleFonts.dmSans(
-                                            fontSize: 11,
-                                            color: VendorColors.textMuted,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ],
+                                    child: Text(
+                                      isFolding
+                                          ? '· Included at no extra cost'
+                                          : '· Customer chooses at checkout',
+                                      style: GoogleFonts.dmSans(
+                                        fontSize: 10,
+                                        color: VendorColors.textMuted,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 6),
                             SizedBox(
-                              height: 24,
-                              width: 40,
+                              height: 18,
+                              width: 32,
                               child: FittedBox(
                                 fit: BoxFit.contain,
                                 child: Switch(

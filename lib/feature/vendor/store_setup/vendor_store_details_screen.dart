@@ -1,15 +1,12 @@
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
-import 'package:foam_mobile/core/services/upload_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/feature/vendor/store_setup/vendor_pricing_service_screen.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 class VendorStoreDetailsScreen extends StatefulWidget {
@@ -49,10 +46,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
   double? _latitude;
   double? _longitude;
   String? _storePhotoUrl;
-  File? _localPhotoFile;
 
-  final ImagePicker _picker = ImagePicker();
-  bool _isUploadingPhoto = false;
   bool _isDetectingLocation = false;
   bool _isSearchingSuggestions = false;
   bool _isGeocodingAddress = false;
@@ -391,251 +385,6 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
     return false;
   }
 
-  Future<void> _pickAndUploadPhoto(
-    ImageSource source, {
-    bool updateProfileAcrossAllStores = false,
-  }) async {
-    try {
-      final XFile? picked = await _picker.pickImage(
-        source: source,
-        maxWidth: 1600,
-        maxHeight: 1200,
-        imageQuality: 85,
-      );
-
-      if (picked != null) {
-        final file = File(picked.path);
-        setState(() {
-          _localPhotoFile = file;
-          _isUploadingPhoto = true;
-        });
-
-        final url = await UploadService.uploadImage(file);
-
-        if (!mounted) return;
-        setState(() {
-          _isUploadingPhoto = false;
-          if (url != null) {
-            _storePhotoUrl = url;
-          }
-        });
-
-        if (updateProfileAcrossAllStores && url != null) {
-          final auth = Provider.of<AuthProvider>(context, listen: false);
-          final vendor = Provider.of<VendorProvider>(context, listen: false);
-          auth.updateAvatarUrl(url);
-          await vendor.updateVendorProfileImage(url);
-        }
-
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              updateProfileAcrossAllStores
-                  ? 'Business profile image updated across all branches!'
-                  : (url != null
-                      ? 'Branch photo uploaded successfully'
-                      : 'Photo attached locally'),
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w500),
-            ),
-            backgroundColor:
-                url != null ? const Color(0xFF10B981) : Colors.black87,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('Error uploading photo: $e');
-      if (mounted) {
-        setState(() {
-          _isUploadingPhoto = false;
-        });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to upload photo: $e'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
-  }
-
-  void _showPhotoOptions({bool isBrandUpdateOnly = false}) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isBrandUpdateOnly
-                          ? 'Update Business Profile Photo'
-                          : (_storePhotoUrl != null || _localPhotoFile != null
-                              ? 'Change Branch Photo'
-                              : 'Upload Store Photo'),
-                      style: GoogleFonts.dmSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: VendorColors.textMain,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      isBrandUpdateOnly
-                          ? 'This photo is displayed across all branches on Foam.'
-                          : 'You can set a photo for this branch or update your brand profile photo.',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12.5,
-                        color: VendorColors.textMuted,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Divider(),
-              if (isBrandUpdateOnly) ...[
-                ListTile(
-                  leading: const Icon(Icons.photo_library_outlined,
-                      color: VendorColors.primary),
-                  title: Text(
-                    'Choose Brand Photo from Gallery',
-                    style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
-                        color: VendorColors.textMain),
-                  ),
-                  subtitle: Text('Applies across all store branches',
-                      style: GoogleFonts.dmSans(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickAndUploadPhoto(ImageSource.gallery,
-                        updateProfileAcrossAllStores: true);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt_outlined,
-                      color: VendorColors.primary),
-                  title: Text(
-                    'Take Brand Photo with Camera',
-                    style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
-                        color: VendorColors.textMain),
-                  ),
-                  subtitle: Text('Applies across all store branches',
-                      style: GoogleFonts.dmSans(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickAndUploadPhoto(ImageSource.camera,
-                        updateProfileAcrossAllStores: true);
-                  },
-                ),
-              ] else ...[
-                ListTile(
-                  leading: const Icon(Icons.photo_library_outlined,
-                      color: VendorColors.primary),
-                  title: Text(
-                    'Choose Branch Photo from Gallery',
-                    style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
-                        color: VendorColors.textMain),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickAndUploadPhoto(ImageSource.gallery,
-                        updateProfileAcrossAllStores: false);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.camera_alt_outlined,
-                      color: VendorColors.primary),
-                  title: Text(
-                    'Take Branch Photo with Camera',
-                    style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600,
-                        color: VendorColors.textMain),
-                  ),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _pickAndUploadPhoto(ImageSource.camera,
-                        updateProfileAcrossAllStores: false);
-                  },
-                ),
-                ListTile(
-                  leading: const Icon(Icons.business, color: Color(0xFF0284C7)),
-                  title: Text(
-                    'Update Brand Profile Photo (All Branches)',
-                    style: GoogleFonts.dmSans(
-                        fontWeight: FontWeight.w600, color: Color(0xFF0284C7)),
-                  ),
-                  subtitle: Text('Replaces profile photo across every branch',
-                      style: GoogleFonts.dmSans(fontSize: 11.5)),
-                  onTap: () {
-                    Navigator.pop(ctx);
-                    _showPhotoOptions(isBrandUpdateOnly: true);
-                  },
-                ),
-                if (_storePhotoUrl != null)
-                  ListTile(
-                    leading:
-                        const Icon(Icons.restore, color: Color(0xFF0F766E)),
-                    title: Text(
-                      'Use Brand Profile Photo',
-                      style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF0F766E)),
-                    ),
-                    subtitle: Text(
-                        'Remove branch photo and use business brand photo',
-                        style: GoogleFonts.dmSans(fontSize: 11.5)),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      setState(() {
-                        _storePhotoUrl = null;
-                        _localPhotoFile = null;
-                      });
-                    },
-                  ),
-                if (_storePhotoUrl != null || _localPhotoFile != null)
-                  ListTile(
-                    leading: const Icon(Icons.delete_outline,
-                        color: Colors.redAccent),
-                    title: Text(
-                      'Remove Photo',
-                      style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w600, color: Colors.redAccent),
-                    ),
-                    onTap: () {
-                      Navigator.pop(ctx);
-                      setState(() {
-                        _storePhotoUrl = null;
-                        _localPhotoFile = null;
-                      });
-                    },
-                  ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
   Future<void> _selectDayTime(String day, bool isOpenTime) async {
     final initial = isOpenTime ? _dayOpenTime[day]! : _dayCloseTime[day]!;
     final picked = await showTimePicker(
@@ -920,11 +669,6 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
     final profileImg = auth.avatarUrl.isNotEmpty
         ? auth.avatarUrl
         : (vendor.vendorAvatarUrl ?? '');
-    final String? displayPhotoUrl =
-        _storePhotoUrl ?? (profileImg.isNotEmpty ? profileImg : null);
-    final bool hasPhoto = _localPhotoFile != null || displayPhotoUrl != null;
-    final bool isUsingBrandPhoto =
-        _storePhotoUrl == null && profileImg.isNotEmpty;
     final bool isOverLimit = !isEditing && !vendor.canAddStore;
 
     return Scaffold(
@@ -981,215 +725,6 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                   ),
                 ),
               ],
-
-              // Store Photo Section Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Store photo',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: VendorColors.textMain,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton.icon(
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: const Size(50, 30),
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    icon: const Icon(Icons.account_circle_outlined,
-                        size: 15, color: VendorColors.primary),
-                    label: Text(
-                      'Update Brand Photo',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: VendorColors.primary,
-                      ),
-                    ),
-                    onPressed: _isUploadingPhoto
-                        ? null
-                        : () => _showPhotoOptions(isBrandUpdateOnly: true),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Uses your business brand photo across all branches by default, or you can set a branch photo.',
-                style: GoogleFonts.dmSans(
-                  fontSize: 12,
-                  color: VendorColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: 8),
-              GestureDetector(
-                onTap: _isUploadingPhoto
-                    ? null
-                    : () => _showPhotoOptions(isBrandUpdateOnly: false),
-                child: Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: VendorColors.lightBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color:
-                          hasPhoto ? VendorColors.primary : VendorColors.border,
-                      width: hasPhoto ? 1.6 : 1.2,
-                    ),
-                    image: _localPhotoFile != null
-                        ? DecorationImage(
-                            image: FileImage(_localPhotoFile!),
-                            fit: BoxFit.cover,
-                          )
-                        : (displayPhotoUrl != null
-                            ? DecorationImage(
-                                image: NetworkImage(displayPhotoUrl),
-                                fit: BoxFit.cover,
-                              )
-                            : null),
-                  ),
-                  child: Stack(
-                    children: [
-                      if (hasPhoto) ...[
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(15),
-                            gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.transparent,
-                                Colors.black.withValues(alpha: 0.65),
-                              ],
-                            ),
-                          ),
-                        ),
-                        if (isUsingBrandPhoto)
-                          Positioned(
-                            top: 10,
-                            left: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                    color: VendorColors.primary
-                                        .withValues(alpha: 0.4)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.verified,
-                                      size: 12, color: Color(0xFF00AABC)),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    'Brand Profile Photo',
-                                    style: GoogleFonts.dmSans(
-                                      color: Colors.white,
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                      ],
-                      Center(
-                        child: _isUploadingPhoto
-                            ? Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.9),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const CircularProgressIndicator(
-                                  color: VendorColors.primary,
-                                  strokeWidth: 2.5,
-                                ),
-                              )
-                            : (hasPhoto
-                                ? Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 14,
-                                      vertical: 8,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color:
-                                          Colors.black.withValues(alpha: 0.55),
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(
-                                          Icons.camera_alt_outlined,
-                                          color: Colors.white,
-                                          size: 16,
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          'Change storefront photo',
-                                          style: GoogleFonts.dmSans(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 12.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: VendorColors.primary
-                                              .withValues(alpha: 0.1),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.add_a_photo_outlined,
-                                          color: VendorColors.primary,
-                                          size: 26,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Upload storefront or shop photo',
-                                        style: GoogleFonts.dmSans(
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 14,
-                                          color: VendorColors.textMain,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Helps riders and customers recognize your location',
-                                        style: GoogleFonts.dmSans(
-                                          fontSize: 12,
-                                          color: VendorColors.textMuted,
-                                        ),
-                                      ),
-                                    ],
-                                  )),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
 
               // Store Name
               Text(
@@ -1740,7 +1275,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                                   fit: BoxFit.contain,
                                   child: Switch(
                                     value: isOpen,
-                                    activeColor: VendorColors.primary,
+                                    activeThumbColor: VendorColors.primary,
                                     materialTapTargetSize:
                                         MaterialTapTargetSize.shrinkWrap,
                                     onChanged: (val) {
@@ -1934,36 +1469,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                 ),
               ),
 
-              const SizedBox(height: 12),
-
-              // Live example calculation preview
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF8FAFC),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.calculate_outlined,
-                        size: 16, color: VendorColors.primary),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        '₦1,000 item → ₦${1000 + (1000 * _basicPercentage ~/ 100)} (Basic) · ₦${1000 + (1000 * _balancePercentage ~/ 100)} (Balance) · ₦${1000 + (1000 * _premiumPercentage ~/ 100)} (Premium)',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: VendorColors.textMain,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
+              
               const SizedBox(height: 36),
 
               VendorButton(
@@ -1972,11 +1478,8 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                     : (vendor.stores.isEmpty
                         ? 'Save & Set Prices'
                         : 'Create Store Branch'),
-                isLoading: _isUploadingPhoto ||
-                    _isGeocodingAddress ||
-                    vendor.isLoading,
-                onPressed: _isUploadingPhoto ||
-                        _isGeocodingAddress ||
+                isLoading: _isGeocodingAddress || vendor.isLoading,
+                onPressed: _isGeocodingAddress ||
                         isOverLimit ||
                         vendor.isLoading
                     ? null
@@ -2081,8 +1584,9 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             address: address,
                             lat: _latitude!,
                             lng: _longitude!,
-                            photoUrl: _storePhotoUrl,
-                            turnaroundDays: 2,
+                            photoUrl: _storePhotoUrl ??
+                                (profileImg.isNotEmpty ? profileImg : null),
+                            turnaroundDays: _turnaroundDays,
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
                           );
@@ -2125,8 +1629,9 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             address: address,
                             lat: _latitude!,
                             lng: _longitude!,
-                            photoUrl: _storePhotoUrl,
-                            turnaroundDays: 2,
+                            photoUrl: _storePhotoUrl ??
+                                (profileImg.isNotEmpty ? profileImg : null),
+                            turnaroundDays: _turnaroundDays,
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
                           );

@@ -250,7 +250,8 @@ class VendorStoresListScreen extends StatelessWidget {
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
                                           Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
                                             children: [
                                               Expanded(
                                                 child: Text(
@@ -264,13 +265,48 @@ class VendorStoresListScreen extends StatelessWidget {
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              VendorStatusPill(status: store.status),
+                                              const SizedBox(width: 8),
+                                              VendorStatusPill(
+                                                  status: store.status),
                                             ],
+                                          ),
+                                          const SizedBox(height: 5),
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 7, vertical: 2.5),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF0FDF4),
+                                              borderRadius:
+                                                  BorderRadius.circular(10),
+                                              border: Border.all(
+                                                  color: const Color(0xFFDCFCE7)),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                    Icons.check_circle_rounded,
+                                                    size: 11,
+                                                    color: Color(0xFF16A34A)),
+                                                const SizedBox(width: 3.5),
+                                                Text(
+                                                  'Verified Partner',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w700,
+                                                    color: const Color(0xFF15803D),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                           const SizedBox(height: 5),
                                           Row(
                                             children: [
-                                              const Icon(Icons.location_on_outlined, size: 14, color: VendorColors.textMuted),
+                                              const Icon(
+                                                  Icons.location_on_outlined,
+                                                  size: 14,
+                                                  color: VendorColors.textMuted),
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
@@ -280,7 +316,8 @@ class VendorStoresListScreen extends StatelessWidget {
                                                     color: VendorColors.textMuted,
                                                   ),
                                                   maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
                                             ],
@@ -288,17 +325,27 @@ class VendorStoresListScreen extends StatelessWidget {
                                           const SizedBox(height: 4),
                                           Row(
                                             children: [
-                                              const Icon(Icons.access_time, size: 13, color: VendorColors.textMuted),
+                                              const Icon(Icons.access_time,
+                                                  size: 13,
+                                                  color: VendorColors.textMuted),
                                               const SizedBox(width: 4),
-                                              Text(
-                                                store.hoursMonFri.isNotEmpty ? store.hoursMonFri : '8:00 AM – 6:00 PM',
-                                                style: GoogleFonts.dmSans(
-                                                  fontSize: 11.5,
-                                                  color: const Color(0xFF64748B),
-                                                  fontWeight: FontWeight.w500,
+                                              Flexible(
+                                                child: Text(
+                                                  store.hoursMonFri.isNotEmpty
+                                                      ? store.hoursMonFri
+                                                      : '8:00 AM – 6:00 PM',
+                                                  style: GoogleFonts.dmSans(
+                                                    fontSize: 11.5,
+                                                    color:
+                                                        const Color(0xFF64748B),
+                                                    fontWeight: FontWeight.w500,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
                                               ),
-                                              const SizedBox(width: 10),
+                                              const SizedBox(width: 8),
                                               Text(
                                                 '· ${store.itemsPricedCount} prices set',
                                                 style: GoogleFonts.dmSans(
