@@ -23,6 +23,16 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
   int _selectedTab = 0; // 0: New, 1: Active, 2: Done
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        Provider.of<VendorProvider>(context, listen: false).fetchVendorOrders();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final currencyFormatter = NumberFormat('#,###');
     final provider = Provider.of<VendorProvider>(context);
@@ -304,18 +314,39 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
     }
 
     if (orders.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+      return RefreshIndicator(
+        onRefresh: () async {
+          await Provider.of<VendorProvider>(context, listen: false).fetchVendorOrders();
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           children: [
-            Icon(Icons.inbox_outlined, size: 48, color: VendorColors.textMuted.withValues(alpha: 0.5)),
-            const SizedBox(height: 12),
-            Text(
-              'No orders in this queue',
-              style: GoogleFonts.dmSans(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: VendorColors.textMuted,
+            SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.inbox_outlined, size: 48, color: VendorColors.textMuted.withValues(alpha: 0.5)),
+                    const SizedBox(height: 12),
+                    Text(
+                      'No orders in this queue',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: VendorColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Orders from customers will appear here.',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        color: VendorColors.textMuted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -325,10 +356,14 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
 
     final currencyFormatter = NumberFormat('#,###');
 
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
-      itemCount: orders.length,
-      itemBuilder: (ctx, i) {
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Provider.of<VendorProvider>(context, listen: false).fetchVendorOrders();
+      },
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 6.0),
+        itemCount: orders.length,
+        itemBuilder: (ctx, i) {
         final order = orders[i];
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
@@ -430,6 +465,7 @@ class _VendorOrdersScreenState extends State<VendorOrdersScreen> {
           ),
         );
       },
-    );
-  }
+    ),
+  );
+}
 }

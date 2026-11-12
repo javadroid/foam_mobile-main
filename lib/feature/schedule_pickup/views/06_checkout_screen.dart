@@ -187,6 +187,26 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                               color: const Color(0xFF5E5E5E),
                             ),
                           ),
+                          if (provider.selectedTurnaroundOption != null) ...[
+                            const SizedBox(height: 5),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF00AABC).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                '${provider.selectedTurnaroundOption!.name} · ${provider.selectedTurnaroundDays}d',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF007A87),
+                                ),
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
@@ -212,35 +232,56 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
 
               // Items breakdown list
               ...items.map(
-                (item) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '${item.quantity} × ${item.name}',
+                (item) {
+                  final hasFolding = item.foldType.toLowerCase().contains('folding');
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '${item.quantity} × ${item.name}',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF212828),
+                                ),
+                              ),
+                              if (hasFolding && store.hasFoldingFee)
+                                Text(
+                                  '+₦${store.foldingPrice.round()} folding/unit',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 11,
+                                    color: const Color(0xFF00AABC),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '₦${currencyFormatter.format(provider.getItemPrice(item) * item.quantity)}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.dmSans(
                             fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                            fontWeight: FontWeight.w500,
                             color: const Color(0xFF212828),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '₦${currencyFormatter.format(provider.getItemPrice(item) * item.quantity)}',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                          color: const Color(0xFF212828),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                      ],
+                    ),
+                  );
+                },
               ),
 
               const Divider(height: 24, color: Color(0xFFE4E4E4)),
@@ -305,6 +346,22 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                   children: [
                     _buildCalcRow('Item subtotal', '₦${currencyFormatter.format(provider.itemSubtotal)}'),
                     const SizedBox(height: 10),
+                    if (provider.selectedTurnaroundOption != null) ...[
+                      _buildCalcRow(
+                        'Turnaround speed',
+                        '${provider.selectedTurnaroundOption!.name} (${provider.selectedTurnaroundDays}d${provider.selectedTurnaroundOption!.surchargePercent > 0 ? " +${provider.selectedTurnaroundOption!.surchargePercent}%" : ""})',
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                    if (provider.items.any((i) => i.quantity > 0 && i.foldType.toLowerCase().contains('folding'))) ...[
+                      _buildCalcRow(
+                        'Store folding care',
+                        store.hasFoldingFee && provider.storeFoldingTotal > 0
+                            ? '₦${currencyFormatter.format(provider.storeFoldingTotal)} (₦${store.foldingPrice.round()}/item)'
+                            : 'Included (Free)',
+                      ),
+                      const SizedBox(height: 10),
+                    ],
                     _buildCalcRow('Delivery fee', '₦${currencyFormatter.format(provider.deliveryFee)}'),
                     const SizedBox(height: 10),
                     _buildCalcRow('Service fee', '₦${currencyFormatter.format(provider.serviceFee)}'),
@@ -323,12 +380,17 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '₦${currencyFormatter.format(provider.grandTotal)}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 17,
-                            fontWeight: FontWeight.w700,
-                            color: const Color(0xFF212828),
+                        Flexible(
+                          child: Text(
+                            '₦${currencyFormatter.format(provider.grandTotal)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF212828),
+                            ),
                           ),
                         ),
                       ],
@@ -418,12 +480,17 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
           ),
         ),
         const SizedBox(width: 8),
-        Text(
-          amount,
-          style: GoogleFonts.dmSans(
-            fontSize: 14,
-            fontWeight: FontWeight.w400,
-            color: const Color(0xFF212828),
+        Flexible(
+          child: Text(
+            amount,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.end,
+            style: GoogleFonts.dmSans(
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              color: const Color(0xFF212828),
+            ),
           ),
         ),
       ],

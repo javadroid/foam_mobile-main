@@ -19,6 +19,7 @@ class VendorStore {
   double balancePercentage;
   double premiumPercentage;
   String logisticsType; // 'FOAM_RIDERS', 'OWN_LOGISTICS', 'BOTH'
+  double foldingPrice;
 
   VendorStore({
     required this.id,
@@ -41,6 +42,7 @@ class VendorStore {
     this.balancePercentage = 15,
     this.premiumPercentage = 35,
     this.logisticsType = 'BOTH',
+    this.foldingPrice = 0.0,
   });
 
   String get turnaroundText => turnaroundDays <= 1 ? 'Next-day' : 'Ready in $turnaroundDays days';
@@ -48,6 +50,8 @@ class VendorStore {
   bool get isLive => status.toUpperCase() == 'LIVE';
   bool get isPaused => status.toUpperCase() == 'PAUSED';
   bool get isDraft => status.toUpperCase() == 'DRAFT';
+
+  bool get hasFoldingFee => foldingPrice > 0;
 
   bool get usesFoamRiders => logisticsType == 'FOAM_RIDERS' || logisticsType == 'BOTH';
   bool get usesOwnLogistics => logisticsType == 'OWN_LOGISTICS' || logisticsType == 'BOTH';
@@ -86,6 +90,7 @@ class VendorStore {
     double? balancePercentage,
     double? premiumPercentage,
     String? logisticsType,
+    double? foldingPrice,
   }) {
     return VendorStore(
       id: id ?? this.id,
@@ -108,6 +113,7 @@ class VendorStore {
       balancePercentage: balancePercentage ?? this.balancePercentage,
       premiumPercentage: premiumPercentage ?? this.premiumPercentage,
       logisticsType: logisticsType ?? this.logisticsType,
+      foldingPrice: foldingPrice ?? this.foldingPrice,
     );
   }
 }
@@ -163,6 +169,65 @@ class VendorOrder {
     this.deliveryPin,
     required this.items,
   });
+
+  factory VendorOrder.fromJson(Map<String, dynamic> json) {
+    final orderId = json['id'] != null ? json['id'].toString() : '0';
+    final storeId = json['storeId'] != null ? json['storeId'].toString() : '';
+    final user = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : null;
+    final userName = user != null
+        ? '${user['firstName'] ?? ''} ${user['lastName'] ?? ''}'.trim()
+        : (json['customerName']?.toString() ?? 'Customer');
+    final customerName = userName.isNotEmpty ? userName : 'Customer';
+
+    final total = (json['totalPrice'] as num?)?.toDouble() ?? 0.0;
+    final delivery = (json['deliveryFee'] as num?)?.toDouble() ?? 0.0;
+    final service = (json['serviceFee'] as num?)?.toDouble() ?? 0.0;
+    final subtotal =
+        (total - delivery - service) > 0 ? (total - delivery - service) : total;
+    final commission = subtotal * 0.15;
+    final vendorEarnings = (json['vendorEarnings'] as num?)?.toDouble() ??
+        (subtotal - commission);
+
+    final rawItems = (json['items'] as List?) ?? [];
+    final items = rawItems.map((it) {
+      if (it is Map<String, dynamic>) {
+        final cat = it['category'] is Map ? it['category'] as Map : null;
+        final name = it['name'] ?? (cat != null ? cat['name'] : 'Item');
+        final qty = (it['quantity'] as num?)?.toInt() ?? 1;
+        final price = (it['price'] as num?)?.toDouble() ??
+            (cat != null
+                ? ((cat['price'] as num?)?.toDouble() ?? 500.0)
+                : 500.0);
+        return VendorOrderItem(
+          name: name.toString(),
+          quantity: qty,
+          totalPrice: price * qty,
+        );
+      }
+      return VendorOrderItem(name: 'Item', quantity: 1, totalPrice: 500.0);
+    }).toList();
+
+    return VendorOrder(
+      id: orderId,
+      storeId: storeId,
+      customerName: customerName,
+      serviceType: json['tier']?.toString() ?? 'Laundry',
+      itemCount: items.fold(0, (sum, i) => sum + i.quantity),
+      pickupSlot: json['pickupTime']?.toString() ?? 'Today, 3:00 – 4:00 PM',
+      subtotal: subtotal,
+      commission: commission,
+      vendorEarnings: vendorEarnings,
+      status: json['vendorStatus']?.toString() ??
+          (json['status'] == 'ACCEPTED'
+              ? 'NEW'
+              : (json['status']?.toString() ?? 'NEW')),
+      pickupPin: json['pickupPin']?.toString(),
+      deliveryPin: json['deliveryPin']?.toString(),
+      items: items,
+    );
+  }
 
   bool get isNew => status == 'NEW';
   bool get isActive => [

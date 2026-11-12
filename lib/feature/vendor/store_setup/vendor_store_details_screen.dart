@@ -23,6 +23,7 @@ class VendorStoreDetailsScreen extends StatefulWidget {
 class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
   late final TextEditingController _storeNameController;
   final TextEditingController _addressController = TextEditingController();
+  late final TextEditingController _foldingPriceController;
 
   final List<String> _daysOfWeek = const [
     'Monday',
@@ -166,6 +167,15 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
       _longitude = null;
     }
 
+    final double initialFoldingPrice = currentStore?.foldingPrice ?? 0.0;
+    _foldingPriceController = TextEditingController(
+      text: initialFoldingPrice > 0
+          ? (initialFoldingPrice == initialFoldingPrice.roundToDouble()
+              ? initialFoldingPrice.toInt().toString()
+              : initialFoldingPrice.toString())
+          : '0',
+    );
+
     _storeNameController = TextEditingController(text: initialName);
     _addressController.addListener(_onAddressChanged);
   }
@@ -176,6 +186,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
     _addressController.removeListener(_onAddressChanged);
     _storeNameController.dispose();
     _addressController.dispose();
+    _foldingPriceController.dispose();
     super.dispose();
   }
 
@@ -1596,6 +1607,71 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
 
               const SizedBox(height: 24),
 
+              // Store Folding Service Price Section
+              Text(
+                'STORE FOLDING SERVICE (PER ITEM)',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: VendorColors.textMuted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Set an optional folding fee applied per folded item for this store branch. Enter 0 if folding care is complimentary or included in your base pricing.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12.5,
+                  color: VendorColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                decoration: BoxDecoration(
+                  color: VendorColors.lightBg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: VendorColors.border),
+                ),
+                child: TextField(
+                  controller: _foldingPriceController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    color: VendorColors.textMain,
+                  ),
+                  decoration: InputDecoration(
+                    prefixIcon: Padding(
+                      padding: const EdgeInsets.only(left: 14, right: 8, top: 12, bottom: 12),
+                      child: Text(
+                        '₦',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: VendorColors.primary,
+                        ),
+                      ),
+                    ),
+                    prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    suffixText: '/ item',
+                    suffixStyle: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      color: VendorColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    hintText: '0 (Free folding)',
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      color: VendorColors.textMuted,
+                    ),
+                    border: InputBorder.none,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // Delivery & Logistics Fulfillment Section
               Text(
                 'DELIVERY & LOGISTICS FULFILLMENT',
@@ -1764,6 +1840,9 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                           },
                         ];
 
+                        final double foldingPrice =
+                            double.tryParse(_foldingPriceController.text.trim()) ?? 0.0;
+
                         if (isEditing) {
                           final res = await vendorProvider.updateStoreDetails(
                             storeId: widget.store!.id,
@@ -1777,6 +1856,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
                             logisticsType: _logisticsType,
+                            foldingPrice: foldingPrice,
                           );
 
                           if (!mounted) return;
@@ -1823,6 +1903,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
                             logisticsType: _logisticsType,
+                            foldingPrice: foldingPrice,
                           );
 
                           if (!mounted) return;

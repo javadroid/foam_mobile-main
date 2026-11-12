@@ -522,6 +522,43 @@ class VendorProvider extends ChangeNotifier {
     }
   }
 
+  void addVendorOrder(VendorOrder order) {
+    _orders.insert(0, order);
+    notifyListeners();
+  }
+
+  Future<void> fetchVendorOrders({String? status}) async {
+    try {
+      final token = HiveClass.getToken();
+      if (token.isEmpty) return;
+
+      final uri = Uri.parse(
+        '${Constants.url}/api/vendor/orders${status != null ? '?status=$status' : ''}',
+      );
+      final res = await http.get(
+        uri,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Accept': 'application/json',
+        },
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['orders'] is List) {
+          final list = (data['orders'] as List)
+              .map((o) => VendorOrder.fromJson(o as Map<String, dynamic>))
+              .toList();
+          _orders.clear();
+          _orders.addAll(list);
+          notifyListeners();
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching vendor orders: $e');
+    }
+  }
+
   Map<String, double> getItemPrices(
       String storeId, String service, String foldType) {
     final key = '${storeId}_${service}_$foldType';
@@ -925,6 +962,9 @@ class VendorProvider extends ChangeNotifier {
       balancePercentage: balancePct,
       premiumPercentage: premiumPct,
       logisticsType: json['logisticsType']?.toString().toUpperCase() ?? 'BOTH',
+      foldingPrice: (json['foldingPrice'] is num)
+          ? (json['foldingPrice'] as num).toDouble()
+          : 0.0,
     );
   }
 
@@ -982,6 +1022,7 @@ class VendorProvider extends ChangeNotifier {
     Map<String, dynamic>? operatingHours,
     List<Map<String, dynamic>>? turnaroundOptions,
     String logisticsType = 'BOTH',
+    double foldingPrice = 0.0,
   }) async {
     if (!canAddStore) {
       return {
@@ -1016,6 +1057,7 @@ class VendorProvider extends ChangeNotifier {
             'sun': sun,
           },
           'logisticsType': logisticsType,
+          'foldingPrice': foldingPrice,
           if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
@@ -1073,6 +1115,7 @@ class VendorProvider extends ChangeNotifier {
         balancePercentage: balPct,
         premiumPercentage: pPct,
         logisticsType: logisticsType,
+        foldingPrice: foldingPrice,
       );
       _stores.add(newStore);
       _selectedStoreId = newStore.id;
@@ -1097,6 +1140,7 @@ class VendorProvider extends ChangeNotifier {
     Map<String, dynamic>? operatingHours,
     List<Map<String, dynamic>>? turnaroundOptions,
     String? logisticsType,
+    double? foldingPrice,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -1123,6 +1167,7 @@ class VendorProvider extends ChangeNotifier {
             'sun': sun,
           },
           if (logisticsType != null) 'logisticsType': logisticsType,
+          if (foldingPrice != null) 'foldingPrice': foldingPrice,
           if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
@@ -1178,6 +1223,7 @@ class VendorProvider extends ChangeNotifier {
         balancePercentage: balPct,
         premiumPercentage: pPct,
         logisticsType: logisticsType ?? existing.logisticsType,
+        foldingPrice: foldingPrice ?? existing.foldingPrice,
         hoursMonFri: monFri,
         hoursSat: sat,
         hoursSun: sun,

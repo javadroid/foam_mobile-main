@@ -179,6 +179,7 @@ class CustomerScheduleService {
     required String pickupAddress,
     required String pickupTime,
     String? paystackRef,
+    int? totalPrice,
   }) async {
     try {
       final uri =
@@ -186,6 +187,7 @@ class CustomerScheduleService {
       final body = jsonEncode({
         'storeId': storeId,
         'tier': tier,
+        if (totalPrice != null) 'totalPrice': totalPrice,
         'items': items
             .where((i) => i.quantity > 0)
             .map((i) => {

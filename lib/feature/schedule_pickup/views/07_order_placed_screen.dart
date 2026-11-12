@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/history/history_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/08_pickup_leg_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -158,6 +159,36 @@ class ScheduleOrderPlacedScreen extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 12),
+
+                // Order history navigation button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF00AABC), width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamedAndRemoveUntil(
+                        context,
+                        HistoryScreen.id,
+                        (route) => route.isFirst,
+                      );
+                    },
+                    child: Text(
+                      'View in Order History',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF00AABC),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),

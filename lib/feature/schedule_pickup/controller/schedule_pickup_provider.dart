@@ -191,6 +191,13 @@ class SchedulePickupProvider extends ChangeNotifier {
 
   void selectTier(String tierId) {
     _selectedTierId = tierId;
+    if (tierId == 'BEST_VALUE') {
+      _selectedTurnaroundDays = 3;
+    } else if (tierId == 'BALANCED') {
+      _selectedTurnaroundDays = 2;
+    } else if (tierId == 'PREMIUM') {
+      _selectedTurnaroundDays = 1;
+    }
     notifyListeners();
   }
 
@@ -222,6 +229,7 @@ class SchedulePickupProvider extends ChangeNotifier {
   }
 
   Future<void> selectStore(NearbyStore store) async {
+    _selectedMethod = ScheduleMethod.pickStore;
     _selectedStore = store;
     _selectedTurnaroundDays = store.turnaroundDays;
     notifyListeners();
@@ -259,14 +267,33 @@ class SchedulePickupProvider extends ChangeNotifier {
     if (_selectedMethod == ScheduleMethod.pickStore) {
       return selectedTurnaroundOption?.priceMultiplier ?? 1.0;
     }
+    // Tier mode ("Let Foam choose")
+    if (_selectedTierId == 'PREMIUM') return 1.6;
+    if (_selectedTierId == 'BEST_VALUE') return 0.75;
     return 1.0;
   }
 
   int getItemPrice(ScheduleItem item) {
-    if (_selectedMethod == ScheduleMethod.pickStore) {
-      return (item.price * turnaroundMultiplier).round();
-    }
-    return item.price;
+    final basePrice = (item.price * turnaroundMultiplier).round();
+    final isFolding = item.foldType.toLowerCase().contains('folding');
+    final foldingExtra = isFolding ? currentStore.foldingPrice.round() : 0;
+    return basePrice + foldingExtra;
+  }
+
+  int get storeFoldingTotal {
+    return _items
+        .where((i) => i.foldType.toLowerCase().contains('folding'))
+        .fold(
+          0,
+          (sum, i) => sum + (currentStore.foldingPrice.round() * i.quantity),
+        );
+  }
+
+  int get baseItemSubtotal {
+    return _items.fold(
+      0,
+      (sum, i) => sum + ((i.price * turnaroundMultiplier).round() * i.quantity),
+    );
   }
 
   // Items & Quantities
@@ -427,6 +454,7 @@ class SchedulePickupProvider extends ChangeNotifier {
         pickupAddress: _pickupAddress,
         pickupTime: _pickupSlot,
         paystackRef: paystackRef,
+        totalPrice: grandTotal,
       );
 
       if (res['status'] == true && res['order'] != null) {

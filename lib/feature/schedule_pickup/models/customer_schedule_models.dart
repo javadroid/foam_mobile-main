@@ -185,6 +185,9 @@ class TurnaroundOption {
     required this.shirtStartingPrice,
   });
 
+  int get surchargePercent =>
+      priceMultiplier > 1.0 ? ((priceMultiplier - 1.0) * 100).round() : 0;
+
   factory TurnaroundOption.fromJson(Map<String, dynamic> json) {
     double mult = 1.0;
     if (json['priceMultiplier'] is num) {
@@ -229,6 +232,7 @@ class NearbyStore {
   final String operatingHours;
   final String? photoUrl;
   final String logisticsType;
+  final double foldingPrice;
   final double? latitude;
   final double? longitude;
   final List<TurnaroundOption> turnaroundOptions;
@@ -247,10 +251,13 @@ class NearbyStore {
     this.operatingHours = '8am–8pm',
     this.photoUrl,
     this.logisticsType = 'BOTH',
+    this.foldingPrice = 0.0,
     this.latitude,
     this.longitude,
     this.turnaroundOptions = const [],
   });
+
+  bool get hasFoldingFee => foldingPrice > 0;
 
   bool get usesFoamRiders =>
       logisticsType == 'FOAM_RIDERS' || logisticsType == 'BOTH';
@@ -349,6 +356,7 @@ class NearbyStore {
       operatingHours: parsedHours,
       photoUrl: json['photoUrl'] as String?,
       logisticsType: json['logisticsType'] as String? ?? 'BOTH',
+      foldingPrice: (json['foldingPrice'] as num?)?.toDouble() ?? 0.0,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       turnaroundOptions: parsedOptions,
@@ -368,6 +376,7 @@ class NearbyStore {
         'shirtStartingPrice': shirtStartingPrice,
         'operatingHours': operatingHours,
         'logisticsType': logisticsType,
+        'foldingPrice': foldingPrice,
         if (photoUrl != null) 'photoUrl': photoUrl,
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,

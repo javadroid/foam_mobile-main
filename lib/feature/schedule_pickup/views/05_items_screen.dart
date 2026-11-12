@@ -16,9 +16,12 @@ class ScheduleItemsScreen extends StatelessWidget {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final currencyFormatter = NumberFormat('#,###');
     final items = provider.items;
-    final storeName = provider.currentStore.name;
+    final store = provider.currentStore;
+    final storeName = store.name;
     final totalCount = provider.totalBasketCount;
     final subtotal = provider.itemSubtotal;
+    final turnaroundOptions = store.effectiveTurnaroundOptions;
+    final turnaroundOption = provider.selectedTurnaroundOption;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -29,30 +32,33 @@ class ScheduleItemsScreen extends StatelessWidget {
           icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Laundry · Folding',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF212828),
+        title: SizedBox(
+          width: double.infinity,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Laundry · Folding',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF212828),
+                ),
               ),
-            ),
-            Text(
-              'Prices from $storeName',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.dmSans(
-                fontSize: 12.5,
-                fontWeight: FontWeight.w400,
-                color: const Color(0xFF5E5E5E),
+              Text(
+                'Prices from $storeName',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w400,
+                  color: const Color(0xFF5E5E5E),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         centerTitle: false,
       ),
@@ -60,7 +66,137 @@ class ScheduleItemsScreen extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Turnaround Speed Selector Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Turnaround Speed',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF212828),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  if (turnaroundOption != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE5F7F8),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        '${turnaroundOption.name} · ${turnaroundOption.days}d SLA',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF00AABC),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 8),
+
+              // Turnaround Option Chips
+              if (turnaroundOptions.isNotEmpty)
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: turnaroundOptions.map((opt) {
+                      final isSelected =
+                          provider.selectedTurnaroundDays == opt.days;
+                      final multiplierPercent =
+                          ((opt.priceMultiplier - 1.0) * 100).round();
+                      final markupText =
+                          multiplierPercent > 0 ? ' (+$multiplierPercent%)' : '';
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8.0),
+                        child: ChoiceChip(
+                          label: Text(
+                            '${opt.days}d ${opt.name}$markupText',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 12.5,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : const Color(0xFF212828),
+                            ),
+                          ),
+                          selected: isSelected,
+                          selectedColor: const Color(0xFF00AABC),
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          checkmarkColor: Colors.white,
+                          onSelected: (_) =>
+                              provider.selectTurnaroundDays(opt.days),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+
+              const SizedBox(height: 10),
+
+              // Store Folding Care Banner
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: store.foldingPrice > 0
+                      ? const Color(0xFFFEF3C7)
+                      : const Color(0xFFF0FDF4),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: store.foldingPrice > 0
+                        ? const Color(0xFFFDE68A)
+                        : const Color(0xFFDCFCE7),
+                    width: 0.8,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      store.foldingPrice > 0
+                          ? Icons.inventory_2_outlined
+                          : Icons.check_circle_outline,
+                      size: 14,
+                      color: store.foldingPrice > 0
+                          ? const Color(0xFFD97706)
+                          : const Color(0xFF16A34A),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        store.foldingPrice > 0
+                            ? 'Store folding care: +₦${store.foldingPrice.round()} per item'
+                            : 'Folding care included for free by this store',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
+                          color: store.foldingPrice > 0
+                              ? const Color(0xFF92400E)
+                              : const Color(0xFF15803D),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 10),
+
               Expanded(
                 child: ListView.separated(
                   itemCount: items.length,
@@ -116,12 +252,17 @@ class ScheduleItemsScreen extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 8),
-                        Text(
-                          '₦${currencyFormatter.format(subtotal)}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                        Flexible(
+                          child: Text(
+                            '₦${currencyFormatter.format(subtotal)}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.end,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ],
