@@ -186,11 +186,22 @@ class TurnaroundOption {
   });
 
   factory TurnaroundOption.fromJson(Map<String, dynamic> json) {
+    double mult = 1.0;
+    if (json['priceMultiplier'] is num) {
+      mult = (json['priceMultiplier'] as num).toDouble();
+    } else if (json['multiplier'] is num) {
+      mult = (json['multiplier'] as num).toDouble();
+    } else if (json['percentage'] is num) {
+      mult = 1.0 + ((json['percentage'] as num).toDouble() / 100.0);
+    }
+
     return TurnaroundOption(
       days: (json['days'] as num?)?.toInt() ?? 2,
-      name: json['name'] as String? ?? 'Standard',
-      priceMultiplier: (json['priceMultiplier'] as num?)?.toDouble() ?? 1.0,
-      shirtStartingPrice: (json['shirtStartingPrice'] as num?)?.toInt() ?? 500,
+      name: json['name'] as String? ?? (json['package'] as String? ?? 'Standard'),
+      priceMultiplier: mult,
+      shirtStartingPrice: (json['shirtStartingPrice'] as num?)?.toInt() ??
+          (json['startingPrice'] as num?)?.toInt() ??
+          500,
     );
   }
 
@@ -216,6 +227,8 @@ class NearbyStore {
   final String turnaroundText;
   final int shirtStartingPrice;
   final String operatingHours;
+  final String? photoUrl;
+  final String logisticsType;
   final double? latitude;
   final double? longitude;
   final List<TurnaroundOption> turnaroundOptions;
@@ -232,13 +245,45 @@ class NearbyStore {
     required this.turnaroundText,
     required this.shirtStartingPrice,
     this.operatingHours = '8am–8pm',
+    this.photoUrl,
+    this.logisticsType = 'BOTH',
     this.latitude,
     this.longitude,
     this.turnaroundOptions = const [],
   });
 
+  bool get usesFoamRiders =>
+      logisticsType == 'FOAM_RIDERS' || logisticsType == 'BOTH';
+  bool get usesOwnLogistics =>
+      logisticsType == 'OWN_LOGISTICS' || logisticsType == 'BOTH';
+  bool get usesBothLogistics => logisticsType == 'BOTH';
+
+  String get logisticsDisplayText {
+    switch (logisticsType.toUpperCase()) {
+      case 'FOAM_RIDERS':
+        return 'Foam Fleet';
+      case 'OWN_LOGISTICS':
+        return 'Store Logistics';
+      case 'BOTH':
+      default:
+        return 'Fleet & Store';
+    }
+  }
+
   List<TurnaroundOption> get effectiveTurnaroundOptions {
-    if (turnaroundOptions.isNotEmpty) return turnaroundOptions;
+    if (turnaroundOptions.isNotEmpty) {
+      return turnaroundOptions.map((opt) {
+        if (opt.shirtStartingPrice == 500 && shirtStartingPrice != 500) {
+          return TurnaroundOption(
+            days: opt.days,
+            name: opt.name,
+            priceMultiplier: opt.priceMultiplier,
+            shirtStartingPrice: (shirtStartingPrice * opt.priceMultiplier).round(),
+          );
+        }
+        return opt;
+      }).toList();
+    }
     return [
       TurnaroundOption(
         days: 1,
@@ -272,6 +317,21 @@ class NearbyStore {
       }
     }
 
+    // Safely parse operatingHours whether it is String, Map, or null
+    String parsedHours = '8am–8pm';
+    final rawHours = json['operatingHours'];
+    if (rawHours is String && rawHours.trim().isNotEmpty) {
+      parsedHours = rawHours;
+    } else if (rawHours is Map) {
+      if (rawHours['monFri'] != null && rawHours['monFri'].toString().trim().isNotEmpty) {
+        parsedHours = rawHours['monFri'].toString();
+      } else if (rawHours['monday'] is Map && rawHours['monday']['open'] != null) {
+        parsedHours = '${rawHours['monday']['open']} – ${rawHours['monday']['close']}';
+      } else {
+        parsedHours = '8:00 AM – 6:00 PM';
+      }
+    }
+
     return NearbyStore(
       id: (json['id'] as num?)?.toInt() ?? 0,
       name: json['name'] as String? ?? 'Laundry Store',
@@ -286,7 +346,9 @@ class NearbyStore {
       shirtStartingPrice: (json['shirtStartingPrice'] as num?)?.toInt() ??
           (json['startingPrice'] as num?)?.toInt() ??
           500,
-      operatingHours: json['operatingHours'] as String? ?? '8am–8pm',
+      operatingHours: parsedHours,
+      photoUrl: json['photoUrl'] as String?,
+      logisticsType: json['logisticsType'] as String? ?? 'BOTH',
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       turnaroundOptions: parsedOptions,
@@ -305,6 +367,8 @@ class NearbyStore {
         'turnaroundText': turnaroundText,
         'shirtStartingPrice': shirtStartingPrice,
         'operatingHours': operatingHours,
+        'logisticsType': logisticsType,
+        if (photoUrl != null) 'photoUrl': photoUrl,
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
         if (turnaroundOptions.isNotEmpty)

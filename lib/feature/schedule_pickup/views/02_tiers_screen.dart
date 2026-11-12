@@ -10,41 +10,42 @@ class ScheduleTiersScreen extends StatelessWidget {
 
   const ScheduleTiersScreen({super.key});
 
+  static const List<ScheduleTier> fallbackTiers = [
+    ScheduleTier(
+      id: 'BEST_VALUE',
+      title: 'Best value',
+      startingPrice: 350,
+      turnaroundDays: 3,
+      turnaroundText: 'Ready in 3 days · ★ 4.2 average',
+      isMostPicked: false,
+    ),
+    ScheduleTier(
+      id: 'BALANCED',
+      title: 'Balanced',
+      startingPrice: 500,
+      turnaroundDays: 2,
+      turnaroundText: 'Ready in 2 days · ★ 4.6 average',
+      isMostPicked: true,
+      badge: 'MOST PICKED',
+    ),
+    ScheduleTier(
+      id: 'PREMIUM',
+      title: 'Premium',
+      startingPrice: 800,
+      turnaroundDays: 1,
+      turnaroundText: 'Ready in 24 hours · ★ 4.9 average',
+      isMostPicked: false,
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final selectedTier = provider.currentTier;
 
     // Use live tiers from provider or standard fallback
-    final displayTiers = provider.tiers.isNotEmpty
-        ? provider.tiers
-        : const [
-            ScheduleTier(
-              id: 'BEST_VALUE',
-              title: 'Best value',
-              startingPrice: 350,
-              turnaroundDays: 3,
-              turnaroundText: 'Ready in 3 days (Foam Guarantee) · ★ 4.2 average',
-              isMostPicked: false,
-            ),
-            ScheduleTier(
-              id: 'BALANCED',
-              title: 'Balanced',
-              startingPrice: 500,
-              turnaroundDays: 2,
-              turnaroundText: 'Ready in 2 days (Foam Guarantee) · ★ 4.6 average',
-              isMostPicked: true,
-              badge: 'MOST PICKED',
-            ),
-            ScheduleTier(
-              id: 'PREMIUM',
-              title: 'Premium',
-              startingPrice: 800,
-              turnaroundDays: 1,
-              turnaroundText: 'Next-day (Foam Guarantee) · ★ 4.8 average',
-              isMostPicked: false,
-            ),
-          ];
+    final displayTiers =
+        provider.tiers.isNotEmpty ? provider.tiers : fallbackTiers;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -52,7 +53,8 @@ class ScheduleTiersScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Color(0xFF212828), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -73,7 +75,7 @@ class ScheduleTiersScreen extends StatelessWidget {
             children: [
               // Dynamic tier subtitle based on backend data
               Text(
-                provider.tierSubtitle,
+                provider?.tierSubtitle ?? "",
                 style: GoogleFonts.dmSans(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w400,
@@ -95,7 +97,7 @@ class ScheduleTiersScreen extends StatelessWidget {
                     priceText: 'from ₦${tier.startingPrice}',
                     metaText: tier.turnaroundText.contains('Foam Guarantee')
                         ? tier.turnaroundText
-                        : '${tier.turnaroundText} · Foam Guarantee (${tier.turnaroundDays}d)',
+                        : '${tier.turnaroundText}',
                     isSelected: provider.selectedTierId == tier.id,
                     badgeText: tier.badge,
                     onTap: () => provider.selectTier(tier.id),
@@ -181,7 +183,8 @@ class ScheduleTiersScreen extends StatelessWidget {
           color: isSelected ? const Color(0xFFE5F7F8) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF00AABC) : const Color(0xFFE4E4E4),
+            color:
+                isSelected ? const Color(0xFF00AABC) : const Color(0xFFE4E4E4),
             width: isSelected ? 1.4 : 0.8,
           ),
         ),

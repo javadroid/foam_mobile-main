@@ -862,16 +862,35 @@ class VendorProvider extends ChangeNotifier {
     double premiumPct = 35;
     List<dynamic>? turnaroundOptions;
 
-    if (json['turnaroundOptions'] is List) {
-      turnaroundOptions = json['turnaroundOptions'] as List;
+    final rawTurnaround = json['turnaroundOptions'];
+    if (rawTurnaround is List) {
+      turnaroundOptions = rawTurnaround;
+    } else if (rawTurnaround is String && rawTurnaround.trim().isNotEmpty) {
+      try {
+        final decoded = jsonDecode(rawTurnaround);
+        if (decoded is List) {
+          turnaroundOptions = decoded;
+        }
+      } catch (_) {}
+    }
+
+    if (turnaroundOptions != null) {
       for (final opt in turnaroundOptions) {
         if (opt is Map) {
-          final pkg = (opt['package'] ?? opt['name'])?.toString().toUpperCase();
-          final pct = (opt['percentage'] is num) ? (opt['percentage'] as num).toDouble() : null;
-          if (pct != null) {
-            if (pkg == 'BASIC') basicPct = pct;
-            if (pkg == 'BALANCE') balancePct = pct;
-            if (pkg == 'PREMIUM') premiumPct = pct;
+          final pkg = (opt['package'] ?? opt['name'])?.toString().toUpperCase() ?? '';
+          final days = (opt['days'] is num) ? (opt['days'] as num).toInt() : 0;
+          double? pct = (opt['percentage'] is num) ? (opt['percentage'] as num).toDouble() : null;
+          if (pct == null && opt['priceMultiplier'] is num) {
+            final mult = (opt['priceMultiplier'] as num).toDouble();
+            pct = ((mult - 1.0) * 100).clamp(0, 200).roundToDouble();
+          }
+
+          if (pkg.contains('BASIC') || pkg.contains('ECONOMY') || days == 3) {
+            if (pct != null) basicPct = pct;
+          } else if (pkg.contains('BALANCE') || pkg.contains('STANDARD') || days == 2) {
+            if (pct != null) balancePct = pct;
+          } else if (pkg.contains('PREMIUM') || pkg.contains('EXPRESS') || days == 1) {
+            if (pct != null) premiumPct = pct;
           }
         }
       }
@@ -905,6 +924,7 @@ class VendorProvider extends ChangeNotifier {
       basicPercentage: basicPct,
       balancePercentage: balancePct,
       premiumPercentage: premiumPct,
+      logisticsType: json['logisticsType']?.toString().toUpperCase() ?? 'BOTH',
     );
   }
 
@@ -961,6 +981,7 @@ class VendorProvider extends ChangeNotifier {
     int turnaroundDays = 2,
     Map<String, dynamic>? operatingHours,
     List<Map<String, dynamic>>? turnaroundOptions,
+    String logisticsType = 'BOTH',
   }) async {
     if (!canAddStore) {
       return {
@@ -994,6 +1015,7 @@ class VendorProvider extends ChangeNotifier {
             'sat': sat,
             'sun': sun,
           },
+          'logisticsType': logisticsType,
           if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
@@ -1017,6 +1039,22 @@ class VendorProvider extends ChangeNotifier {
       }
     } catch (e) {
       // Local fallback
+      double bPct = 0;
+      double balPct = 15;
+      double pPct = 35;
+      if (turnaroundOptions != null) {
+        for (final opt in turnaroundOptions) {
+          final pkg = (opt['package'] ?? opt['name'])?.toString().toUpperCase() ?? '';
+          final days = (opt['days'] is num) ? (opt['days'] as num).toInt() : 0;
+          final pct = (opt['percentage'] is num) ? (opt['percentage'] as num).toDouble() : null;
+          if (pct != null) {
+            if (pkg.contains('BASIC') || days == 3) bPct = pct;
+            if (pkg.contains('BALANCE') || days == 2) balPct = pct;
+            if (pkg.contains('PREMIUM') || days == 1) pPct = pct;
+          }
+        }
+      }
+
       final newStore = VendorStore(
         id: 'store_${DateTime.now().millisecondsSinceEpoch}',
         name: name,
@@ -1031,6 +1069,10 @@ class VendorProvider extends ChangeNotifier {
         operatingHoursMap: operatingHours,
         turnaroundDays: turnaroundDays,
         turnaroundOptions: turnaroundOptions,
+        basicPercentage: bPct,
+        balancePercentage: balPct,
+        premiumPercentage: pPct,
+        logisticsType: logisticsType,
       );
       _stores.add(newStore);
       _selectedStoreId = newStore.id;
@@ -1054,6 +1096,7 @@ class VendorProvider extends ChangeNotifier {
     int turnaroundDays = 2,
     Map<String, dynamic>? operatingHours,
     List<Map<String, dynamic>>? turnaroundOptions,
+    String? logisticsType,
   }) async {
     _isLoading = true;
     notifyListeners();
@@ -1079,6 +1122,7 @@ class VendorProvider extends ChangeNotifier {
             'sat': sat,
             'sun': sun,
           },
+          if (logisticsType != null) 'logisticsType': logisticsType,
           if (turnaroundOptions != null) 'turnaroundOptions': turnaroundOptions,
         }),
       );
@@ -1101,21 +1145,60 @@ class VendorProvider extends ChangeNotifier {
       debugPrint('Error updating store via API: $e');
     }
 
-    // Local update
-    updateStoreAddress(
-      storeId: storeId,
-      name: name,
-      address: address,
-      lat: lat,
-      lng: lng,
-      photoUrl: photoUrl,
-    );
-    updateStoreHours(
-      storeId: storeId,
-      monFri: monFri,
-      sat: sat,
-      sun: sun,
-    );
+    // Local update fallback
+    final idx = _stores.indexWhere((s) => s.id == storeId);
+    if (idx != -1) {
+      final existing = _stores[idx];
+      double bPct = existing.basicPercentage;
+      double balPct = existing.balancePercentage;
+      double pPct = existing.premiumPercentage;
+
+      if (turnaroundOptions != null) {
+        for (final opt in turnaroundOptions) {
+          final pkg = (opt['package'] ?? opt['name'])?.toString().toUpperCase() ?? '';
+          final days = (opt['days'] is num) ? (opt['days'] as num).toInt() : 0;
+          final pct = (opt['percentage'] is num) ? (opt['percentage'] as num).toDouble() : null;
+          if (pct != null) {
+            if (pkg.contains('BASIC') || days == 3) bPct = pct;
+            if (pkg.contains('BALANCE') || days == 2) balPct = pct;
+            if (pkg.contains('PREMIUM') || days == 1) pPct = pct;
+          }
+        }
+      }
+
+      _stores[idx] = existing.copyWith(
+        name: name,
+        address: address,
+        latitude: lat,
+        longitude: lng,
+        photoUrl: photoUrl,
+        turnaroundDays: turnaroundDays,
+        turnaroundOptions: turnaroundOptions ?? existing.turnaroundOptions,
+        basicPercentage: bPct,
+        balancePercentage: balPct,
+        premiumPercentage: pPct,
+        logisticsType: logisticsType ?? existing.logisticsType,
+        hoursMonFri: monFri,
+        hoursSat: sat,
+        hoursSun: sun,
+        operatingHoursMap: operatingHours,
+      );
+    } else {
+      updateStoreAddress(
+        storeId: storeId,
+        name: name,
+        address: address,
+        lat: lat,
+        lng: lng,
+        photoUrl: photoUrl,
+      );
+      updateStoreHours(
+        storeId: storeId,
+        monFri: monFri,
+        sat: sat,
+        sun: sun,
+      );
+    }
     _isLoading = false;
     notifyListeners();
     return {'success': true, 'store': currentStore};

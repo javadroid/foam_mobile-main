@@ -42,6 +42,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
   int _balancePercentage = 15;
   int _premiumPercentage = 35;
   int _turnaroundDays = 2;
+  String _logisticsType = 'BOTH';
 
   double? _latitude;
   double? _longitude;
@@ -130,6 +131,10 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
       _basicPercentage = currentStore.basicPercentage.round();
       _balancePercentage = currentStore.balancePercentage.round();
       _premiumPercentage = currentStore.premiumPercentage.round();
+      _logisticsType = (currentStore.logisticsType != null &&
+              currentStore.logisticsType!.isNotEmpty)
+          ? currentStore.logisticsType!
+          : 'BOTH';
 
       if (currentStore.operatingHoursMap != null) {
         final map = currentStore.operatingHoursMap!;
@@ -658,6 +663,126 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogisticsOptionCard({
+    required String type,
+    required String title,
+    required String badgeText,
+    required Color badgeColor,
+    required IconData icon,
+    required String description,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? VendorColors.primary.withValues(alpha: 0.05)
+              : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? VendorColors.primary : VendorColors.border,
+            width: isSelected ? 1.6 : 1.0,
+          ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: VendorColors.primary.withValues(alpha: 0.06),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? VendorColors.primary.withValues(alpha: 0.12)
+                    : const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                icon,
+                size: 20,
+                color: isSelected ? VendorColors.primary : VendorColors.textMuted,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: VendorColors.textMain,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 7, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: badgeColor.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          badgeText,
+                          style: GoogleFonts.dmSans(
+                            fontSize: 9.5,
+                            fontWeight: FontWeight.w800,
+                            color: badgeColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    description,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 12,
+                      color: VendorColors.textMuted,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color:
+                    isSelected ? VendorColors.primary : const Color(0xFFCBD5E1),
+                size: 20,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1469,7 +1594,66 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                 ),
               ),
 
-              
+              const SizedBox(height: 24),
+
+              // Delivery & Logistics Fulfillment Section
+              Text(
+                'DELIVERY & LOGISTICS FULFILLMENT',
+                style: GoogleFonts.dmSans(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: VendorColors.textMuted,
+                  letterSpacing: 0.8,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Choose how orders are picked up from and delivered to customers for this store branch.',
+                style: GoogleFonts.dmSans(
+                  fontSize: 12.5,
+                  color: VendorColors.textMuted,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              _buildLogisticsOptionCard(
+                type: 'BOTH',
+                title: 'Both (Foam Fleet & Own Logistics)',
+                badgeText: 'RECOMMENDED',
+                badgeColor: const Color(0xFF00AABC),
+                icon: Icons.alt_route_rounded,
+                description:
+                    'Maximum flexibility. Orders can be dispatched via Foam vetted riders or handled by your in-house fleet.',
+                isSelected: _logisticsType == 'BOTH',
+                onTap: () => setState(() => _logisticsType = 'BOTH'),
+              ),
+              const SizedBox(height: 10),
+
+              _buildLogisticsOptionCard(
+                type: 'FOAM_RIDERS',
+                title: 'Foam Rider Service',
+                badgeText: 'FLEET DISPATCH',
+                badgeColor: const Color(0xFF16A34A),
+                icon: Icons.two_wheeler_rounded,
+                description:
+                    'Use Foam dedicated dispatch riders to automatically collect and deliver laundry orders to customers.',
+                isSelected: _logisticsType == 'FOAM_RIDERS',
+                onTap: () => setState(() => _logisticsType = 'FOAM_RIDERS'),
+              ),
+              const SizedBox(height: 10),
+
+              _buildLogisticsOptionCard(
+                type: 'OWN_LOGISTICS',
+                title: 'Own Logistics Only',
+                badgeText: 'IN-HOUSE TEAM',
+                badgeColor: const Color(0xFFF59E0B),
+                icon: Icons.local_shipping_outlined,
+                description:
+                    'Your business uses its own delivery vans, bikes, or staff to manage all customer pickups and deliveries.',
+                isSelected: _logisticsType == 'OWN_LOGISTICS',
+                onTap: () => setState(() => _logisticsType = 'OWN_LOGISTICS'),
+              ),
+
               const SizedBox(height: 36),
 
               VendorButton(
@@ -1559,6 +1743,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             'name': 'Basic',
                             'days': 3,
                             'percentage': _basicPercentage,
+                            'priceMultiplier': 1.0 + (_basicPercentage / 100.0),
                             'description': 'Standard 3-day turnaround',
                           },
                           {
@@ -1566,6 +1751,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             'name': 'Balance',
                             'days': 2,
                             'percentage': _balancePercentage,
+                            'priceMultiplier': 1.0 + (_balancePercentage / 100.0),
                             'description': 'Balanced 2-day turnaround',
                           },
                           {
@@ -1573,6 +1759,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             'name': 'Premium',
                             'days': 1,
                             'percentage': _premiumPercentage,
+                            'priceMultiplier': 1.0 + (_premiumPercentage / 100.0),
                             'description': 'Priority 24h express turnaround',
                           },
                         ];
@@ -1589,6 +1776,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             turnaroundDays: _turnaroundDays,
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
+                            logisticsType: _logisticsType,
                           );
 
                           if (!mounted) return;
@@ -1634,6 +1822,7 @@ class _VendorStoreDetailsScreenState extends State<VendorStoreDetailsScreen> {
                             turnaroundDays: _turnaroundDays,
                             operatingHours: operatingHoursData,
                             turnaroundOptions: turnaroundOptionsData,
+                            logisticsType: _logisticsType,
                           );
 
                           if (!mounted) return;

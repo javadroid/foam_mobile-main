@@ -424,5 +424,112 @@ void main() {
       expect(turnaroundOptionsJson[1]['startingPrice'] as int,
           greaterThan(turnaroundOptionsJson[2]['startingPrice'] as int));
     });
+
+    test('NearbyStore safely handles Map operatingHours and scales turnaround pricing from store starting price', () {
+      final userStoreResponse = {
+        'id': 2,
+        'name': 'Say Wat Laundry Abuja',
+        'address': 'V2MJ+V53, Eneka Rd, Umuola 500102, Rivers, Nigeria',
+        'area': 'V2MJ+V53',
+        'latitude': 4.8841549,
+        'longitude': 7.0305221,
+        'rating': 5,
+        'reviewCount': 312,
+        'turnaroundDays': 2,
+        'turnaroundText': 'Ready in 2 days',
+        'shirtStartingPrice': 5000,
+        'distanceKm': 430.4,
+        'photoUrl': 'http://10.69.179.217:8545/uploads/file-1794513654553-718654436.jpg',
+        'operatingHours': {
+          'sat': 'Closed',
+          'sun': 'Closed',
+          'friday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+          'monFri': '8:00 AM – 6:00 PM',
+          'monday': {'open': '8:00 AM', 'close': '6:00 PM', 'isOpen': true},
+        },
+      };
+
+      // Deserialization must succeed without throwing TypeError
+      final store = NearbyStore.fromJson(userStoreResponse);
+      expect(store.id, 2);
+      expect(store.name, 'Say Wat Laundry Abuja');
+      expect(store.operatingHours, '8:00 AM – 6:00 PM');
+      expect(store.photoUrl, contains('uploads/file-1794513654553-718654436.jpg'));
+      expect(store.shirtStartingPrice, 5000);
+      expect(store.distanceKm, 430.4);
+
+      // Verify dynamic turnaround pricing scales with the ₦5,000 shirt price
+      final options = store.effectiveTurnaroundOptions;
+      expect(options.length, 3);
+      final nextDay = options.firstWhere((o) => o.days == 1);
+      final standard = options.firstWhere((o) => o.days == 2);
+      final economy = options.firstWhere((o) => o.days == 3);
+
+      expect(standard.shirtStartingPrice, 5000);
+      expect(nextDay.shirtStartingPrice, 8000); // 5000 * 1.6
+      expect(economy.shirtStartingPrice, 3750); // 5000 * 0.75
+    });
+
+    test('NearbyStore logisticsType parsing, getters, and serialization', () {
+      final storeWithBoth = NearbyStore.fromJson({
+        'id': 10,
+        'name': 'Express Clean',
+        'address': 'Plot 4, Victoria Island, Lagos',
+        'area': 'Victoria Island',
+        'turnaroundText': 'Ready tomorrow',
+        'shirtStartingPrice': 1500,
+        'logisticsType': 'BOTH',
+      });
+      expect(storeWithBoth.logisticsType, 'BOTH');
+      expect(storeWithBoth.usesFoamRiders, isTrue);
+      expect(storeWithBoth.usesOwnLogistics, isTrue);
+      expect(storeWithBoth.usesBothLogistics, isTrue);
+      expect(storeWithBoth.logisticsDisplayText, 'Fleet & Store');
+
+      final storeWithRiders = NearbyStore.fromJson({
+        'id': 11,
+        'name': 'Rider Cleaners',
+        'address': 'Lekki Phase 1',
+        'area': 'Lekki',
+        'turnaroundText': 'Ready today',
+        'shirtStartingPrice': 2000,
+        'logisticsType': 'FOAM_RIDERS',
+      });
+      expect(storeWithRiders.logisticsType, 'FOAM_RIDERS');
+      expect(storeWithRiders.usesFoamRiders, isTrue);
+      expect(storeWithRiders.usesOwnLogistics, isFalse);
+      expect(storeWithRiders.usesBothLogistics, isFalse);
+      expect(storeWithRiders.logisticsDisplayText, 'Foam Fleet');
+
+      final storeWithOwn = NearbyStore.fromJson({
+        'id': 12,
+        'name': 'In-House Cleaners',
+        'address': 'Ikeja GRA',
+        'area': 'Ikeja',
+        'turnaroundText': 'Ready in 2 days',
+        'shirtStartingPrice': 1200,
+        'logisticsType': 'OWN_LOGISTICS',
+      });
+      expect(storeWithOwn.logisticsType, 'OWN_LOGISTICS');
+      expect(storeWithOwn.usesFoamRiders, isFalse);
+      expect(storeWithOwn.usesOwnLogistics, isTrue);
+      expect(storeWithOwn.usesBothLogistics, isFalse);
+      expect(storeWithOwn.logisticsDisplayText, 'Store Logistics');
+
+      // Verify default fallback when logisticsType is omitted
+      final storeDefault = NearbyStore.fromJson({
+        'id': 13,
+        'name': 'Default Store',
+        'address': 'Abuja Central',
+        'area': 'Abuja',
+        'turnaroundText': 'Ready in 3 days',
+        'shirtStartingPrice': 1000,
+      });
+      expect(storeDefault.logisticsType, 'BOTH');
+      expect(storeDefault.usesBothLogistics, isTrue);
+
+      final json = storeWithRiders.toJson();
+      expect(json['logisticsType'], 'FOAM_RIDERS');
+    });
   });
 }

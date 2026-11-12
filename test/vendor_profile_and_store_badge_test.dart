@@ -200,7 +200,80 @@ void main() {
     expect(find.text('Coordinates Required'), findsOneWidget);
     expect(find.text('Operating hours'), findsOneWidget);
     expect(find.text('TURNAROUND SPEED PACKAGES'), findsOneWidget);
+    expect(find.text('DELIVERY & LOGISTICS FULFILLMENT'), findsOneWidget);
+    expect(find.text('Both (Foam Fleet & Own Logistics)'), findsOneWidget);
+    expect(find.text('Foam Rider Service'), findsOneWidget);
+    expect(find.text('Own Logistics Only'), findsOneWidget);
 
     vendorProvider.dispose();
+  });
+
+  testWidgets(
+      'Vendor can select between rider service, own logistics, or both in store setup',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(450, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(() => tester.view.resetPhysicalSize());
+
+    final authProvider = AuthProvider();
+    final vendorProvider = VendorProvider();
+
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: authProvider),
+          ChangeNotifierProvider.value(value: vendorProvider),
+        ],
+        child: const MaterialApp(
+          home: VendorStoreDetailsScreen(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // Verify all three options exist
+    expect(find.text('Both (Foam Fleet & Own Logistics)'), findsOneWidget);
+    expect(find.text('Foam Rider Service'), findsOneWidget);
+    expect(find.text('Own Logistics Only'), findsOneWidget);
+
+    // Tap Foam Rider Service
+    await tester.tap(find.text('Foam Rider Service'));
+    await tester.pumpAndSettle();
+
+    // Tap Own Logistics Only
+    await tester.tap(find.text('Own Logistics Only'));
+    await tester.pumpAndSettle();
+
+    // Tap back to Both
+    await tester.tap(find.text('Both (Foam Fleet & Own Logistics)'));
+    await tester.pumpAndSettle();
+
+    vendorProvider.dispose();
+  });
+
+  test('VendorStore logisticsType getters and serialization', () {
+    final storeBoth = VendorStore(
+      id: '1',
+      name: 'Branch Central',
+      address: '123 Main St',
+      rating: 4.8,
+      logisticsType: 'BOTH',
+    );
+    expect(storeBoth.usesFoamRiders, isTrue);
+    expect(storeBoth.usesOwnLogistics, isTrue);
+    expect(storeBoth.usesBothLogistics, isTrue);
+    expect(storeBoth.logisticsDisplayText, 'Foam Riders & Own Logistics');
+
+    final storeRiders = storeBoth.copyWith(logisticsType: 'FOAM_RIDERS');
+    expect(storeRiders.usesFoamRiders, isTrue);
+    expect(storeRiders.usesOwnLogistics, isFalse);
+    expect(storeRiders.usesBothLogistics, isFalse);
+    expect(storeRiders.logisticsDisplayText, 'Foam Rider Service');
+
+    final storeOwn = storeBoth.copyWith(logisticsType: 'OWN_LOGISTICS');
+    expect(storeOwn.usesFoamRiders, isFalse);
+    expect(storeOwn.usesOwnLogistics, isTrue);
+    expect(storeOwn.usesBothLogistics, isFalse);
+    expect(storeOwn.logisticsDisplayText, 'Own Logistics');
   });
 }

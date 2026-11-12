@@ -197,7 +197,7 @@ class _HowToChooseScreenState extends State<HowToChooseScreen> {
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        "Pick a price level with Foam's turnaround guarantee (1, 2, or 3 days). We'll match you with the best store nearby.",
+                        "Pick a price level with Foam's turnaround guarantee. We'll match you with the best store nearby.",
                         style: GoogleFonts.dmSans(
                           fontSize: 13.5,
                           fontWeight: FontWeight.w400,

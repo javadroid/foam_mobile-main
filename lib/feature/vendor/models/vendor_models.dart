@@ -18,6 +18,7 @@ class VendorStore {
   double basicPercentage;
   double balancePercentage;
   double premiumPercentage;
+  String logisticsType; // 'FOAM_RIDERS', 'OWN_LOGISTICS', 'BOTH'
 
   VendorStore({
     required this.id,
@@ -39,6 +40,7 @@ class VendorStore {
     this.basicPercentage = 0,
     this.balancePercentage = 15,
     this.premiumPercentage = 35,
+    this.logisticsType = 'BOTH',
   });
 
   String get turnaroundText => turnaroundDays <= 1 ? 'Next-day' : 'Ready in $turnaroundDays days';
@@ -46,6 +48,68 @@ class VendorStore {
   bool get isLive => status.toUpperCase() == 'LIVE';
   bool get isPaused => status.toUpperCase() == 'PAUSED';
   bool get isDraft => status.toUpperCase() == 'DRAFT';
+
+  bool get usesFoamRiders => logisticsType == 'FOAM_RIDERS' || logisticsType == 'BOTH';
+  bool get usesOwnLogistics => logisticsType == 'OWN_LOGISTICS' || logisticsType == 'BOTH';
+  bool get usesBothLogistics => logisticsType == 'BOTH';
+
+  String get logisticsDisplayText {
+    switch (logisticsType.toUpperCase()) {
+      case 'FOAM_RIDERS':
+        return 'Foam Rider Service';
+      case 'OWN_LOGISTICS':
+        return 'Own Logistics';
+      case 'BOTH':
+      default:
+        return 'Foam Riders & Own Logistics';
+    }
+  }
+
+  VendorStore copyWith({
+    String? id,
+    String? name,
+    String? address,
+    String? status,
+    double? rating,
+    int? itemsPricedCount,
+    int? totalItems,
+    String? hoursMonFri,
+    String? hoursSat,
+    String? hoursSun,
+    Map<String, dynamic>? operatingHoursMap,
+    double? latitude,
+    double? longitude,
+    String? photoUrl,
+    int? turnaroundDays,
+    List<dynamic>? turnaroundOptions,
+    double? basicPercentage,
+    double? balancePercentage,
+    double? premiumPercentage,
+    String? logisticsType,
+  }) {
+    return VendorStore(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      address: address ?? this.address,
+      status: status ?? this.status,
+      rating: rating ?? this.rating,
+      itemsPricedCount: itemsPricedCount ?? this.itemsPricedCount,
+      totalItems: totalItems ?? this.totalItems,
+      hoursMonFri: hoursMonFri ?? this.hoursMonFri,
+      hoursSat: hoursSat ?? this.hoursSat,
+      hoursSun: hoursSun ?? this.hoursSun,
+      operatingHoursMap: operatingHoursMap ?? this.operatingHoursMap,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      photoUrl: photoUrl ?? this.photoUrl,
+      turnaroundDays: turnaroundDays ?? this.turnaroundDays,
+      turnaroundOptions: turnaroundOptions ?? this.turnaroundOptions,
+      basicPercentage: basicPercentage ?? this.basicPercentage,
+      balancePercentage: balancePercentage ?? this.balancePercentage,
+      premiumPercentage: premiumPercentage ?? this.premiumPercentage,
+      logisticsType: logisticsType ?? this.logisticsType,
+    );
+  }
 }
 
 class VendorOrderItem {
