@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/01_how_to_choose_screen.dart';
@@ -9,9 +10,14 @@ import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-Widget _buildTestApp(Widget child, SchedulePickupProvider provider) {
-  return ChangeNotifierProvider<SchedulePickupProvider>.value(
-    value: provider,
+Widget _buildTestApp(Widget child, SchedulePickupProvider provider,
+    {AuthProvider? authProvider}) {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider<SchedulePickupProvider>.value(value: provider),
+      if (authProvider != null)
+        ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+    ],
     child: MaterialApp(
       routes: {
         ScheduleTiersScreen.id: (_) => const ScheduleTiersScreen(),
@@ -137,6 +143,44 @@ void main() {
       // Verify Track order button
       expect(find.text('Track order'), findsOneWidget);
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+        'View 01: On loading HowToChooseScreen uses saved location as pickup',
+        (WidgetTester tester) async {
+      final auth = AuthProvider();
+      auth.fillAddress(
+        '14 Stadium Road',
+        'Port Harcourt',
+        '',
+        'Nigeria',
+        state: 'Rivers State',
+        lga: 'Port Harcourt',
+        latitude: 4.8156,
+        longitude: 7.0498,
+      );
+
+      final provider = SchedulePickupProvider();
+
+      await tester.pumpWidget(
+        _buildTestApp(const HowToChooseScreen(), provider, authProvider: auth),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify the banner automatically displays the saved pickup location
+      expect(find.text('Pickup from'), findsOneWidget);
+      expect(find.text('14 Stadium Road, Port Harcourt'), findsOneWidget);
+      expect(provider.pickupAddress, '14 Stadium Road, Port Harcourt');
+      expect(provider.pickupLat, 4.8156);
+      expect(provider.pickupLng, 7.0498);
+
+      // Tap on address banner to open modal
+      await tester.tap(find.text('Pickup from'));
+      await tester.pumpAndSettle();
+
+      // Verify "Use Saved Pickup Address" option appears in modal
+      expect(find.text('Use Saved Pickup Address'), findsOneWidget);
+      expect(find.text('14 Stadium Road, Port Harcourt'), findsWidgets);
     });
   });
 }

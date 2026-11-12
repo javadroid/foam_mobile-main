@@ -1,7 +1,12 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/customer_schedule_service.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
+import 'package:foam_mobile/utils/values.dart';
+import 'package:http/http.dart' as http;
 
 enum ScheduleMethod { letFoamChoose, pickStore }
 
@@ -11,11 +16,109 @@ class SchedulePickupProvider extends ChangeNotifier {
   double _pickupLat = 6.4474;
   double _pickupLng = 3.4723;
   bool _isDetectingLocation = false;
+  bool _isLocationLoaded = false;
 
   String get pickupAddress => _pickupAddress;
   double get pickupLat => _pickupLat;
   double get pickupLng => _pickupLng;
   bool get isDetectingLocation => _isDetectingLocation;
+  bool get isLocationLoaded => _isLocationLoaded;
+
+  /// Load the customer's saved location from AuthProvider / backend API / storage
+  Future<void> loadSavedLocation({AuthProvider? authProvider}) async {
+    // 1. Populate immediately from AuthProvider if available in memory
+    if (authProvider != null && authProvider.addressStreet.isNotEmpty) {
+      final street = authProvider.addressStreet;
+      final city = authProvider.addressCity;
+      _pickupAddress = city.isNotEmpty ? '$street, $city' : street;
+
+      if (authProvider.addressLatitude != null &&
+          authProvider.addressLongitude != null &&
+          authProvider.addressLatitude != 0.0 &&
+          authProvider.addressLongitude != 0.0) {
+        _pickupLat = authProvider.addressLatitude!;
+        _pickupLng = authProvider.addressLongitude!;
+      }
+      _isLocationLoaded = true;
+      notifyListeners();
+    }
+
+    // 2. Fetch latest saved address from backend /api/user/address
+    try {
+      String token = '';
+      try {
+        if (HiveClass.tokenExist()) {
+          token = HiveClass.getToken();
+        }
+      } catch (_) {}
+
+      if (token.isNotEmpty) {
+        final res = await http.get(
+          Uri.parse('${Constants.url}/api/user/address'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 4));
+
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          final data = json.decode(res.body);
+          if (data['address'] != null && (data['address'] as List).isNotEmpty) {
+            final addr = data['address'][0];
+            final street = addr['street']?.toString() ?? '';
+            final city = addr['city']?.toString() ?? '';
+            final state = addr['state']?.toString() ?? '';
+            final lga = addr['lga']?.toString() ?? '';
+            final lat = double.tryParse(addr['latitude']?.toString() ?? '');
+            final lng = double.tryParse(addr['longitude']?.toString() ?? '');
+
+            if (street.isNotEmpty) {
+              _pickupAddress = city.isNotEmpty ? '$street, $city' : street;
+              _isLocationLoaded = true;
+            }
+            if (lat != null && lng != null && lat != 0.0 && lng != 0.0) {
+              _pickupLat = lat;
+              _pickupLng = lng;
+            }
+
+            if (authProvider != null && street.isNotEmpty) {
+              authProvider.fillAddress(
+                street,
+                city,
+                addr['postalCode']?.toString() ?? '',
+                addr['country']?.toString() ?? 'Nigeria',
+                state: state,
+                lga: lga,
+                latitude: lat,
+                longitude: lng,
+              );
+            }
+            notifyListeners();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading saved location from backend: $e');
+    }
+
+    // 3. If address is present but coordinates are default placeholder, geocode the address
+    final isLagosPlaceholder = (_pickupLat == 6.4474 && _pickupLng == 3.4723);
+    if (isLagosPlaceholder &&
+        _pickupAddress.isNotEmpty &&
+        !_pickupAddress.contains('Lekki')) {
+      try {
+        final suggestions =
+            await LocationService.searchAddressSuggestions(_pickupAddress);
+        if (suggestions.isNotEmpty &&
+            suggestions.first.details.latitude != 0.0) {
+          _pickupLat = suggestions.first.details.latitude;
+          _pickupLng = suggestions.first.details.longitude;
+          notifyListeners();
+        }
+      } catch (_) {}
+    }
+  }
 
   void setPickupAddress(String address) {
     _pickupAddress = address;
@@ -229,9 +332,14 @@ class SchedulePickupProvider extends ChangeNotifier {
       'Based on 9 live stores within 5 km. Prices are for a shirt, washed and folded.';
 
   // Load Initial Tiers & Stores
-  Future<void> initFlowData({double? lat, double? lng}) async {
+  Future<void> initFlowData(
+      {AuthProvider? authProvider, double? lat, double? lng}) async {
     _isLoading = true;
     notifyListeners();
+
+    if (lat == null && lng == null) {
+      await loadSavedLocation(authProvider: authProvider);
+    }
 
     final targetLat = lat ?? _pickupLat;
     final targetLng = lng ?? _pickupLng;

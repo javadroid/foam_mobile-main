@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
+import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/02_tiers_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
@@ -21,7 +22,12 @@ class _HowToChooseScreenState extends State<HowToChooseScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<SchedulePickupProvider>(context, listen: false).initFlowData();
+      AuthProvider? auth;
+      try {
+        auth = Provider.of<AuthProvider>(context, listen: false);
+      } catch (_) {}
+      Provider.of<SchedulePickupProvider>(context, listen: false)
+          .initFlowData(authProvider: auth);
     });
   }
 
@@ -424,6 +430,78 @@ class _LocationPickerModalState extends State<_LocationPickerModal> {
             ],
           ),
           const SizedBox(height: 12),
+          // Saved Address option if available
+          Builder(
+            builder: (ctx) {
+              AuthProvider? auth;
+              try {
+                auth = Provider.of<AuthProvider>(ctx, listen: false);
+              } catch (_) {}
+              if (auth == null || auth.addressStreet.isEmpty) {
+                return const SizedBox.shrink();
+              }
+              final savedText = auth.addressCity.isNotEmpty
+                  ? '${auth.addressStreet}, ${auth.addressCity}'
+                  : auth.addressStreet;
+
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: InkWell(
+                  onTap: () {
+                    widget.provider.setPickupLocation(
+                      address: savedText,
+                      lat: auth?.addressLatitude,
+                      lng: auth?.addressLongitude,
+                    );
+                    Navigator.pop(context);
+                  },
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF0FDF4),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                          color: const Color(0xFF86EFAC), width: 1.0),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.bookmark_added_rounded,
+                            color: Color(0xFF16A34A), size: 22),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Use Saved Pickup Address',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w700,
+                                  color: const Color(0xFF15803D),
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                savedText,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  color: const Color(0xFF166534),
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
           // Auto-detect tile
           InkWell(
             onTap: (_isDetecting || _isResolving) ? null : _handleAutoDetect,
