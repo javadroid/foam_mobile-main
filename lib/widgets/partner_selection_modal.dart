@@ -20,8 +20,6 @@ class PartnerSelectionModal extends StatelessWidget {
   });
 
   // ── Brand tokens (from AppColors) ──
-  static const _dark = Color(0xFF001C1F);
-  static const _accent = Color(0xFF00AABC);
   static const _textPrimary = Color(0xFF212828);
   static const _textSecondary = Color(0xFF5A6868);
   static const _surface = Color(0xFFF6F8F8);
@@ -46,6 +44,10 @@ class PartnerSelectionModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final themeColor = theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+
     bool isLoggedIn = false;
     try {
       if (Hive.isBoxOpen('foam')) {
@@ -74,9 +76,9 @@ class PartnerSelectionModal extends StatelessWidget {
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
       ),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surface : Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         top: false,
@@ -96,7 +98,9 @@ class PartnerSelectionModal extends StatelessWidget {
                 width: 36,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: _border,
+                  color: isDark
+                      ? theme.colorScheme.outlineVariant
+                      : _border,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -111,7 +115,7 @@ class PartnerSelectionModal extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
-                        color: _textPrimary,
+                        color: isDark ? theme.colorScheme.onSurface : _textPrimary,
                       ),
                     ),
                   ),
@@ -121,13 +125,17 @@ class PartnerSelectionModal extends StatelessWidget {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: _surface,
+                        color: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : _surface,
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.close_rounded,
                         size: 18,
-                        color: _textSecondary,
+                        color: isDark
+                            ? theme.colorScheme.onSurfaceVariant
+                            : _textSecondary,
                       ),
                     ),
                   ),
@@ -140,7 +148,9 @@ class PartnerSelectionModal extends StatelessWidget {
                   'Choose a program to get started.',
                   style: GoogleFonts.dmSans(
                     fontSize: 14,
-                    color: _textSecondary,
+                    color: isDark
+                        ? theme.colorScheme.onSurfaceVariant
+                        : _textSecondary,
                   ),
                 ),
               ),
@@ -155,6 +165,7 @@ class PartnerSelectionModal extends StatelessWidget {
                 isActive: isVendor,
                 statusLabel: isVendor ? 'Active' : null,
                 ctaLabel: isVendor ? 'Open Vendor Portal' : 'Get Started',
+                themeColor: themeColor,
                 onTap: () {
                   Navigator.pop(context);
                   if (onSelectVendor != null) {
@@ -182,6 +193,7 @@ class PartnerSelectionModal extends StatelessWidget {
                     ? (isRiderPending ? 'Pending' : 'Active')
                     : null,
                 ctaLabel: isRider ? 'Open Rider Portal' : 'Get Started',
+                themeColor: themeColor,
                 onTap: () {
                   Navigator.pop(context);
                   if (onSelectRider != null) {
@@ -212,6 +224,7 @@ class _PartnerCard extends StatelessWidget {
   final String? statusLabel;
   final String ctaLabel;
   final VoidCallback onTap;
+  final Color? themeColor;
 
   const _PartnerCard({
     required this.icon,
@@ -221,23 +234,34 @@ class _PartnerCard extends StatelessWidget {
     required this.statusLabel,
     required this.ctaLabel,
     required this.onTap,
+    this.themeColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final effectiveThemeColor = themeColor ?? theme.colorScheme.primary;
+    final isDark = theme.brightness == Brightness.dark;
+
     return Material(
-      color: Colors.white,
+      color: isDark ? theme.colorScheme.surface : Colors.white,
       borderRadius: BorderRadius.circular(14),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(14),
-        splashColor: PartnerSelectionModal._accent.withValues(alpha: 0.06),
-        highlightColor: PartnerSelectionModal._accent.withValues(alpha: 0.03),
+        splashColor: effectiveThemeColor.withValues(alpha: 0.08),
+        highlightColor: effectiveThemeColor.withValues(alpha: 0.04),
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: PartnerSelectionModal._border),
+            border: Border.all(
+              color: isActive
+                  ? effectiveThemeColor.withValues(alpha: 0.4)
+                  : (isDark
+                      ? theme.colorScheme.outlineVariant
+                      : PartnerSelectionModal._border),
+            ),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -245,15 +269,15 @@ class _PartnerCard extends StatelessWidget {
               // ── Icon row ──
               Row(
                 children: [
-                  // Icon in dark container (matches the app's quick-switch cards)
+                  // Icon in theme color container
                   Container(
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: PartnerSelectionModal._dark,
+                      color: effectiveThemeColor.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Icon(icon, color: Colors.white, size: 22),
+                    child: Icon(icon, color: effectiveThemeColor, size: 22),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -262,7 +286,9 @@ class _PartnerCard extends StatelessWidget {
                       style: GoogleFonts.dmSans(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: PartnerSelectionModal._textPrimary,
+                        color: isDark
+                            ? theme.colorScheme.onSurface
+                            : PartnerSelectionModal._textPrimary,
                       ),
                     ),
                   ),
@@ -274,7 +300,7 @@ class _PartnerCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: isActive
-                            ? PartnerSelectionModal._accent.withValues(alpha: 0.1)
+                            ? effectiveThemeColor.withValues(alpha: 0.12)
                             : const Color(0xFFFFF3E0),
                         borderRadius: BorderRadius.circular(6),
                       ),
@@ -284,7 +310,7 @@ class _PartnerCard extends StatelessWidget {
                           fontSize: 11,
                           fontWeight: FontWeight.w600,
                           color: isActive
-                              ? PartnerSelectionModal._accent
+                              ? effectiveThemeColor
                               : const Color(0xFFE65100),
                         ),
                       ),
@@ -298,18 +324,20 @@ class _PartnerCard extends StatelessWidget {
                 description,
                 style: GoogleFonts.dmSans(
                   fontSize: 13,
-                  color: PartnerSelectionModal._textSecondary,
+                  color: isDark
+                      ? theme.colorScheme.onSurfaceVariant
+                      : PartnerSelectionModal._textSecondary,
                   height: 1.4,
                 ),
               ),
               const SizedBox(height: 14),
 
-              // ── CTA button ── (same shape/feel as the app's ClickButton)
+              // ── CTA button ──
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 decoration: BoxDecoration(
-                  color: PartnerSelectionModal._dark,
+                  color: effectiveThemeColor,
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(

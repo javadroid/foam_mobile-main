@@ -23,7 +23,8 @@ class CustomerScheduleService {
     double lng = 3.4723,
   }) async {
     try {
-      final uri = Uri.parse('${Constants.url}/api/customer/tiers?lat=$lat&lng=$lng');
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/tiers?lat=$lat&lng=$lng');
       final res = await http.get(uri, headers: await _getHeaders()).timeout(
             const Duration(seconds: 4),
           );
@@ -45,7 +46,8 @@ class CustomerScheduleService {
         }
       }
     } catch (e) {
-      debugPrint('Error fetching tiers from backend: $e. Using Figma tier fallback.');
+      debugPrint(
+          'Error fetching tiers from backend: $e. Using Figma tier fallback.');
     }
 
     latestTierMetadata = const TierMetadata(
@@ -112,73 +114,7 @@ class CustomerScheduleService {
     }
 
     // Figma Screen 03 store list fallback
-    return const [
-      NearbyStore(
-        id: 1,
-        name: 'Bright Wash',
-        area: 'Lekki Phase 1',
-        address: '14 Admiralty Way, Lekki Phase 1',
-        rating: 4.7,
-        reviewCount: 312,
-        distanceKm: 1.4,
-        turnaroundDays: 2,
-        turnaroundText: 'Ready in 2 days',
-        shirtStartingPrice: 500,
-        operatingHours: '7am–8pm',
-      ),
-      NearbyStore(
-        id: 2,
-        name: 'Clean Co.',
-        area: 'Admiralty',
-        address: '28 Admiralty Way, Lekki',
-        rating: 4.4,
-        reviewCount: 198,
-        distanceKm: 2.1,
-        turnaroundDays: 3,
-        turnaroundText: 'Ready in 3 days',
-        shirtStartingPrice: 350,
-        operatingHours: '8am–7pm',
-      ),
-      NearbyStore(
-        id: 3,
-        name: 'Pressed',
-        area: 'Ikate',
-        address: 'Plot 12, Ikate Roundabout',
-        rating: 4.9,
-        reviewCount: 420,
-        distanceKm: 2.8,
-        turnaroundDays: 1,
-        turnaroundText: 'Next-day',
-        shirtStartingPrice: 800,
-        operatingHours: '7am–9pm',
-      ),
-      NearbyStore(
-        id: 4,
-        name: 'Foam Laundry',
-        area: 'Lekki',
-        address: '3 Bisola Durosinmi-Etti Dr, Lekki',
-        rating: 4.6,
-        reviewCount: 260,
-        distanceKm: 3.3,
-        turnaroundDays: 2,
-        turnaroundText: 'Ready in 2 days',
-        shirtStartingPrice: 450,
-        operatingHours: '8am–8pm',
-      ),
-      NearbyStore(
-        id: 5,
-        name: 'Spotless',
-        area: 'Chevron',
-        address: 'Chevron Drive, Lekki',
-        rating: 4.3,
-        reviewCount: 145,
-        distanceKm: 4.6,
-        turnaroundDays: 3,
-        turnaroundText: 'Ready in 3 days',
-        shirtStartingPrice: 400,
-        operatingHours: '8am–6pm',
-      ),
-    ];
+    return const [];
   }
 
   /// Fetch store items catalog for items screen
@@ -198,15 +134,40 @@ class CustomerScheduleService {
         }
       }
     } catch (e) {
-      debugPrint('Error fetching store catalog: $e. Using Figma catalog fallback.');
+      debugPrint(
+          'Error fetching store catalog: $e. Using Figma catalog fallback.');
     }
 
     // Figma Screen 05 fallback items
     return [
-      ScheduleItem(id: 1, name: 'Shirt', price: 500, quantity: 4, category: 'Laundry', foldType: 'Folding'),
-      ScheduleItem(id: 2, name: 'T-shirt', price: 400, quantity: 2, category: 'Laundry', foldType: 'Folding'),
-      ScheduleItem(id: 3, name: 'Trousers', price: 600, quantity: 0, category: 'Laundry', foldType: 'Folding'),
-      ScheduleItem(id: 4, name: 'Bedsheet', price: 900, quantity: 0, category: 'Laundry', foldType: 'Folding'),
+      ScheduleItem(
+          id: 1,
+          name: 'Shirt',
+          price: 500,
+          quantity: 4,
+          category: 'Laundry',
+          foldType: 'Folding'),
+      ScheduleItem(
+          id: 2,
+          name: 'T-shirt',
+          price: 400,
+          quantity: 2,
+          category: 'Laundry',
+          foldType: 'Folding'),
+      ScheduleItem(
+          id: 3,
+          name: 'Trousers',
+          price: 600,
+          quantity: 0,
+          category: 'Laundry',
+          foldType: 'Folding'),
+      ScheduleItem(
+          id: 4,
+          name: 'Bedsheet',
+          price: 900,
+          quantity: 0,
+          category: 'Laundry',
+          foldType: 'Folding'),
     ];
   }
 
@@ -220,7 +181,8 @@ class CustomerScheduleService {
     String? paystackRef,
   }) async {
     try {
-      final uri = Uri.parse('${Constants.url}/api/customer/orders/create-paystack');
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/orders/create-paystack');
       final body = jsonEncode({
         'storeId': storeId,
         'tier': tier,
@@ -238,7 +200,9 @@ class CustomerScheduleService {
         'paystackReference': paystackRef,
       });
 
-      final res = await http.post(uri, headers: await _getHeaders(), body: body).timeout(
+      final res = await http
+          .post(uri, headers: await _getHeaders(), body: body)
+          .timeout(
             const Duration(seconds: 6),
           );
 
@@ -246,28 +210,20 @@ class CustomerScheduleService {
         return jsonDecode(res.body) as Map<String, dynamic>;
       }
     } catch (e) {
-      debugPrint('Error creating order with API: $e. Using simulated Paystack order.');
+      debugPrint('Error creating order with API: $e.');
     }
 
-    // Graceful simulated success response
     return {
-      'status': true,
-      'order': {
-        'id': 2038,
-        'orderNumber': 'FM-2038',
-        'storeName': 'Bright Wash',
-        'pickupPin': '3921',
-        'deliveryPin': '6604',
-        'totalPrice': 4600,
-        'pickupTime': pickupTime,
-      }
+      'status': false,
+      'message': 'Unable to connect to server. Please try again.',
     };
   }
 
   /// Fetch live order tracking for Google Maps and progression
   static Future<OrderTrackingData?> fetchOrderTracking(int orderId) async {
     try {
-      final uri = Uri.parse('${Constants.url}/api/customer/orders/$orderId/track');
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/orders/$orderId/track');
       final res = await http.get(uri, headers: await _getHeaders()).timeout(
             const Duration(seconds: 4),
           );
@@ -275,52 +231,15 @@ class CustomerScheduleService {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['tracking'] != null) {
-          return OrderTrackingData.fromJson(data['tracking'] as Map<String, dynamic>);
+          return OrderTrackingData.fromJson(
+              data['tracking'] as Map<String, dynamic>);
         }
       }
     } catch (e) {
       debugPrint('Error fetching tracking info: $e.');
     }
 
-    // Default Figma fallback for tracking
-    return OrderTrackingData.fromJson({
-      'orderId': orderId,
-      'orderNumber': 'FM-$orderId',
-      'currentStage': 'PICKUP',
-      'storeName': 'Bright Wash · Lekki Phase 1',
-      'pickupPin': '3921',
-      'deliveryPin': '6604',
-      'pickupEta': 'ARRIVING IN 6 MIN',
-      'deliveryEta': 'ARRIVING IN 11 MIN',
-      'readyEta': 'Ready by Thu, 4:00 PM',
-      'pickupRider': const {
-        'name': 'Tunde B.',
-        'initials': 'TB',
-        'phone': '+2348012345678',
-        'rating': 4.9,
-        'vehicle': 'Bajaj Boxer · LND 482 KJ'
-      },
-      'deliveryRider': const {
-        'name': 'Kunle A.',
-        'initials': 'KA',
-        'phone': '+2348087654321',
-        'rating': 4.8,
-        'subtitle': 'From Bright Wash'
-      },
-      'locations': const {
-        'customer': {'latitude': 6.4474, 'longitude': 3.4723},
-        'store': {'latitude': 6.4520, 'longitude': 3.4800},
-        'rider': {'latitude': 6.4490, 'longitude': 3.4760}
-      },
-      'timeline': const [
-        {'section': 'PICKUP', 'title': 'Picked up by Tunde', 'time': 'Today, 3:12 PM', 'isCompleted': true},
-        {'section': 'PICKUP', 'title': 'Dropped at Bright Wash', 'time': 'Today, 3:34 PM', 'isCompleted': true},
-        {'section': 'AT THE STORE', 'title': 'Washing', 'time': 'Started 4:05 PM', 'isCompleted': false, 'isActive': true},
-        {'section': 'AT THE STORE', 'title': 'Ready', 'time': '', 'isCompleted': false},
-        {'section': 'DELIVERY', 'title': 'Out for delivery', 'time': '', 'isCompleted': false},
-        {'section': 'DELIVERY', 'title': 'Delivered', 'time': '', 'isCompleted': false}
-      ]
-    });
+    return null;
   }
 
   /// Submit reviews for store and rider
@@ -331,7 +250,8 @@ class CustomerScheduleService {
     String? comments,
   }) async {
     try {
-      final uri = Uri.parse('${Constants.url}/api/customer/orders/$orderId/review');
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/orders/$orderId/review');
       final res = await http.post(
         uri,
         headers: await _getHeaders(),
@@ -348,4 +268,3 @@ class CustomerScheduleService {
     }
   }
 }
-

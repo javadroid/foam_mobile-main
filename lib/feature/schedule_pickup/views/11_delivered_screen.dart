@@ -13,8 +13,10 @@ class CustomerDeliveredScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final tracking = provider.trackingData;
-    final orderNumber = tracking?.orderNumber ?? 'FM-2038';
-    final storeName = tracking?.storeName ?? 'Bright Wash';
+    final orderNumber = tracking?.orderNumber ??
+        (provider.lastCreatedOrder?['orderNumber'] as String? ?? '');
+    final storeName = tracking?.storeName ??
+        (provider.lastCreatedOrder?['storeName'] as String? ?? 'Laundry Store');
 
     return PopScope(
       canPop: false,

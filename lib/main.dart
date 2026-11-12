@@ -6,7 +6,6 @@ import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
 import 'package:foam_mobile/core/routes/app_router.dart';
 import 'package:foam_mobile/core/splash_screen.dart';
 import 'package:foam_mobile/core/services/notification_service.dart';
-import 'package:foam_mobile/core/services/onesignal_service.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
@@ -37,130 +36,50 @@ void main() async {
   // open the hive box
   await Hive.openBox('foam');
 
-  // Initialize OneSignal Push Notifications
-  await NotificationService.initOneSignal(Constants.oneSignalAppId);
-
-  SystemChrome.setPreferredOrientations(
+  await SystemChrome.setPreferredOrientations(
     [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown],
-  ).then(
-    (value) => runApp(
-      // DevicePreview(
-      //   builder: (context) =>
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(
-            create: (_) => ThemeProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => AuthProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => ProfilePicAuth(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => BasketProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => VendorProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => SchedulePickupProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => WalletProvider(),
-          ),
-          ChangeNotifierProvider(
-            create: (_) => RiderProvider(),
-          ),
-        ],
-        child: const MyApp(),
-      ),
-    ),
-
-    // ),
   );
-}
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
-  // Retained observer reference to prevent garbage collection
-  void Function(OSPushSubscriptionChangedState)? _pushSubscriptionObserver;
-  bool _dialogShown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _setupPushSubscriptionObserver();
-  }
-
-  // A real, server-assigned subscription ID is non-empty and not the local- placeholder
-  bool _isRegistered(String? id) =>
-      id != null && id.isNotEmpty && !id.startsWith('local-');
-
-  void _maybeShowIntegrationCompleteDialog(String? subscriptionId) {
-    if (_isRegistered(subscriptionId) && !_dialogShown) {
-      _dialogShown = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showIntegrationCompleteDialog();
-      });
-    }
-  }
-
-  void _setupPushSubscriptionObserver() {
-    _pushSubscriptionObserver = (state) {
-      _maybeShowIntegrationCompleteDialog(state.current.id);
-    };
-    OneSignalService().addPushSubscriptionObserver(_pushSubscriptionObserver!);
-
-    // The ID may already be assigned before the observer attaches,
-    // so evaluate the current value immediately as well.
-    _maybeShowIntegrationCompleteDialog(OneSignalService().pushSubscriptionId);
-  }
-
-  void _showIntegrationCompleteDialog() {
-    final context = AppRouter.navigatorKey.currentContext;
-    if (context == null || !context.mounted) {
-      // If navigator context is not mounted yet, retry shortly
-      Future.delayed(const Duration(milliseconds: 300), () {
-        if (mounted) _showIntegrationCompleteDialog();
-      });
-      return;
-    }
-
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('Your OneSignal SDK integration is complete!'),
-        content: const Text(
-          'You can now send Push Notifications & In-App Messages through OneSignal. Tap below to enable push notifications.',
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) => ThemeProvider(),
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              OneSignalService().requestPermission();
-            },
-            child: const Text('Got it'),
-          ),
-        ],
-      ),
-    );
-  }
+        ChangeNotifierProvider(
+          create: (_) => AuthProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => ProfilePicAuth(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => BasketProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => VendorProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SchedulePickupProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => WalletProvider(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => RiderProvider(),
+        ),
+      ],
+      child: const MyApp(),
+    ),
+  );
 
-  @override
-  void dispose() {
-    if (_pushSubscriptionObserver != null) {
-      OneSignalService().removePushSubscriptionObserver(_pushSubscriptionObserver!);
-    }
-    super.dispose();
-  }
+  // Initialize OneSignal Push Notifications asynchronously after first frame
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    NotificationService.initOneSignal(Constants.oneSignalAppId);
+  });
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {

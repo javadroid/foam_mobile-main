@@ -70,7 +70,7 @@ class _CustomerDeliveryLegScreenState extends State<CustomerDeliveryLegScreen> {
     final tracking = provider.trackingData;
     final deliveryPin = tracking?.deliveryPin.isNotEmpty == true
         ? tracking!.deliveryPin
-        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '6604');
+        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '');
     final rider = tracking?.deliveryRider;
 
     final customerPos = _parseCoordinate(tracking?.customerLocation, _fallbackCustomer);
@@ -81,7 +81,7 @@ class _CustomerDeliveryLegScreenState extends State<CustomerDeliveryLegScreen> {
       Marker(
         markerId: const MarkerId('store'),
         position: storePos,
-        infoWindow: InfoWindow(title: tracking?.storeName ?? 'Bright Wash Store'),
+        infoWindow: InfoWindow(title: tracking?.storeName ?? 'Laundry Store'),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueOrange),
       ),
       Marker(
@@ -164,7 +164,11 @@ class _CustomerDeliveryLegScreenState extends State<CustomerDeliveryLegScreen> {
                     ],
                   ),
                   child: Text(
-                    'Order #${tracking?.orderNumber ?? 'FM-2038'}',
+                    tracking?.orderNumber.isNotEmpty == true
+                        ? 'Order #${tracking!.orderNumber}'
+                        : (provider.lastCreatedOrder?['orderNumber'] != null
+                            ? 'Order #${provider.lastCreatedOrder!['orderNumber']}'
+                            : 'Order Details'),
                     style: GoogleFonts.dmSans(
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
@@ -259,7 +263,7 @@ class _CustomerDeliveryLegScreenState extends State<CustomerDeliveryLegScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              rider?.name ?? 'Kunle A.',
+                              rider?.name ?? 'Delivery Rider',
                               style: GoogleFonts.dmSans(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -268,7 +272,9 @@ class _CustomerDeliveryLegScreenState extends State<CustomerDeliveryLegScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '★ ${rider?.rating ?? 4.8} · ${rider?.subtitle ?? 'From Bright Wash'}',
+                              rider != null
+                                  ? '★ ${rider.rating} · ${(rider.vehicle != null && rider.vehicle!.isNotEmpty) ? rider.vehicle! : (tracking?.storeName ?? 'Delivery')}'
+                                  : (tracking?.storeName ?? 'Delivery in progress'),
                               style: GoogleFonts.dmSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,

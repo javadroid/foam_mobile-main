@@ -13,9 +13,9 @@ class CustomerAtStoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final tracking = provider.trackingData;
-    final orderNumber = tracking?.orderNumber ?? 'FM-2038';
-    final storeName = tracking?.storeName ?? 'Bright Wash · Lekki Phase 1';
-    final readyEta = tracking?.readyEta ?? 'Ready by Thu, 4:00 PM';
+    final orderNumber = tracking?.orderNumber ?? '';
+    final storeName = tracking?.storeName ?? 'Laundry Store';
+    final readyEta = tracking?.readyEta ?? 'Processing at store';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -89,14 +89,16 @@ class CustomerAtStoreScreen extends StatelessWidget {
               _buildSectionHeader('PICKUP'),
               const SizedBox(height: 8),
               _buildTimelineStep(
-                title: 'Picked up by Tunde',
-                subtitle: 'Today, 3:12 PM',
+                title: tracking?.pickupRider?.name != null
+                    ? 'Picked up by ${tracking!.pickupRider!.name}'
+                    : 'Picked up by rider',
+                subtitle: '',
                 isCompleted: true,
                 showBottomLine: true,
               ),
               _buildTimelineStep(
                 title: 'Dropped at $storeName',
-                subtitle: 'Today, 3:34 PM',
+                subtitle: '',
                 isCompleted: true,
                 showBottomLine: true,
               ),
@@ -106,7 +108,7 @@ class CustomerAtStoreScreen extends StatelessWidget {
               const SizedBox(height: 8),
               _buildTimelineStep(
                 title: 'Washing',
-                subtitle: 'Started 4:05 PM',
+                subtitle: readyEta,
                 isActive: true,
                 showBottomLine: true,
               ),

@@ -108,6 +108,13 @@ void main() {
     testWidgets('View 07: Renders pickup PIN inside FittedBox with proportional size',
         (WidgetTester tester) async {
       final provider = SchedulePickupProvider();
+      provider.setLastCreatedOrderForTest({
+        'id': 101,
+        'orderNumber': 'FM-2101',
+        'storeName': 'Lekki Whites',
+        'pickupPin': '3921',
+        'deliveryPin': '6604',
+      });
 
       await tester.pumpWidget(_buildTestApp(const ScheduleOrderPlacedScreen(), provider));
       await tester.pumpAndSettle();

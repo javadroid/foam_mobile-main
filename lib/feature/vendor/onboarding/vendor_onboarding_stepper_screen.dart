@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:foam_mobile/core/Screens/main_screen.dart';
+import 'package:hive/hive.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/services/upload_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/models/vendor_models.dart';
 import 'package:foam_mobile/feature/vendor/onboarding/vendor_pending_verification_screen.dart';
-import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/app_fullscreen_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -64,8 +63,14 @@ class _VendorOnboardingStepperScreenState
   }
 
   Future<void> _initDraft() async {
-    final token = HiveClass.getToken();
-    _isLoggedIn = token.isNotEmpty;
+    try {
+      if (Hive.isBoxOpen('foam')) {
+        final token = HiveClass.getToken();
+        _isLoggedIn = token.isNotEmpty;
+      }
+    } catch (_) {
+      _isLoggedIn = false;
+    }
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final vendor = Provider.of<VendorProvider>(context, listen: false);
@@ -77,7 +82,7 @@ class _VendorOnboardingStepperScreenState
 
     if (!mounted) return;
 
-    // Prefill fields
+    // Prefill fields from draft or auth profile
     if (vendor.draftBusinessName.isNotEmpty) {
       _businessNameController.text = vendor.draftBusinessName;
     } else if (auth.businessName.isNotEmpty) {
@@ -90,10 +95,16 @@ class _VendorOnboardingStepperScreenState
       _ownerNameController.text = '${auth.firstName} ${auth.lastName}'.trim();
     }
 
-    if (vendor.draftPhone.isNotEmpty) {
-      _phoneController.text = vendor.draftPhone;
-    } else if (auth.phoneNumber.isNotEmpty) {
-      _phoneController.text = auth.phoneNumber;
+    final phone =
+        vendor.draftPhone.isNotEmpty ? vendor.draftPhone : auth.phoneNumber;
+    if (phone.isNotEmpty) {
+      if (phone.startsWith('+234')) {
+        _phoneController.text = phone.substring(4);
+      } else if (phone.startsWith('0')) {
+        _phoneController.text = phone.substring(1);
+      } else {
+        _phoneController.text = phone;
+      }
     }
 
     if (vendor.draftEmail.isNotEmpty) {
@@ -141,13 +152,22 @@ class _VendorOnboardingStepperScreenState
     super.dispose();
   }
 
-  String _parseApiError(http.Response res, {String fallback = 'An unexpected error occurred'}) {
+  String _parseApiError(http.Response res,
+      {String fallback = 'An unexpected error occurred'}) {
     try {
       if (res.body.trim().isEmpty) {
-        if (res.statusCode == 401) return 'Session expired. Please log in again.';
-        if (res.statusCode == 403) return 'You do not have permission to perform this action.';
-        if (res.statusCode == 404) return 'The requested endpoint was not found.';
-        if (res.statusCode >= 500) return 'Server error (${res.statusCode}). Please try again shortly.';
+        if (res.statusCode == 401) {
+          return 'Session expired. Please log in again.';
+        }
+        if (res.statusCode == 403) {
+          return 'You do not have permission to perform this action.';
+        }
+        if (res.statusCode == 404) {
+          return 'The requested endpoint was not found.';
+        }
+        if (res.statusCode >= 500) {
+          return 'Server error (${res.statusCode}). Please try again shortly.';
+        }
         return fallback;
       }
 
@@ -161,7 +181,9 @@ class _VendorOnboardingStepperScreenState
         if (data['errors'] != null) {
           if (data['errors'] is List) {
             final list = (data['errors'] as List)
-                .map((e) => e is Map ? (e['message'] ?? e['msg'] ?? e['error'] ?? '').toString() : e.toString())
+                .map((e) => e is Map
+                    ? (e['message'] ?? e['msg'] ?? e['error'] ?? '').toString()
+                    : e.toString())
                 .where((s) => s.isNotEmpty)
                 .toList();
             if (list.isNotEmpty) return list.join('\n');
@@ -170,14 +192,16 @@ class _VendorOnboardingStepperScreenState
           }
         }
         if (data['error'] != null) {
-          if (data['error'] is String && (data['error'] as String).trim().isNotEmpty) {
+          if (data['error'] is String &&
+              (data['error'] as String).trim().isNotEmpty) {
             return data['error'] as String;
           } else if (data['error'] is Map && data['error']['message'] != null) {
             return data['error']['message'].toString();
           }
         }
         if (data['message'] != null) {
-          if (data['message'] is String && (data['message'] as String).trim().isNotEmpty) {
+          if (data['message'] is String &&
+              (data['message'] as String).trim().isNotEmpty) {
             return data['message'] as String;
           } else if (data['message'] is List) {
             final list = (data['message'] as List)
@@ -195,13 +219,17 @@ class _VendorOnboardingStepperScreenState
       }
     } catch (_) {}
     if (res.statusCode == 401) return 'Session expired. Please log in again.';
-    if (res.statusCode >= 500) return 'Server error (${res.statusCode}). Please try again shortly.';
+    if (res.statusCode >= 500) {
+      return 'Server error (${res.statusCode}). Please try again shortly.';
+    }
     return fallback;
   }
 
   String _parseException(Object e) {
     final str = e.toString().toLowerCase();
-    if (str.contains('socketexception') || str.contains('network is unreachable') || str.contains('failed host lookup')) {
+    if (str.contains('socketexception') ||
+        str.contains('network is unreachable') ||
+        str.contains('failed host lookup')) {
       return 'Unable to reach the server. Please check your internet connection.';
     }
     if (str.contains('timeoutexception') || str.contains('timed out')) {
@@ -214,7 +242,8 @@ class _VendorOnboardingStepperScreenState
   }
 
   void _showSnack(String msg, {bool isError = false}) {
-    final messenger = _scaffoldKey.currentState ?? ScaffoldMessenger.of(context);
+    final messenger =
+        _scaffoldKey.currentState ?? ScaffoldMessenger.of(context);
     messenger.clearSnackBars();
     messenger.showSnackBar(
       SnackBar(
@@ -222,7 +251,9 @@ class _VendorOnboardingStepperScreenState
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(
-              isError ? Icons.error_outline_rounded : Icons.check_circle_outline_rounded,
+              isError
+                  ? Icons.error_outline_rounded
+                  : Icons.check_circle_outline_rounded,
               color: Colors.white,
               size: 20,
             ),
@@ -234,53 +265,49 @@ class _VendorOnboardingStepperScreenState
                   fontWeight: FontWeight.w600,
                   fontSize: 13.5,
                   color: Colors.white,
-                  height: 1.3,
                 ),
               ),
             ),
           ],
         ),
-        backgroundColor: isError ? const Color(0xFFDC2626) : const Color(0xFF0F172A),
+        backgroundColor:
+            isError ? const Color(0xFFDC2626) : const Color(0xFF00AABC),
         behavior: SnackBarBehavior.floating,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        duration: Duration(seconds: isError ? 4 : 2),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 4),
       ),
     );
   }
 
   Widget _buildErrorBanner(String message) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
         color: const Color(0xFFFEF2F2),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: const Color(0xFFFCA5A5)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 2),
-            child: Icon(Icons.error_outline_rounded,
-                color: Color(0xFFDC2626), size: 20),
-          ),
-          const SizedBox(width: 12),
+          const Icon(Icons.error_outline_rounded,
+              size: 20, color: Color(0xFFDC2626)),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
               style: GoogleFonts.dmSans(
-                color: const Color(0xFF991B1B),
                 fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.4,
+                color: const Color(0xFF991B1B),
+                fontWeight: FontWeight.w500,
+                height: 1.3,
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          InkWell(
+          const SizedBox(width: 6),
+          GestureDetector(
             onTap: () => setState(() => _stepError = null),
             child: const Icon(Icons.close_rounded,
                 size: 18, color: Color(0xFF991B1B)),
@@ -294,11 +321,20 @@ class _VendorOnboardingStepperScreenState
     setState(() => _isSavingDraft = true);
     final vendor = Provider.of<VendorProvider>(context, listen: false);
 
+    final rawPhone = _phoneController.text.trim();
+    final formattedPhone = rawPhone.isNotEmpty
+        ? (rawPhone.startsWith('+234')
+            ? rawPhone
+            : rawPhone.startsWith('0')
+                ? '+234${rawPhone.substring(1)}'
+                : '+234$rawPhone')
+        : '';
+
     if (_isLoggedIn) {
       final success = await vendor.saveOnboardingDraft(
         businessName: _businessNameController.text.trim(),
         ownerName: _ownerNameController.text.trim(),
-        phone: _phoneController.text.trim(),
+        phone: formattedPhone,
         isFinalSubmit: false,
       );
       if (!mounted) return;
@@ -324,7 +360,7 @@ class _VendorOnboardingStepperScreenState
   Future<void> _handleStep1Submit() async {
     final businessName = _businessNameController.text.trim();
     final ownerName = _ownerNameController.text.trim();
-    final phone = _phoneController.text.trim();
+    final rawPhone = _phoneController.text.trim();
     final email = _emailController.text.trim();
     final password = _passwordController.text;
 
@@ -340,12 +376,18 @@ class _VendorOnboardingStepperScreenState
       _showSnack(err, isError: true);
       return;
     }
-    if (phone.isEmpty) {
+    if (rawPhone.isEmpty) {
       const err = 'Please enter your phone number';
       setState(() => _stepError = err);
       _showSnack(err, isError: true);
       return;
     }
+
+    final phone = rawPhone.startsWith('+234')
+        ? rawPhone
+        : rawPhone.startsWith('0')
+            ? '+234${rawPhone.substring(1)}'
+            : '+234$rawPhone';
 
     if (!_isLoggedIn) {
       if (email.isEmpty || !email.contains('@')) {
@@ -384,11 +426,7 @@ class _VendorOnboardingStepperScreenState
             'firstName': firstName,
             'lastName': lastName,
             'email': email,
-            'phone': phone.startsWith('+234')
-                ? phone
-                : phone.startsWith('0')
-                    ? '+234${phone.substring(1)}'
-                    : '+234$phone',
+            'phone': phone,
             'password': password,
             'businessName': businessName,
             'role': 'VENDOR',
@@ -424,7 +462,8 @@ class _VendorOnboardingStepperScreenState
           });
           _showSnack('Account created! Now upload verification documents.');
         } else {
-          final errorMsg = _parseApiError(res, fallback: 'Registration failed. Please check your details.');
+          final errorMsg = _parseApiError(res,
+              fallback: 'Registration failed. Please check your details.');
           setState(() => _stepError = errorMsg);
           _showSnack(errorMsg, isError: true);
         }
@@ -460,7 +499,8 @@ class _VendorOnboardingStepperScreenState
         });
         _showSnack('Business details saved.');
       } else {
-        final errorMsg = vendor.lastError ?? 'Failed to save business details. Please try again.';
+        final errorMsg = vendor.lastError ??
+            'Failed to save business details. Please try again.';
         setState(() => _stepError = errorMsg);
         _showSnack(errorMsg, isError: true);
       }
@@ -484,7 +524,8 @@ class _VendorOnboardingStepperScreenState
 
       if (uploadUrl == null || uploadUrl.isEmpty) {
         setState(() => _isUploadingDoc = false);
-        final err = 'Failed to upload ${file.name}. Please ensure file is valid and try again.';
+        final err =
+            'Failed to upload ${file.name}. Please ensure file is valid and try again.';
         setState(() => _stepError = err);
         _showSnack(err, isError: true);
         return;
@@ -578,7 +619,8 @@ class _VendorOnboardingStepperScreenState
         _resolveError = null;
       });
     } else {
-      final err = vendor.lastResolveError ?? 'Could not verify account details with Paystack. Please check the account number.';
+      final err = vendor.lastResolveError ??
+          'Could not verify account details with Paystack. Please check the account number.';
       setState(() {
         _isResolvingAccount = false;
         _resolvedAccountName = '';
@@ -602,7 +644,8 @@ class _VendorOnboardingStepperScreenState
       return;
     }
     if (_resolveError != null && _resolvedAccountName.isEmpty) {
-      final err = _resolveError ?? 'Please verify your bank account details before submitting';
+      final err = _resolveError ??
+          'Please verify your bank account details before submitting';
       setState(() => _stepError = err);
       _showSnack(err, isError: true);
       return;
@@ -646,7 +689,8 @@ class _VendorOnboardingStepperScreenState
         VendorPendingVerificationScreen.id,
       );
     } else {
-      final err = vendor.lastError ?? 'Submission failed. Please check your network and try again.';
+      final err = vendor.lastError ??
+          'Submission failed. Please check your network and try again.';
       setState(() => _stepError = err);
       _showSnack(err, isError: true);
     }
@@ -675,16 +719,71 @@ class _VendorOnboardingStepperScreenState
   Widget build(BuildContext context) {
     final vendor = Provider.of<VendorProvider>(context);
 
-    return ScaffoldMessenger(
-      key: _scaffoldKey,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentStep > 0) {
+          setState(() {
+            _stepError = null;
+            _currentStep--;
+          });
+        } else {
+          _saveDraftAndExit();
+        }
+      },
+      child: ScaffoldMessenger(
+        key: _scaffoldKey,
+        child: Scaffold(
           backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new,
-                color: VendorColors.textMain, size: 20),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Top bar with back navigation & Save Draft action
+                _buildTopBar(),
+
+                // Active Step Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0, vertical: 12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_stepError != null) _buildErrorBanner(_stepError!),
+                        _currentStep == 0
+                            ? _buildStep1BusinessInfo()
+                            : _currentStep == 1
+                                ? _buildStep2Documents(vendor)
+                                : _buildStep3PayoutBank(vendor),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ==========================================
+  // TOP APP BAR
+  // ==========================================
+  Widget _buildTopBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new,
+              color: Color(0xFF212828),
+              size: 20,
+            ),
             onPressed: () {
               if (_currentStep > 0) {
                 setState(() {
@@ -696,275 +795,167 @@ class _VendorOnboardingStepperScreenState
               }
             },
           ),
-          title: Text(
-            'Vendor Onboarding',
-            style: GoogleFonts.dmSans(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: VendorColors.textMain,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: _isSavingDraft ? null : _saveDraftAndExit,
-              child: Text(
-                'Save Draft',
-                style: GoogleFonts.dmSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w700,
-                  color: VendorColors.primary,
-                ),
+          TextButton(
+            onPressed: _isSavingDraft ? null : _saveDraftAndExit,
+            child: Text(
+              'Save Draft',
+              style: GoogleFonts.dmSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF00AABC),
               ),
-            ),
-          ],
-        ),
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Stepper Header
-              _buildStepperHeader(),
-              const Divider(height: 1, color: VendorColors.border),
-
-              // Active Step Body
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 24.0, vertical: 20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (_stepError != null) _buildErrorBanner(_stepError!),
-                      _currentStep == 0
-                          ? _buildStep1BusinessInfo()
-                          : _currentStep == 1
-                              ? _buildStep2Documents(vendor)
-                              : _buildStep3PayoutBank(vendor),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStepperHeader() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-      color: Colors.white,
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _buildStepIndicator(
-                  stepIndex: 0,
-                  title: 'Business Info',
-                  isDone: _currentStep > 0),
-              _buildStepConnector(isFilled: _currentStep > 0),
-              _buildStepIndicator(
-                  stepIndex: 1, title: 'Documents', isDone: _currentStep > 1),
-              _buildStepConnector(isFilled: _currentStep > 1),
-              _buildStepIndicator(
-                  stepIndex: 2, title: 'Payout Bank', isDone: false),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator({
-    required int stepIndex,
-    required String title,
-    required bool isDone,
-  }) {
-    final isCurrent = _currentStep == stepIndex;
-    return InkWell(
-      onTap: () {
-        // Allow going back to previous steps
-        if (stepIndex < _currentStep) {
-          setState(() {
-            _stepError = null;
-            _currentStep = stepIndex;
-          });
-        }
-      },
-      borderRadius: BorderRadius.circular(12),
-      child: Column(
-        children: [
-          Container(
-            width: 32,
-            height: 32,
-            decoration: BoxDecoration(
-              color: isDone
-                  ? VendorColors.liveBg
-                  : isCurrent
-                      ? VendorColors.primary
-                      : VendorColors.lightBg,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isDone
-                    ? VendorColors.liveText
-                    : isCurrent
-                        ? VendorColors.primary
-                        : VendorColors.border,
-                width: 2,
-              ),
-            ),
-            child: Center(
-              child: isDone
-                  ? const Icon(Icons.check,
-                      size: 16, color: VendorColors.liveText)
-                  : Text(
-                      '${stepIndex + 1}',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color:
-                            isCurrent ? Colors.white : VendorColors.textMuted,
-                      ),
-                    ),
-            ),
-          ),
-          const SizedBox(height: 5),
-          Text(
-            title,
-            style: GoogleFonts.dmSans(
-              fontSize: 11,
-              fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500,
-              color: isCurrent ? VendorColors.textMain : VendorColors.textMuted,
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildStepConnector({required bool isFilled}) {
-    return Expanded(
-      child: Container(
-        height: 2.5,
-        margin: const EdgeInsets.only(bottom: 18),
-        color: isFilled ? VendorColors.primary : VendorColors.border,
       ),
     );
   }
 
   // ==========================================
-  // STEP 1: BUSINESS & OWNER INFO
+  // 2-SEGMENT PROGRESS BAR (Steps 1 & 2)
+  // ==========================================
+  Widget _buildFigmaProgressBar({required int activeStep}) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFF00AABC),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: activeStep >= 2
+                  ? const Color(0xFF00AABC)
+                  : const Color(0xFFE4E4E4),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ==========================================
+  // STEP 1: BUSINESS & OWNER INFO (Figma 170:4202)
   // ==========================================
   Widget _buildStep1BusinessInfo() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Brand tag
         Text(
-          'Tell us about your business',
-          style: GoogleFonts.dmSans(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: VendorColors.textMain,
-            letterSpacing: -0.4,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          _isLoggedIn
-              ? 'Your account details are linked. Update your business information below to continue.'
-              : 'Create your vendor account to partner with Foam and list your laundry business.',
+          'FOAM FOR BUSINESS',
           style: GoogleFonts.dmSans(
             fontSize: 14,
-            color: VendorColors.textMuted,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF00AABC),
+            letterSpacing: 1.12,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Title
+        Text(
+          'Create vendor account',
+          style: GoogleFonts.dmSans(
+            fontSize: 31,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF212828),
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Subtitle
+        Text(
+          _isLoggedIn
+              ? 'Run your laundry stores on Foam. Update your business information below to continue.'
+              : "Run your laundry stores on Foam. We'll verify your business before you go live.",
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.normal,
+            color: const Color(0xFF5E5E5E),
             height: 1.4,
           ),
         ),
         const SizedBox(height: 24),
 
-        _buildTextField(
+        // Form Fields (56px, rounded 10px, #E4E4E4)
+        _buildFigmaField(
           controller: _businessNameController,
-          label: 'Business Name',
-          hint: 'e.g. CleanWave Laundromat',
-          icon: Icons.storefront_outlined,
+          hint: 'Business name',
         ),
         const SizedBox(height: 16),
 
-        _buildTextField(
+        _buildFigmaField(
           controller: _ownerNameController,
-          label: "Owner's Full Name",
-          hint: 'e.g. John Doe',
-          icon: Icons.person_outline,
+          hint: "Owner's full name",
         ),
         const SizedBox(height: 16),
 
-        _buildTextField(
-          controller: _phoneController,
-          label: 'Phone Number',
-          hint: '+234 801 234 5678',
-          icon: Icons.phone_outlined,
-          keyboardType: TextInputType.phone,
-        ),
-        const SizedBox(height: 16),
-
-        // Email: LOCKED if already logged in / continuing draft
-        _buildTextField(
+        _buildFigmaField(
           controller: _emailController,
-          label: _isLoggedIn
-              ? 'Email Address (Locked to account)'
-              : 'Email Address',
-          hint: 'vendor@example.com',
-          icon: Icons.email_outlined,
+          hint: 'Email address',
+          keyboardType: TextInputType.emailAddress,
           readOnly: _isLoggedIn,
           suffixIcon: _isLoggedIn
               ? const Tooltip(
-                  message: 'Email cannot be changed once linked to account',
+                  message: 'Email locked to current account',
                   child: Icon(Icons.lock_outline,
-                      size: 18, color: VendorColors.textMuted),
+                      size: 20, color: Color(0xFF5E5E5E)),
                 )
               : null,
-          helperText:
-              _isLoggedIn ? 'Your account email cannot be changed' : null,
         ),
         const SizedBox(height: 16),
 
-        // Password: ONLY shown for brand new signup
+        _buildFigmaPhoneField(),
+        const SizedBox(height: 16),
+
         if (!_isLoggedIn) ...[
-          _buildTextField(
+          _buildFigmaField(
             controller: _passwordController,
-            label: 'Password',
-            hint: '••••••••',
-            icon: Icons.lock_outline,
+            hint: 'Password',
             obscureText: _obscurePassword,
             suffixIcon: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 24, minHeight: 24),
               icon: Icon(
-                _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                color: VendorColors.textMuted,
+                _obscurePassword
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                color: const Color(0xFF5E5E5E),
                 size: 20,
               ),
               onPressed: () =>
                   setState(() => _obscurePassword = !_obscurePassword),
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
         ] else ...[
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
-              color: VendorColors.lightBg,
+              color: const Color(0xFFE5F7F8),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: VendorColors.border),
             ),
             child: Row(
               children: [
-                const Icon(Icons.security_rounded,
-                    size: 18, color: VendorColors.primary),
+                const Icon(Icons.check_circle_rounded,
+                    size: 20, color: Color(0xFF00AABC)),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Logged in as an active Foam customer. Password is verified.',
+                    'Logged in with verified Foam account.',
                     style: GoogleFonts.dmSans(
-                      fontSize: 12.5,
-                      color: VendorColors.textMuted,
+                      fontSize: 13,
+                      color: const Color(0xFF212828),
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -972,35 +963,52 @@ class _VendorOnboardingStepperScreenState
               ],
             ),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 28),
         ],
 
-        VendorButton(
-          text: 'Continue to Documents',
+        // Continue Button
+        _buildGradientButton(
+          text: 'Continue',
           onPressed: _handleStep1Submit,
         ),
-        const SizedBox(height: 14),
-        Center(
-          child: TextButton.icon(
-            onPressed: _saveDraftAndExit,
-            icon: const Icon(Icons.bookmark_outline,
-                size: 17, color: VendorColors.textMuted),
-            label: Text(
-              'Save as Draft & Finish Later',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: VendorColors.textMuted,
+        const SizedBox(height: 10),
+
+        // Save as Draft
+        _buildSaveDraftButton(),
+
+        if (!_isLoggedIn) ...[
+          const SizedBox(height: 2),
+          Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/log_in'),
+              child: RichText(
+                text: TextSpan(
+                  style: GoogleFonts.dmSans(
+                    fontSize: 16,
+                    color: const Color(0xFF212828),
+                  ),
+                  children: [
+                    const TextSpan(text: 'Already a vendor? '),
+                    TextSpan(
+                      text: 'Log in',
+                      style: GoogleFonts.dmSans(
+                        color: const Color(0xFF00AABC),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
+          const SizedBox(height: 8),
+        ],
       ],
     );
   }
 
   // ==========================================
-  // STEP 2: BUSINESS DOCUMENTS (KYC)
+  // STEP 2: BUSINESS DOCUMENTS (Figma 170:3120)
   // ==========================================
   Widget _buildStep2Documents(VendorProvider vendor) {
     final kyc = vendor.kycStatus;
@@ -1008,203 +1016,163 @@ class _VendorOnboardingStepperScreenState
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 2-segment progress bar
+        _buildFigmaProgressBar(activeStep: 1),
+        const SizedBox(height: 16),
+
+        // Step tag
         Text(
-          'Upload Verification Documents',
+          'Step 1 of 2',
           style: GoogleFonts.dmSans(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: VendorColors.textMain,
-            letterSpacing: -0.4,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF5E5E5E),
           ),
         ),
         const SizedBox(height: 6),
+
+        // Title
         Text(
-          'Foam reviews every vendor for safety and compliance. Documents are safely saved to your draft.',
+          'Verify your business',
           style: GoogleFonts.dmSans(
-            fontSize: 14,
-            color: VendorColors.textMuted,
+            fontSize: 31,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF212828),
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Subtitle
+        Text(
+          'Upload clear photos or PDFs. Foam reviews every vendor before approval.',
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.normal,
+            color: const Color(0xFF5E5E5E),
             height: 1.4,
           ),
         ),
         const SizedBox(height: 24),
-        _buildDocUploadCard(
-          title: 'CAC Registration',
-          subtitle: 'Company or business name certificate',
+
+        // Doc Cards
+        _buildFigmaDocCard(
+          title: 'CAC registration',
+          subtitle: 'cac-certificate.pdf · 1.2 MB',
+          emptySubtitle: 'Company or business name certificate',
           isUploaded: kyc.cacUploaded,
           fileName: kyc.cacFileName,
           onUpload: () => _pickAndUploadDoc('CAC'),
         ),
-        const SizedBox(height: 16),
-        _buildDocUploadCard(
-          title: "Owner's Valid ID",
-          subtitle: 'NIN slip, Driver’s license, or Int’l passport',
+        const SizedBox(height: 14),
+
+        _buildFigmaDocCard(
+          title: "Owner's ID",
+          subtitle: 'NIN slip · front.jpg',
+          emptySubtitle: 'NIN slip, Driver’s license, or Int’l passport',
           isUploaded: kyc.ownerIdUploaded,
           fileName: kyc.ownerIdFileName,
           onUpload: () => _pickAndUploadDoc('OWNER_ID'),
         ),
-        const SizedBox(height: 16),
-        _buildDocUploadCard(
-          title: 'Proof of Business Address',
-          subtitle: 'Recent utility bill or tenancy agreement',
+        const SizedBox(height: 14),
+
+        _buildFigmaDocCard(
+          title: 'Proof of address',
+          subtitle: 'Utility bill or tenancy, last 3 months',
+          emptySubtitle: 'Utility bill or tenancy, last 3 months',
           isUploaded: kyc.proofOfAddressUploaded,
           fileName: kyc.proofOfAddressFileName,
           onUpload: () => _pickAndUploadDoc('ADDRESS'),
         ),
         const SizedBox(height: 28),
+
         if (_isUploadingDoc)
-          const Padding(
-            padding: EdgeInsets.only(bottom: 16.0),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: Center(
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2)),
-                  SizedBox(width: 10),
-                  Text('Uploading document to Cloudinary...'),
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'Uploading document...',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13.5,
+                      color: const Color(0xFF5E5E5E),
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-        VendorButton(
-          text: 'Continue to Payout Bank',
+
+        _buildGradientButton(
+          text: 'Continue',
           onPressed: _isUploadingDoc ? null : _handleStep2Submit,
         ),
         const SizedBox(height: 14),
-        Center(
-          child: TextButton.icon(
-            onPressed: _saveDraftAndExit,
-            icon: const Icon(Icons.bookmark_outline,
-                size: 17, color: VendorColors.textMuted),
-            label: Text(
-              'Save as Draft & Finish Later',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: VendorColors.textMuted,
-              ),
-            ),
-          ),
-        ),
+
+        _buildSaveDraftButton(),
       ],
     );
   }
 
-  Widget _buildDocUploadCard({
-    required String title,
-    required String subtitle,
-    required bool isUploaded,
-    required String fileName,
-    required VoidCallback onUpload,
-  }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: VendorColors.lightBg,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: isUploaded
-              ? VendorColors.primary.withValues(alpha: 0.4)
-              : VendorColors.border,
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isUploaded
-                  ? VendorColors.primary.withValues(alpha: 0.1)
-                  : Colors.white,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: isUploaded ? VendorColors.primary : VendorColors.border,
-              ),
-            ),
-            child: Icon(
-              isUploaded
-                  ? Icons.check_circle_rounded
-                  : Icons.cloud_upload_outlined,
-              color: isUploaded ? VendorColors.primary : VendorColors.textMuted,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: GoogleFonts.dmSans(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14.5,
-                    color: VendorColors.textMain,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  isUploaded && fileName.isNotEmpty ? fileName : subtitle,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12.5,
-                    color: isUploaded
-                        ? VendorColors.primary
-                        : VendorColors.textMuted,
-                    fontWeight:
-                        isUploaded ? FontWeight.w600 : FontWeight.normal,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: onUpload,
-            child: Text(
-              isUploaded ? 'Replace' : 'Upload',
-              style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.w700,
-                fontSize: 13.5,
-                color: VendorColors.primary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ==========================================
-  // STEP 3: PAYOUT BANK DETAILS
+  // STEP 3: PAYOUT BANK DETAILS (Figma 170:3173)
   // ==========================================
   Widget _buildStep3PayoutBank(VendorProvider vendor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // 2-segment progress bar
+        _buildFigmaProgressBar(activeStep: 2),
+        const SizedBox(height: 16),
+
+        // Step tag
         Text(
-          'Set Up Payout Bank',
+          'Step 2 of 2',
           style: GoogleFonts.dmSans(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: VendorColors.textMain,
-            letterSpacing: -0.4,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF5E5E5E),
           ),
         ),
         const SizedBox(height: 6),
+
+        // Title
         Text(
-          'Your earnings will be automatically transferred to this verified account.',
+          'Where should we pay you?',
           style: GoogleFonts.dmSans(
-            fontSize: 14,
-            color: VendorColors.textMuted,
+            fontSize: 31,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF212828),
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Subtitle
+        Text(
+          "Your earnings are withdrawn to this account. It must be in your business or owner's name.",
+          style: GoogleFonts.dmSans(
+            fontSize: 15,
+            fontWeight: FontWeight.normal,
+            color: const Color(0xFF5E5E5E),
             height: 1.4,
           ),
         ),
         const SizedBox(height: 24),
 
+        // Bank Selector
         InkWell(
           onTap: () async {
             if (vendor.paystackBanks.isEmpty) {
@@ -1223,44 +1191,35 @@ class _VendorOnboardingStepperScreenState
               _showBankPickerSheet(vendor.paystackBanks);
             }
           },
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(10),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            height: 56,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: VendorColors.lightBg,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: VendorColors.border),
+              color: const Color(0xFFE4E4E4),
+              borderRadius: BorderRadius.circular(10),
             ),
             child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Icon(Icons.account_balance_outlined,
-                    color: VendorColors.textMuted, size: 20),
-                const SizedBox(width: 12),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Select Bank',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: VendorColors.textMuted,
-                        ),
-                      ),
-                      Text(
-                        _selectedBank?.name ?? 'Select Bank',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: VendorColors.textMain,
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _selectedBank?.name ?? 'Select Bank',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 16,
+                      fontWeight: FontWeight.normal,
+                      color: _selectedBank != null
+                          ? const Color(0xFF212828)
+                          : const Color(0xFF212828).withValues(alpha: 0.8),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                const Icon(Icons.keyboard_arrow_down,
-                    color: VendorColors.textMuted),
+                const Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: Color(0xFF212828),
+                  size: 24,
+                ),
               ],
             ),
           ),
@@ -1268,67 +1227,105 @@ class _VendorOnboardingStepperScreenState
         const SizedBox(height: 16),
 
         // Account Number
-        _buildTextField(
-          controller: _accountNumberController,
-          label: 'Account Number',
-          hint: '0123456789',
-          icon: Icons.numbers_outlined,
-          keyboardType: TextInputType.number,
-          onChanged: _onAccountNumberChanged,
+        Container(
+          height: 56,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFE4E4E4),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          alignment: Alignment.center,
+          child: TextField(
+            controller: _accountNumberController,
+            keyboardType: TextInputType.number,
+            textAlignVertical: TextAlignVertical.center,
+            onChanged: _onAccountNumberChanged,
+            style: GoogleFonts.dmSans(
+              fontSize: 16,
+              letterSpacing: 0.96,
+              color: const Color(0xFF212828),
+            ),
+            decoration: InputDecoration(
+              hintText: '0123 454 821',
+              hintStyle: GoogleFonts.dmSans(
+                fontSize: 16,
+                letterSpacing: 0.96,
+                color: const Color(0xFF212828).withValues(alpha: 0.8),
+              ),
+              border: InputBorder.none,
+              isDense: true,
+              contentPadding: EdgeInsets.zero,
+            ),
+          ),
         ),
         const SizedBox(height: 12),
 
         // Resolution Feedback
         if (_isResolvingAccount)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+          Container(
+            height: 52,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFE5F7F8),
+              borderRadius: BorderRadius.circular(10),
+            ),
             child: Row(
               children: [
-                SizedBox(
-                    width: 14,
-                    height: 14,
-                    child: CircularProgressIndicator(strokeWidth: 2)),
-                SizedBox(width: 8),
-                Text('Verifying account with Paystack...'),
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  'Verifying account with Paystack...',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF00AABC),
+                  ),
+                ),
               ],
             ),
           )
         else if (_resolvedAccountName.isNotEmpty)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              color: VendorColors.liveBg,
+              color: const Color(0xFFE5F7F8),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(
-                  color: VendorColors.liveText.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.verified_rounded,
-                    color: VendorColors.liveText, size: 18),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF00AABC),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.check_rounded,
+                      color: Colors.white,
+                      size: 14,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 10),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _resolvedAccountName,
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 13,
-                          color: VendorColors.liveText,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        'Verified by Paystack',
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 11,
-                          color: VendorColors.liveText.withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    _resolvedAccountName,
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: const Color(0xFF212828),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
               ],
@@ -1336,7 +1333,7 @@ class _VendorOnboardingStepperScreenState
           )
         else if (_resolveError != null)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: Colors.redAccent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
@@ -1345,14 +1342,14 @@ class _VendorOnboardingStepperScreenState
             ),
             child: Row(
               children: [
-                const Icon(Icons.error_outline,
+                const Icon(Icons.error_outline_rounded,
                     color: Colors.redAccent, size: 18),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     _resolveError!,
                     style: GoogleFonts.dmSans(
-                      fontSize: 12,
+                      fontSize: 13,
                       color: Colors.redAccent,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1362,135 +1359,323 @@ class _VendorOnboardingStepperScreenState
             ),
           ),
 
-        const SizedBox(height: 20),
-
-        // Terms Agreement
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Checkbox(
-              value: _isAgreed,
-              onChanged: (val) => setState(() => _isAgreed = val ?? false),
-              activeColor: VendorColors.primary,
-            ),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  'I agree to the Foam Vendor Terms of Service and acknowledge payout transfers are subject to platform review.',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 12.5,
-                    color: VendorColors.textMuted,
-                    height: 1.4,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
         const SizedBox(height: 24),
 
-        VendorButton(
-          text: 'Submit Application for Review',
-          onPressed: _handleStep3Submit,
-        ),
-        const SizedBox(height: 14),
-        Center(
-          child: TextButton.icon(
-            onPressed: _saveDraftAndExit,
-            icon: const Icon(Icons.bookmark_outline,
-                size: 17, color: VendorColors.textMuted),
-            label: Text(
-              'Save as Draft & Finish Later',
-              style: GoogleFonts.dmSans(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: VendorColors.textMuted,
-              ),
+        // Terms Agreement
+        InkWell(
+          onTap: () => setState(() => _isAgreed = !_isAgreed),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Checkbox(
+                  value: _isAgreed,
+                  onChanged: (val) => setState(() => _isAgreed = val ?? false),
+                  activeColor: const Color(0xFF00AABC),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 2.0),
+                    child: Text(
+                      "By submitting, you agree to Foam's vendor terms, including a 15% commission on item subtotals.",
+                      style: GoogleFonts.dmSans(
+                        fontSize: 13,
+                        color: const Color(0xFF5E5E5E),
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),
+        const SizedBox(height: 24),
+
+        _buildGradientButton(
+          text: 'Submit for review',
+          onPressed: _handleStep3Submit,
+        ),
+        const SizedBox(height: 14),
+
+        _buildSaveDraftButton(),
       ],
     );
   }
 
-  Widget _buildTextField({
+  // ==========================================
+  // SHARED FIGMA REUSABLE UI BUILDERS
+  // ==========================================
+  Widget _buildFigmaField({
     required TextEditingController controller,
-    required String label,
     required String hint,
-    required IconData icon,
     bool readOnly = false,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     Widget? suffixIcon,
-    String? helperText,
     ValueChanged<String>? onChanged,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: GoogleFonts.dmSans(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: VendorColors.textMain,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Container(
-          decoration: BoxDecoration(
-            color: readOnly ? const Color(0xFFF8FAFC) : VendorColors.lightBg,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: readOnly ? const Color(0xFFE2E8F0) : VendorColors.border,
-            ),
-          ),
-          child: TextField(
-            controller: controller,
-            readOnly: readOnly,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            onChanged: (val) {
-              if (_stepError != null) {
-                setState(() => _stepError = null);
-              }
-              onChanged?.call(val);
-            },
-            style: GoogleFonts.dmSans(
-              fontSize: 14.5,
-              fontWeight: FontWeight.w600,
-              color: readOnly ? const Color(0xFF64748B) : VendorColors.textMain,
-            ),
-            decoration: InputDecoration(
-              hintText: hint,
-              hintStyle: GoogleFonts.dmSans(
-                fontSize: 14,
-                color: VendorColors.textMuted,
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: readOnly ? const Color(0xFFF1F3F3) : const Color(0xFFE4E4E4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: TextField(
+              controller: controller,
+              readOnly: readOnly,
+              obscureText: obscureText,
+              keyboardType: keyboardType,
+              textAlignVertical: TextAlignVertical.center,
+              onChanged: (val) {
+                if (_stepError != null) {
+                  setState(() => _stepError = null);
+                }
+                onChanged?.call(val);
+              },
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                color: readOnly ? const Color(0xFF5E5E5E) : const Color(0xFF212828),
               ),
-              prefixIcon: Icon(icon,
-                  size: 20,
-                  color: readOnly
-                      ? const Color(0xFF94A3B8)
-                      : VendorColors.textMuted),
-              suffixIcon: suffixIcon,
-              border: InputBorder.none,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+              decoration: InputDecoration(
+                hintText: hint,
+                hintStyle: GoogleFonts.dmSans(
+                  fontSize: 16,
+                  color: const Color(0xFF212828).withValues(alpha: 0.8),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
-        ),
-        if (helperText != null) ...[
-          const SizedBox(height: 4),
+          if (suffixIcon != null) ...[
+            const SizedBox(width: 8),
+            suffixIcon,
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFigmaPhoneField() {
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE4E4E4),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        children: [
           Text(
-            helperText,
+            '+234',
             style: GoogleFonts.dmSans(
-              fontSize: 11.5,
-              color: VendorColors.textMuted,
+              fontSize: 16,
+              fontWeight: FontWeight.normal,
+              color: const Color(0xFF212828),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Container(
+            width: 1,
+            height: 24,
+            color: const Color(0xFF777777).withValues(alpha: 0.6),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _phoneController,
+              keyboardType: TextInputType.phone,
+              textAlignVertical: TextAlignVertical.center,
+              onChanged: (_) {
+                if (_stepError != null) {
+                  setState(() => _stepError = null);
+                }
+              },
+              style: GoogleFonts.dmSans(
+                fontSize: 16,
+                color: const Color(0xFF212828),
+              ),
+              decoration: InputDecoration(
+                hintText: 'Phone number',
+                hintStyle: GoogleFonts.dmSans(
+                  fontSize: 16,
+                  color: const Color(0xFF212828).withValues(alpha: 0.8),
+                ),
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.zero,
+              ),
             ),
           ),
         ],
-      ],
+      ),
+    );
+  }
+
+  Widget _buildFigmaDocCard({
+    required String title,
+    required String subtitle,
+    required String emptySubtitle,
+    required bool isUploaded,
+    required String fileName,
+    required VoidCallback onUpload,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      decoration: BoxDecoration(
+        color: isUploaded ? const Color(0xFFE5F7F8) : Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isUploaded
+              ? const Color(0xFF00AABC).withValues(alpha: 0.25)
+              : const Color(0xFFE4E4E4),
+          width: 1.2,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isUploaded ? const Color(0xFF00AABC) : Colors.white,
+              shape: BoxShape.circle,
+              border: isUploaded
+                  ? null
+                  : Border.all(color: const Color(0xFF212828), width: 1.5),
+            ),
+            child: Icon(
+              isUploaded ? Icons.check_rounded : Icons.add_rounded,
+              color: isUploaded ? Colors.white : const Color(0xFF212828),
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15.5,
+                    color: const Color(0xFF212828),
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  isUploaded && fileName.isNotEmpty
+                      ? fileName
+                      : (isUploaded ? subtitle : emptySubtitle),
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13,
+                    color: const Color(0xFF5E5E5E),
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: onUpload,
+            child: Text(
+              isUploaded ? 'Replace' : 'Upload',
+              style: GoogleFonts.dmSans(
+                fontWeight: FontWeight.w700,
+                fontSize: 14.5,
+                color: const Color(0xFF00AABC),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGradientButton({
+    required String text,
+    required VoidCallback? onPressed,
+    bool isLoading = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      height: 53,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF00AABC), Color(0xFFC5EFF3)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF00AABC).withValues(alpha: 0.2),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: isLoading ? null : onPressed,
+          borderRadius: BorderRadius.circular(8),
+          child: Center(
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : Text(
+                    text,
+                    style: GoogleFonts.dmSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: 1.44,
+                    ),
+                  ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSaveDraftButton() {
+    return Center(
+      child: TextButton.icon(
+        onPressed: _saveDraftAndExit,
+        icon: const Icon(
+          Icons.bookmark_outline_rounded,
+          size: 17,
+          color: Color(0xFF5E5E5E),
+        ),
+        label: Text(
+          'Save as Draft & Finish Later',
+          style: GoogleFonts.dmSans(
+            fontSize: 13.5,
+            fontWeight: FontWeight.w600,
+            color: const Color(0xFF5E5E5E),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -1556,9 +1741,9 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
                 hintText: 'Search Nigerian banks...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: VendorColors.lightBg,
+                fillColor: const Color(0xFFE4E4E4),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -1579,12 +1764,12 @@ class _BankPickerSheetState extends State<_BankPickerSheet> {
                       fontWeight:
                           isSelected ? FontWeight.w700 : FontWeight.w500,
                       color: isSelected
-                          ? VendorColors.primary
-                          : VendorColors.textMain,
+                          ? const Color(0xFF00AABC)
+                          : const Color(0xFF212828),
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check, color: VendorColors.primary)
+                      ? const Icon(Icons.check, color: Color(0xFF00AABC))
                       : null,
                   onTap: () {
                     widget.onBankSelected(bank);

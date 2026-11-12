@@ -86,15 +86,15 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     OrderTrackingData? tracking,
   ) {
     final orderNum = tracking?.orderNumber ??
-        (provider.lastCreatedOrder?['orderNumber'] as String? ?? 'FM-2038');
+        (provider.lastCreatedOrder?['orderNumber'] as String? ?? '');
     final storeName = tracking?.storeName ??
-        (provider.lastCreatedOrder?['storeName'] as String? ?? 'Bright Wash');
+        (provider.lastCreatedOrder?['storeName'] as String? ?? 'Laundry Store');
     final deliveryPin = tracking?.deliveryPin.isNotEmpty == true
         ? tracking!.deliveryPin
-        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '6604');
+        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '');
     final pickupPin = tracking?.pickupPin.isNotEmpty == true
         ? tracking!.pickupPin
-        : (provider.lastCreatedOrder?['pickupPin'] as String? ?? '3921');
+        : (provider.lastCreatedOrder?['pickupPin'] as String? ?? '');
     final stage = tracking?.currentStage ?? 'AT_STORE';
 
     return SafeArea(
@@ -533,10 +533,10 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
 
     final deliveryPin = tracking?.deliveryPin.isNotEmpty == true
         ? tracking!.deliveryPin
-        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '6604');
+        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '');
     final rider = tracking?.deliveryRider ?? tracking?.pickupRider;
     final orderNum = tracking?.orderNumber ??
-        (provider.lastCreatedOrder?['orderNumber'] as String? ?? 'FM-2038');
+        (provider.lastCreatedOrder?['orderNumber'] as String? ?? '');
 
     final markers = <Marker>{
       Marker(

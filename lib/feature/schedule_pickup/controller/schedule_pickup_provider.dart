@@ -99,19 +99,22 @@ class SchedulePickupProvider extends ChangeNotifier {
   String get storeFilter => _storeFilter;
 
   NearbyStore? _selectedStore;
+  NearbyStore? get selectedStore => _selectedStore;
+  bool get hasSelectedStore => _selectedStore != null || _nearbyStores.isNotEmpty;
+
   NearbyStore get currentStore {
     if (_selectedStore != null) return _selectedStore!;
     if (_nearbyStores.isNotEmpty) return _nearbyStores.first;
     return const NearbyStore(
-      id: 1,
-      name: 'Bright Wash',
-      area: 'Lekki Phase 1',
-      address: '14 Admiralty Way, Lekki Phase 1',
-      rating: 4.7,
-      distanceKm: 1.4,
+      id: 0,
+      name: 'Laundry Store',
+      area: '',
+      address: '',
+      rating: 5.0,
+      distanceKm: 0.0,
       turnaroundDays: 2,
-      turnaroundText: 'Ready in 2 days',
-      shirtStartingPrice: 500,
+      turnaroundText: '',
+      shirtStartingPrice: 0,
     );
   }
 
@@ -309,19 +312,14 @@ class SchedulePickupProvider extends ChangeNotifier {
       debugPrint('Error placing Paystack schedule order: $e');
     }
 
-    // Default fallback order for smooth flow
-    _lastCreatedOrder = {
-      'id': 2038,
-      'orderNumber': 'FM-2038',
-      'storeName': currentStore.name,
-      'pickupPin': '3921',
-      'deliveryPin': '6604',
-      'totalPrice': grandTotal,
-      'pickupTime': _pickupSlot,
-    };
     _isLoading = false;
     notifyListeners();
-    return true;
+    return false;
+  }
+
+  @visibleForTesting
+  void setLastCreatedOrderForTest(Map<String, dynamic> order) {
+    _lastCreatedOrder = order;
   }
 
   Future<void> loadTrackingInfo(int orderId) async {

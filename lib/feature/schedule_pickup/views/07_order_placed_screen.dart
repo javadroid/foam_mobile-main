@@ -13,10 +13,10 @@ class ScheduleOrderPlacedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final order = provider.lastCreatedOrder ?? {};
-    final orderNumber = order['orderNumber'] ?? 'FM-2038';
-    final storeName = order['storeName'] ?? provider.currentStore.name;
-    final pickupPin = order['pickupPin'] ?? '3921';
-    final pickupTime = order['pickupTime'] ?? provider.pickupSlot;
+    final orderNumber = order['orderNumber'] as String? ?? (order['id'] != null ? 'FM-${order['id']}' : '');
+    final storeName = order['storeName'] as String? ?? (provider.hasSelectedStore ? provider.currentStore.name : 'Store');
+    final pickupPin = order['pickupPin'] as String? ?? '';
+    final pickupTime = order['pickupTime'] as String? ?? provider.pickupSlot;
 
     return PopScope(
       canPop: false,

@@ -23,10 +23,10 @@ class OneSignalService {
     }
 
     try {
-      // Set log level for debugging
-      OneSignal.Debug.setLogLevel(OSLogLevel.verbose);
+      // Set log level to none to avoid main thread I/O overhead
+      OneSignal.Debug.setLogLevel(OSLogLevel.none);
 
-      // Initialize SDK
+      // Initialize SDK asynchronously
       OneSignal.initialize(appId);
       _isInitialized = true;
       debugPrint(
@@ -116,27 +116,50 @@ class OneSignalService {
   /// Listen for notification clicks
   void setNotificationClickListener(
       void Function(OSNotificationClickEvent) handler) {
-    OneSignal.Notifications.addClickListener(handler);
+    try {
+      OneSignal.Notifications.addClickListener(handler);
+    } catch (e) {
+      debugPrint('[OneSignalService] Error adding click listener: $e');
+    }
   }
 
   /// Listen for foreground notifications
   void setNotificationForegroundListener(
       void Function(OSNotificationWillDisplayEvent) handler) {
-    OneSignal.Notifications.addForegroundWillDisplayListener(handler);
+    try {
+      OneSignal.Notifications.addForegroundWillDisplayListener(handler);
+    } catch (e) {
+      debugPrint('[OneSignalService] Error adding foreground listener: $e');
+    }
   }
 
   /// Add Push Subscription observer
   void addPushSubscriptionObserver(
       void Function(OSPushSubscriptionChangedState) observer) {
-    OneSignal.User.pushSubscription.addObserver(observer);
+    try {
+      OneSignal.User.pushSubscription.addObserver(observer);
+    } catch (e) {
+      debugPrint('[OneSignalService] Error adding push observer: $e');
+    }
   }
 
   /// Remove Push Subscription observer
   void removePushSubscriptionObserver(
       void Function(OSPushSubscriptionChangedState) observer) {
-    OneSignal.User.pushSubscription.removeObserver(observer);
+    try {
+      OneSignal.User.pushSubscription.removeObserver(observer);
+    } catch (e) {
+      debugPrint('[OneSignalService] Error removing push observer: $e');
+    }
   }
 
   /// Get current push subscription ID
-  String? get pushSubscriptionId => OneSignal.User.pushSubscription.id;
+  String? get pushSubscriptionId {
+    try {
+      return OneSignal.User.pushSubscription.id;
+    } catch (e) {
+      debugPrint('[OneSignalService] Error getting pushSubscriptionId: $e');
+      return null;
+    }
+  }
 }
