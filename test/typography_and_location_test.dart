@@ -108,7 +108,7 @@ void main() {
 
     test('Store selection updates currentStore', () {
       const customStore = NearbyStore(
-        id: 7,
+        id: '7',
         name: 'Prime Drycleaners Abuja',
         area: 'Maitama',
         address: 'Maitama Shopping Complex',
@@ -120,7 +120,7 @@ void main() {
       );
 
       provider.selectStore(customStore);
-      expect(provider.currentStore.id, 7);
+      expect(provider.currentStore.id, '7');
       expect(provider.currentStore.name, 'Prime Drycleaners Abuja');
     });
 

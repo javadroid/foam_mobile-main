@@ -172,6 +172,48 @@ class SchedulePickupProvider extends ChangeNotifier {
   // Tiers for "Let Foam choose"
   List<ScheduleTier> _tiers = [];
   List<ScheduleTier> get tiers => _tiers;
+  bool _isTiersLoading = false;
+  bool get isTiersLoading => _isTiersLoading;
+  bool _hasTiersLoaded = false;
+  bool get hasTiersLoaded => _hasTiersLoaded;
+
+  Future<void> loadTiersAndNearbyStores({bool silent = false}) async {
+    if (!silent || !_hasTiersLoaded) {
+      _isTiersLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      final fetchedTiers = await CustomerScheduleService.fetchTiers(
+        lat: _pickupLat,
+        lng: _pickupLng,
+      );
+      final fetchedStores = await CustomerScheduleService.fetchNearbyStores(
+        lat: _pickupLat,
+        lng: _pickupLng,
+        filter: _storeFilter,
+      );
+
+      _tierMetadata = CustomerScheduleService.latestTierMetadata;
+      if (fetchedTiers.isNotEmpty) {
+        _tiers = fetchedTiers;
+      }
+      if (fetchedStores.isNotEmpty) {
+        _nearbyStores = fetchedStores;
+        if (_selectedStore == null ||
+            !_nearbyStores.any((s) => s.id == _selectedStore?.id)) {
+          _selectedStore = _nearbyStores.first;
+          _selectedTurnaroundDays = _selectedStore!.turnaroundDays;
+        }
+      }
+      _hasTiersLoaded = true;
+    } catch (e) {
+      debugPrint('Error loading tiers and stores: $e');
+    } finally {
+      _isTiersLoading = false;
+      notifyListeners();
+    }
+  }
 
   String _selectedTierId = 'BALANCED';
   String get selectedTierId => _selectedTierId;
@@ -210,17 +252,18 @@ class SchedulePickupProvider extends ChangeNotifier {
 
   NearbyStore? _selectedStore;
   NearbyStore? get selectedStore => _selectedStore;
-  bool get hasSelectedStore => _selectedStore != null || _nearbyStores.isNotEmpty;
+  bool get hasSelectedStore =>
+      _selectedStore != null || _nearbyStores.isNotEmpty;
 
   NearbyStore get currentStore {
     if (_selectedStore != null) return _selectedStore!;
     if (_nearbyStores.isNotEmpty) return _nearbyStores.first;
     return const NearbyStore(
-      id: 0,
+      id: '',
       name: 'Laundry Store',
       area: '',
       address: '',
-      rating: 5.0,
+      rating: 0.0,
       distanceKm: 0.0,
       turnaroundDays: 2,
       turnaroundText: '',
@@ -239,6 +282,7 @@ class SchedulePickupProvider extends ChangeNotifier {
       if (catalog.isNotEmpty) {
         _items.clear();
         _items.addAll(catalog);
+        _loadedCatalogStoreIds.add(store.id);
         notifyListeners();
       }
     } catch (e) {
@@ -298,12 +342,78 @@ class SchedulePickupProvider extends ChangeNotifier {
 
   // Items & Quantities
   final List<ScheduleItem> _items = [
-    ScheduleItem(id: 1, name: 'Shirt', price: 500, quantity: 4, category: 'Laundry', foldType: 'Folding'),
-    ScheduleItem(id: 2, name: 'T-shirt', price: 400, quantity: 2, category: 'Laundry', foldType: 'Folding'),
-    ScheduleItem(id: 3, name: 'Trousers', price: 600, quantity: 0, category: 'Laundry', foldType: 'Folding'),
-    ScheduleItem(id: 4, name: 'Bedsheet', price: 900, quantity: 0, category: 'Laundry', foldType: 'Folding'),
+    ScheduleItem(
+        id: 1,
+        name: 'Shirt',
+        price: 500,
+        quantity: 4,
+        category: 'Laundry',
+        foldType: 'Folding'),
+    ScheduleItem(
+        id: 2,
+        name: 'T-shirt',
+        price: 400,
+        quantity: 2,
+        category: 'Laundry',
+        foldType: 'Folding'),
+    ScheduleItem(
+        id: 3,
+        name: 'Trousers',
+        price: 600,
+        quantity: 0,
+        category: 'Laundry',
+        foldType: 'Folding'),
+    ScheduleItem(
+        id: 4,
+        name: 'Bedsheet',
+        price: 900,
+        quantity: 0,
+        category: 'Laundry',
+        foldType: 'Folding'),
   ];
   List<ScheduleItem> get items => _items;
+
+  bool _isItemsLoading = false;
+  bool get isItemsLoading => _isItemsLoading;
+  final Set<String> _loadedCatalogStoreIds = {};
+
+  bool hasCatalogLoaded(String storeId) =>
+      _loadedCatalogStoreIds.contains(storeId);
+
+  Future<void> loadStoreCatalog({String? storeId, bool silent = false}) async {
+    final targetStoreId = storeId ?? currentStore.id;
+    if (targetStoreId.isEmpty) return;
+
+    final hasLoadedBefore = _loadedCatalogStoreIds.contains(targetStoreId);
+    if (!silent || !hasLoadedBefore) {
+      _isItemsLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      final catalog =
+          await CustomerScheduleService.fetchStoreCatalog(targetStoreId);
+      if (catalog.isNotEmpty) {
+        // Preserve any quantities user already selected
+        final existingQuantities = {
+          for (final item in _items) item.id: item.quantity
+        };
+        for (final catItem in catalog) {
+          if (existingQuantities.containsKey(catItem.id)) {
+            catItem.quantity = existingQuantities[catItem.id]!;
+          }
+        }
+        _items.clear();
+        _items.addAll(catalog);
+        _loadedCatalogStoreIds.add(targetStoreId);
+      }
+    } catch (e) {
+      debugPrint('Error loading store catalog: $e');
+    } finally {
+      _isItemsLoading = false;
+      notifyListeners();
+    }
+  }
 
   void incrementItem(int itemId) {
     final idx = _items.indexWhere((i) => i.id == itemId);
@@ -395,15 +505,18 @@ class SchedulePickupProvider extends ChangeNotifier {
 
       _tierMetadata = CustomerScheduleService.latestTierMetadata;
       _tiers = fetchedTiers;
+      _hasTiersLoaded = true;
       _nearbyStores = fetchedStores;
       if (_nearbyStores.isNotEmpty) {
         _selectedStore = _nearbyStores.first;
         _selectedTurnaroundDays = _selectedStore!.turnaroundDays;
         try {
-          final catalog = await CustomerScheduleService.fetchStoreCatalog(_selectedStore!.id);
+          final catalog = await CustomerScheduleService.fetchStoreCatalog(
+              _selectedStore!.id);
           if (catalog.isNotEmpty) {
             _items.clear();
             _items.addAll(catalog);
+            _loadedCatalogStoreIds.add(_selectedStore!.id);
           }
         } catch (_) {}
       }
@@ -492,7 +605,8 @@ class SchedulePickupProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final tracking = await CustomerScheduleService.fetchOrderTracking(orderId);
+      final tracking =
+          await CustomerScheduleService.fetchOrderTracking(orderId);
       if (tracking != null) {
         _trackingData = tracking;
       }
@@ -518,4 +632,3 @@ class SchedulePickupProvider extends ChangeNotifier {
     }
   }
 }
-

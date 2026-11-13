@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/vendor/controller/vendor_provider.dart';
 import 'package:foam_mobile/feature/vendor/widgets/vendor_ui_components.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +25,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
   final Map<String, bool> _itemFolding = {};
   final List<String> _items = [];
   bool _isSaving = false;
+  bool _isLoading = false;
 
   final List<String> _defaultLaundryItems = [
     'Shirt',
@@ -50,11 +52,15 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
   @override
   void initState() {
     super.initState();
+    _initLocalItems();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPricingData();
+    });
+  }
+
+  void _initLocalItems() {
     final provider = Provider.of<VendorProvider>(context, listen: false);
     final storeId = provider.currentStore.id;
-
-    // Fetch dynamic commission from admin
-    provider.fetchFoamCommission();
 
     final defaults = widget.serviceType == 'Dry cleaning'
         ? _defaultDryCleaningItems
@@ -63,6 +69,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
     // Load custom items added previously
     final customItems = provider.getCustomItems(storeId, widget.serviceType);
 
+    _items.clear();
     _items.addAll(defaults);
     for (final ci in customItems) {
       if (!_items.contains(ci)) {
@@ -87,6 +94,62 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
         widget.serviceType,
         item,
       );
+    }
+  }
+
+  Future<void> _loadPricingData() async {
+    if (!mounted) return;
+    final provider = Provider.of<VendorProvider>(context, listen: false);
+    final storeId = provider.currentStore.id;
+    final hasLoadedBefore =
+        provider.hasPricingLoaded(storeId, widget.serviceType);
+
+    // If data hasn't loaded before, trigger loading state for skeleton
+    if (!hasLoadedBefore) {
+      setState(() => _isLoading = true);
+    }
+
+    try {
+      await Future.wait([
+        provider.fetchFoamCommission(),
+        provider.fetchStorePricing(
+          storeId: storeId,
+          serviceType: widget.serviceType,
+          silent: hasLoadedBefore,
+        ),
+      ]);
+
+      if (!mounted) return;
+
+      final freshPrices = provider.getItemPrices(
+        storeId,
+        widget.serviceType,
+        widget.foldType,
+      );
+
+      for (final item in _items) {
+        final price = freshPrices[item];
+        if (_controllers.containsKey(item)) {
+          if (_controllers[item]!.text.trim().isEmpty && price != null) {
+            _controllers[item]!.text = price.toInt().toString();
+          }
+        } else {
+          _controllers[item] = TextEditingController(
+            text: price != null ? price.toInt().toString() : '',
+          );
+        }
+        _itemFolding[item] = provider.isItemFoldingIncluded(
+          storeId,
+          widget.serviceType,
+          item,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error loading vendor pricing: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
     }
   }
 
@@ -592,12 +655,22 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
             // Item cards list
             Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 24.0, vertical: 10.0),
-                itemCount: _items.length,
-                separatorBuilder: (ctx, i) => const SizedBox(height: 10),
-                itemBuilder: (ctx, i) {
+              child: (_isLoading &&
+                      !vendor.hasPricingLoaded(
+                          vendor.currentStore.id, widget.serviceType))
+                  ? ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 10.0),
+                      itemCount: 6,
+                      itemBuilder: (ctx, i) =>
+                          AppSkeletonLoader.pricingItemCard(),
+                    )
+                  : ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24.0, vertical: 10.0),
+                      itemCount: _items.length,
+                      separatorBuilder: (ctx, i) => const SizedBox(height: 10),
+                      itemBuilder: (ctx, i) {
                   final item = _items[i];
                   final isCustom = !_isDefaultItem(item);
                   final isFolding = _itemFolding[item] ?? true;

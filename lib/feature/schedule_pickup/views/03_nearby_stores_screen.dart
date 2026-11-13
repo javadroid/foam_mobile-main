@@ -26,7 +26,8 @@ class NearbyStoresScreen extends StatelessWidget {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Color(0xFF212828), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -74,7 +75,8 @@ class NearbyStoresScreen extends StatelessWidget {
               if (isOutsideReach && stores.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: const Color(0xFFFEF3C7),
                     borderRadius: BorderRadius.circular(8),
@@ -82,7 +84,8 @@ class NearbyStoresScreen extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.info_outline, size: 16, color: Color(0xFFD97706)),
+                      const Icon(Icons.info_outline,
+                          size: 16, color: Color(0xFFD97706)),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -105,13 +108,15 @@ class NearbyStoresScreen extends StatelessWidget {
               Expanded(
                 child: provider.isLoading
                     ? const Center(
-                        child: CircularProgressIndicator(color: Color(0xFF00AABC)),
+                        child:
+                            CircularProgressIndicator(color: Color(0xFF00AABC)),
                       )
                     : stores.isEmpty
                         ? _buildEmptyState(context, provider)
                         : ListView.separated(
                             itemCount: stores.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 12),
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
                             itemBuilder: (context, index) {
                               final store = stores[index];
                               return _buildStoreCard(context, store, provider);
@@ -265,7 +270,8 @@ class NearbyStoresScreen extends StatelessWidget {
               ),
               child: (store.photoUrl == null || store.photoUrl!.isEmpty)
                   ? const Center(
-                      child: Icon(Icons.storefront_rounded, color: Color(0xFF00AABC), size: 26),
+                      child: Icon(Icons.storefront_rounded,
+                          color: Color(0xFF00AABC), size: 26),
                     )
                   : null,
             ),
@@ -293,7 +299,8 @@ class NearbyStoresScreen extends StatelessWidget {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          const Icon(Icons.star_rounded, size: 16, color: Color(0xFFF59E0B)),
+                          const Icon(Icons.star_rounded,
+                              size: 16, color: Color(0xFFF59E0B)),
                           const SizedBox(width: 2),
                           Text(
                             store.rating.toStringAsFixed(1),
@@ -318,50 +325,6 @@ class NearbyStoresScreen extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 5),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: store.logisticsType == 'FOAM_RIDERS'
-                          ? const Color(0xFFF0FDF4)
-                          : store.logisticsType == 'OWN_LOGISTICS'
-                              ? const Color(0xFFFEF3C7)
-                              : const Color(0xFFE0F2FE),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          store.logisticsType == 'FOAM_RIDERS'
-                              ? Icons.two_wheeler_rounded
-                              : store.logisticsType == 'OWN_LOGISTICS'
-                                  ? Icons.local_shipping_outlined
-                                  : Icons.alt_route_rounded,
-                          size: 11,
-                          color: store.logisticsType == 'FOAM_RIDERS'
-                              ? const Color(0xFF16A34A)
-                              : store.logisticsType == 'OWN_LOGISTICS'
-                                  ? const Color(0xFFD97706)
-                                  : const Color(0xFF0284C7),
-                        ),
-                        const SizedBox(width: 3.5),
-                        Text(
-                          store.logisticsDisplayText,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: store.logisticsType == 'FOAM_RIDERS'
-                                ? const Color(0xFF16A34A)
-                                : store.logisticsType == 'OWN_LOGISTICS'
-                                    ? const Color(0xFFD97706)
-                                    : const Color(0xFF0284C7),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
@@ -381,9 +344,12 @@ class NearbyStoresScreen extends StatelessWidget {
                           color: const Color(0xFF6B7280),
                         ),
                       ),
-                      const Spacer(),
+                    ],
+                  ),
+                  Row(
+                    children: [
                       Text(
-                        'Shirt from ₦${currencyFormatter.format(store.shirtStartingPrice)}',
+                        'Starting from ₦${currencyFormatter.format(store.shirtStartingPrice)}',
                         style: GoogleFonts.dmSans(
                           fontSize: 12,
                           fontWeight: FontWeight.w700,

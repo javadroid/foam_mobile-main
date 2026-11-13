@@ -33,7 +33,7 @@ class OrderClass {
     required BuildContext context,
     required GlobalKey<ScaffoldMessengerState> scaffoldKey,
     required bool noFolding,
-    int? storeId,
+    String? storeId,
   }) async {
     try {
       final res = await http.post(
@@ -99,7 +99,7 @@ class PayStackOrderClass {
     required GlobalKey<ScaffoldMessengerState> scaffoldKey,
     required double depositAmount,
     required bool noFolding,
-    int? storeId,
+    String? storeId,
   }) async {
     final walletProvider = Provider.of<WalletProvider>(context, listen: false);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);

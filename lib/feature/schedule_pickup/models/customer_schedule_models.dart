@@ -31,7 +31,7 @@ class LocationCoordinate {
 /// Store metadata matched for a specific pricing tier
 @immutable
 class MatchedTierStore {
-  final int id;
+  final String id;
   final String name;
   final double rating;
   final int turnaroundDays;
@@ -47,7 +47,7 @@ class MatchedTierStore {
 
   factory MatchedTierStore.fromJson(Map<String, dynamic> json) {
     return MatchedTierStore(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? 'Nearby Store',
       rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
       turnaroundDays: (json['turnaroundDays'] as num?)?.toInt() ?? 2,
@@ -219,7 +219,7 @@ class TurnaroundOption {
 /// Nearby store model
 @immutable
 class NearbyStore {
-  final int id;
+  final String id;
   final String name;
   final String area;
   final String address;
@@ -340,7 +340,7 @@ class NearbyStore {
     }
 
     return NearbyStore(
-      id: (json['id'] as num?)?.toInt() ?? 0,
+      id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? 'Laundry Store',
       area: json['area'] as String? ?? (json['city'] as String? ?? 'Area'),
       address: json['address'] as String? ?? '',

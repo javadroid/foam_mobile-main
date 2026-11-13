@@ -39,14 +39,14 @@ void main() {
       };
 
       final store = MatchedTierStore.fromJson(json);
-      expect(store.id, 2);
+      expect(store.id, '2');
       expect(store.name, 'Spotless Cleaners Eneka');
       expect(store.rating, 4.7);
       expect(store.turnaroundDays, 2);
       expect(store.distanceKm, 1.8);
 
       final out = store.toJson();
-      expect(out['id'], 2);
+      expect(out['id'], '2');
       expect(out['name'], 'Spotless Cleaners Eneka');
       expect(out['rating'], 4.7);
     });
@@ -146,7 +146,7 @@ void main() {
       };
 
       final store = NearbyStore.fromJson(json);
-      expect(store.id, 10);
+      expect(store.id, '10');
       expect(store.name, 'Eneka Wash & Dry');
       expect(store.area, 'Eneka, Port Harcourt');
       expect(store.rating, 4.8);
@@ -361,7 +361,7 @@ void main() {
       expect(emptyTier.matchedStore, isNull);
 
       final emptyStore = NearbyStore.fromJson({});
-      expect(emptyStore.id, 0);
+      expect(emptyStore.id, '');
       expect(emptyStore.name, 'Laundry Store');
       expect(emptyStore.rating, 4.5);
       expect(emptyStore.distanceKm, 0.0);
@@ -451,7 +451,7 @@ void main() {
 
       // Deserialization must succeed without throwing TypeError
       final store = NearbyStore.fromJson(userStoreResponse);
-      expect(store.id, 2);
+      expect(store.id, '2');
       expect(store.name, 'Say Wat Laundry Abuja');
       expect(store.operatingHours, '8:00 AM – 6:00 PM');
       expect(store.photoUrl, contains('uploads/file-1794513654553-718654436.jpg'));

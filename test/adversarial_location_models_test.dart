@@ -144,7 +144,7 @@ void main() {
       expect(loc.longitude, 0.0);
 
       final store = MatchedTierStore.fromJson({});
-      expect(store.id, 0);
+      expect(store.id, '');
       expect(store.name, 'Nearby Store');
       expect(store.rating, 4.5);
 
@@ -165,7 +165,7 @@ void main() {
       expect(opt.shirtStartingPrice, 500);
 
       final nearby = NearbyStore.fromJson({});
-      expect(nearby.id, 0);
+      expect(nearby.id, '');
       expect(nearby.turnaroundOptions, isEmpty);
       expect(nearby.effectiveTurnaroundOptions.length, 3);
 

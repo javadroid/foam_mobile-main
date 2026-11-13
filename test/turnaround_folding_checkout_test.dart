@@ -18,10 +18,12 @@ void main() {
   });
 
   group('Turnaround, Store Folding Price & Checkout Order Flow Tests', () {
-    test('Turnaround multiplier dynamically alters item prices in SchedulePickupProvider', () {
+    test(
+        'Turnaround multiplier dynamically alters item prices in SchedulePickupProvider',
+        () {
       final provider = SchedulePickupProvider();
       final testStore = NearbyStore(
-        id: 10,
+        id: '10',
         name: 'Express Cleaners',
         area: 'Lekki Phase 1',
         address: 'Admiralty Way, Lekki',
@@ -71,11 +73,13 @@ void main() {
       expect(provider.storeFoldingTotal, 6 * 150);
     });
 
-    test('Store folding price per store affects all folded items and itemSubtotal', () {
+    test(
+        'Store folding price per store affects all folded items and itemSubtotal',
+        () {
       final provider = SchedulePickupProvider();
       // Store with custom 250 folding price per item
       final storeWithFolding = const NearbyStore(
-        id: 11,
+        id: '11',
         name: 'Prime Wash Hub',
         area: 'Victoria Island',
         address: 'Ahmadu Bello Way',
@@ -97,15 +101,18 @@ void main() {
       expect(provider.storeFoldingTotal, 1500);
 
       // Base items subtotal + store folding total == itemSubtotal
-      expect(provider.baseItemSubtotal + provider.storeFoldingTotal, provider.itemSubtotal);
-      expect(provider.grandTotal, provider.itemSubtotal + provider.deliveryFee + provider.serviceFee);
+      expect(provider.baseItemSubtotal + provider.storeFoldingTotal,
+          provider.itemSubtotal);
+      expect(provider.grandTotal,
+          provider.itemSubtotal + provider.deliveryFee + provider.serviceFee);
     });
 
-    testWidgets('05_items_screen renders turnaround chips and store folding banner',
+    testWidgets(
+        '05_items_screen renders turnaround chips and store folding banner',
         (WidgetTester tester) async {
       final provider = SchedulePickupProvider();
       final store = const NearbyStore(
-        id: 15,
+        id: '15',
         name: 'Sparkle Fresh Wash',
         area: 'Ikeja GRA',
         address: 'Isaac John St',
@@ -136,14 +143,16 @@ void main() {
       expect(find.textContaining('1d Next-day'), findsOneWidget);
 
       // Verify folding banner
-      expect(find.textContaining('Store folding care: +₦200 per item'), findsOneWidget);
+      expect(find.textContaining('Store folding care: +₦200 per item'),
+          findsOneWidget);
     });
 
-    testWidgets('06_checkout_screen displays turnaround speed and folding care breakdown',
+    testWidgets(
+        '06_checkout_screen displays turnaround speed and folding care breakdown',
         (WidgetTester tester) async {
       final provider = SchedulePickupProvider();
       final store = const NearbyStore(
-        id: 20,
+        id: '20',
         name: 'Deluxe Laundry Studio',
         area: 'Maitama',
         address: 'Gana Street',
@@ -182,7 +191,8 @@ void main() {
       expect(find.text('Secure payment by Paystack'), findsOneWidget);
     });
 
-    testWidgets('07_order_placed_screen provides Track order and View in Order History actions',
+    testWidgets(
+        '07_order_placed_screen provides Track order and View in Order History actions',
         (WidgetTester tester) async {
       final provider = SchedulePickupProvider();
       provider.setLastCreatedOrderForTest({
@@ -200,7 +210,8 @@ void main() {
           value: provider,
           child: MaterialApp(
             routes: {
-              HistoryScreen.id: (_) => const Scaffold(body: Text('Customer Order History Screen')),
+              HistoryScreen.id: (_) =>
+                  const Scaffold(body: Text('Customer Order History Screen')),
             },
             home: const ScheduleOrderPlacedScreen(),
           ),
@@ -211,7 +222,9 @@ void main() {
       // PIN and store message
       expect(find.text('8421'), findsOneWidget);
       expect(find.text('Order placed'), findsOneWidget);
-      expect(find.textContaining('Say Wat Laundry Abuja has your order #FM-3045'), findsOneWidget);
+      expect(
+          find.textContaining('Say Wat Laundry Abuja has your order #FM-3045'),
+          findsOneWidget);
 
       // Track order button
       expect(find.text('Track order'), findsOneWidget);

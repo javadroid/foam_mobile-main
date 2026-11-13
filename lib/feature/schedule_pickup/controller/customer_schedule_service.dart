@@ -118,7 +118,7 @@ class CustomerScheduleService {
   }
 
   /// Fetch store items catalog for items screen
-  static Future<List<ScheduleItem>> fetchStoreCatalog(int storeId) async {
+  static Future<List<ScheduleItem>> fetchStoreCatalog(String storeId) async {
     try {
       final uri = Uri.parse('${Constants.url}/api/customer/stores/$storeId');
       final res = await http.get(uri, headers: await _getHeaders()).timeout(
@@ -173,7 +173,7 @@ class CustomerScheduleService {
 
   /// Create order with Paystack only
   static Future<Map<String, dynamic>> createScheduleOrderPaystack({
-    required int storeId,
+    required String storeId,
     required String tier,
     required List<ScheduleItem> items,
     required String pickupAddress,

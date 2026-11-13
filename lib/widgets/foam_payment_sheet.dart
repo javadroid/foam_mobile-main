@@ -14,7 +14,7 @@ class FoamPaymentSheet extends StatefulWidget {
   final FoamPaymentPurpose purpose;
   final dynamic plan;
   final bool noFolding;
-  final int? storeId;
+  final String? storeId;
   final String? pickupAddress;
   final String? deliveryAddress;
   final DateTime? pickupDate;
@@ -51,7 +51,7 @@ class FoamPaymentSheet extends StatefulWidget {
     required FoamPaymentPurpose purpose,
     dynamic plan,
     bool noFolding = false,
-    int? storeId,
+    String? storeId,
     String? pickupAddress,
     String? deliveryAddress,
     DateTime? pickupDate,

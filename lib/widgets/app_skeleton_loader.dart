@@ -164,6 +164,101 @@ class AppSkeletonLoader extends StatelessWidget {
     );
   }
 
+  /// Skeleton for Schedule Tier Cards (Screen 02)
+  static Widget tierCard() {
+    return AppSkeletonLoader(
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(18),
+        margin: const EdgeInsets.only(bottom: 14),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                box(width: 120, height: 18, borderRadius: 4),
+                box(width: 85, height: 18, borderRadius: 4),
+              ],
+            ),
+            const SizedBox(height: 10),
+            box(width: 210, height: 14, borderRadius: 4),
+            const SizedBox(height: 12),
+            box(width: 80, height: 20, borderRadius: 6),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Skeleton for Schedule Basket Item Rows (Screen 05)
+  static Widget itemRow() {
+    return AppSkeletonLoader(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12.0),
+        child: Row(
+          children: [
+            box(width: 52, height: 52, borderRadius: 10),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  box(width: 120, height: 16, borderRadius: 4),
+                  const SizedBox(height: 6),
+                  box(width: 70, height: 14, borderRadius: 4),
+                ],
+              ),
+            ),
+            Row(
+              children: [
+                circle(radius: 16),
+                const SizedBox(width: 12),
+                box(width: 20, height: 16, borderRadius: 4),
+                const SizedBox(width: 12),
+                circle(radius: 16),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Skeleton for Vendor Pricing Item Cards
+  static Widget pricingItemCard() {
+    return AppSkeletonLoader(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        margin: const EdgeInsets.only(bottom: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE2E8F0)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                box(width: 130, height: 18, borderRadius: 4),
+                box(width: 90, height: 38, borderRadius: 8),
+              ],
+            ),
+            const SizedBox(height: 12),
+            box(width: 200, height: 14, borderRadius: 4),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// Skeleton list builder helper
   static Widget list({
     int count = 4,

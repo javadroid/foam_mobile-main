@@ -69,7 +69,7 @@ void main() {
 
     NearbyStore createAdversarialStore() {
       return const NearbyStore(
-        id: 88,
+        id: '88',
         name: kAdversarialStoreName,
         area: 'Port Harcourt Trans-Amadi Industrial Layout Area',
         address: kAdversarialAddress,

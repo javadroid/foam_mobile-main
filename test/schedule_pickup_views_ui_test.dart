@@ -86,7 +86,7 @@ void main() {
 
       final provider = SchedulePickupProvider();
       const longStore = NearbyStore(
-        id: 99,
+        id: '99',
         name: 'Extraordinarily Long Super Special Deluxe Dry Cleaning & Laundry Services Establishment',
         area: 'Port Harcourt Municipal Area',
         address: '100 Long Name Expressway',

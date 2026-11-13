@@ -603,6 +603,83 @@ class VendorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool _isPricingLoading = false;
+  bool get isPricingLoading => _isPricingLoading;
+  final Set<String> _loadedPricingStoreKeys = {};
+
+  bool hasPricingLoaded(String storeId, String service) =>
+      _loadedPricingStoreKeys.contains('${storeId}_$service') ||
+      _loadedPricingStoreKeys.contains('${storeId}_all');
+
+  void populatePricingFromJson(String storeId, List<dynamic> pricingList) {
+    for (final item in pricingList) {
+      if (item is Map) {
+        final rawService =
+            item['serviceType']?.toString().toUpperCase() ?? '';
+        final service =
+            rawService == 'DRY_CLEANING' ? 'Dry cleaning' : 'Laundry';
+        final rawFold = item['foldType']?.toString().toUpperCase() ?? 'FOLDING';
+        final fold = rawFold == 'NON_FOLDING'
+            ? 'Non-folding'
+            : (rawFold == 'FOLDING' ? 'Folding' : 'Standard');
+        final itemName = item['itemName']?.toString() ?? '';
+        final price =
+            (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0;
+        final isFolding = rawFold != 'NON_FOLDING';
+
+        if (itemName.isNotEmpty) {
+          setItemPrice(storeId, service, fold, itemName, price);
+          setItemPrice(storeId, service, 'Folding', itemName, price);
+          setItemPrice(storeId, service, 'Non-folding', itemName, price);
+          setItemPrice(storeId, service, 'Standard', itemName, price);
+          setItemFoldingIncluded(storeId, service, itemName, isFolding);
+        }
+      }
+    }
+  }
+
+  Future<void> fetchStorePricing({
+    required String storeId,
+    String? serviceType,
+    bool silent = false,
+  }) async {
+    final cacheKey = '${storeId}_${serviceType ?? "all"}';
+    if (!silent || !hasPricingLoaded(storeId, serviceType ?? 'all')) {
+      _isPricingLoading = true;
+      notifyListeners();
+    }
+
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty && storeId.isNotEmpty) {
+        final res = await http.get(
+          Uri.parse('${Constants.url}/api/vendor/stores/$storeId/pricing'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        );
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data['pricing'] is List) {
+            populatePricingFromJson(storeId, data['pricing'] as List);
+          }
+        }
+      }
+      _loadedPricingStoreKeys.add(cacheKey);
+      _loadedPricingStoreKeys.add('${storeId}_all');
+      if (serviceType != null) {
+        _loadedPricingStoreKeys.add('${storeId}_$serviceType');
+      }
+    } catch (e) {
+      debugPrint('Error fetching store pricing: $e');
+    } finally {
+      _isPricingLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<bool> saveStorePricing({
     required String storeId,
     required String serviceType,
@@ -624,7 +701,7 @@ class VendorProvider extends ChangeNotifier {
     // 2. Sync to Backend if connected
     try {
       final token = HiveClass.getToken();
-      if (token.isNotEmpty && int.tryParse(storeId) != null) {
+      if (token.isNotEmpty && storeId.isNotEmpty) {
         final backendServiceType =
             serviceType == 'Dry cleaning' ? 'DRY_CLEANING' : 'LAUNDRY';
         final itemsPayload = itemPrices.entries.map((entry) {
@@ -892,6 +969,11 @@ class VendorProvider extends ChangeNotifier {
     int pricedCount = 0;
     if (json['pricing'] is List) {
       pricedCount = (json['pricing'] as List).length;
+      final parsedStoreId = json['id']?.toString() ?? '';
+      if (parsedStoreId.isNotEmpty) {
+        populatePricingFromJson(parsedStoreId, json['pricing'] as List);
+        _loadedPricingStoreKeys.add('${parsedStoreId}_all');
+      }
     }
 
     double basicPct = 0;

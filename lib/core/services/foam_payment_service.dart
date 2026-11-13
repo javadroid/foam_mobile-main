@@ -499,7 +499,7 @@ class FoamPaymentService {
     required BuildContext context,
     required bool noFolding,
     required double totalPrice,
-    int? storeId,
+    String? storeId,
     required FoamPaymentMethod method,
     String? pickupAddress,
     String? deliveryAddress,

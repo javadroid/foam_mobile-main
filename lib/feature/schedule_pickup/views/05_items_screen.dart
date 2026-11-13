@@ -2,14 +2,36 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/06_checkout_screen.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-class ScheduleItemsScreen extends StatelessWidget {
+class ScheduleItemsScreen extends StatefulWidget {
   static const String id = '/schedule_pickup/items';
 
   const ScheduleItemsScreen({super.key});
+
+  @override
+  State<ScheduleItemsScreen> createState() => _ScheduleItemsScreenState();
+}
+
+class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider =
+          Provider.of<SchedulePickupProvider>(context, listen: false);
+      final storeId = provider.currentStore.id;
+      final hasLoadedBefore = provider.hasCatalogLoaded(storeId);
+      provider.loadStoreCatalog(
+        storeId: storeId,
+        silent: hasLoadedBefore,
+      );
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,6 +39,8 @@ class ScheduleItemsScreen extends StatelessWidget {
     final currencyFormatter = NumberFormat('#,###');
     final items = provider.items;
     final store = provider.currentStore;
+    final hasLoadedBefore = provider.hasCatalogLoaded(store.id);
+    final isInitialLoading = provider.isItemsLoading && !hasLoadedBefore;
     final storeName = store.name;
     final totalCount = provider.totalBasketCount;
     final subtotal = provider.itemSubtotal;
@@ -198,15 +222,23 @@ class ScheduleItemsScreen extends StatelessWidget {
               const SizedBox(height: 10),
 
               Expanded(
-                child: ListView.separated(
-                  itemCount: items.length,
-                  separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: Color(0xFFE4E4E4)),
-                  itemBuilder: (context, index) {
-                    final item = items[index];
-                    return _buildItemRow(context, item, provider, currencyFormatter);
-                  },
-                ),
+                child: isInitialLoading
+                    ? ListView.separated(
+                        itemCount: 6,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: Color(0xFFE4E4E4)),
+                        itemBuilder: (_, __) => AppSkeletonLoader.itemRow(),
+                      )
+                    : ListView.separated(
+                        itemCount: items.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1, color: Color(0xFFE4E4E4)),
+                        itemBuilder: (context, index) {
+                          final item = items[index];
+                          return _buildItemRow(
+                              context, item, provider, currencyFormatter);
+                        },
+                      ),
               ),
 
               // Bottom sticky View Basket bar matching Figma Screen 05

@@ -2,14 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
+import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-class ScheduleTiersScreen extends StatelessWidget {
+class ScheduleTiersScreen extends StatefulWidget {
   static const String id = '/schedule_pickup/tiers';
 
   const ScheduleTiersScreen({super.key});
 
+  @override
+  State<ScheduleTiersScreen> createState() => _ScheduleTiersScreenState();
+}
+
+class _ScheduleTiersScreenState extends State<ScheduleTiersScreen> {
   static const List<ScheduleTier> fallbackTiers = [
     ScheduleTier(
       id: 'BEST_VALUE',
@@ -39,9 +45,23 @@ class ScheduleTiersScreen extends StatelessWidget {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider =
+          Provider.of<SchedulePickupProvider>(context, listen: false);
+      final hasLoadedBefore = provider.hasTiersLoaded;
+      provider.loadTiersAndNearbyStores(silent: hasLoadedBefore);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final selectedTier = provider.currentTier;
+    final isInitialLoading =
+        provider.isTiersLoading && !provider.hasTiersLoaded;
 
     // Use live tiers from provider or standard fallback
     final displayTiers =
@@ -74,36 +94,51 @@ class ScheduleTiersScreen extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Dynamic tier subtitle based on backend data
-              Text(
-                provider?.tierSubtitle ?? "",
-                style: GoogleFonts.dmSans(
-                  fontSize: 13.5,
-                  fontWeight: FontWeight.w400,
-                  color: const Color(0xFF5E5E5E),
-                  height: 1.4,
+              if (isInitialLoading)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20),
+                  child: AppSkeletonLoader.box(
+                    width: double.infinity,
+                    height: 16,
+                    borderRadius: 4,
+                  ),
+                )
+              else
+                Text(
+                  provider.tierSubtitle,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w400,
+                    color: const Color(0xFF5E5E5E),
+                    height: 1.4,
+                  ),
                 ),
-              ),
 
               const SizedBox(height: 20),
 
-              // Dynamic pricing tier cards with Foam turnaround guarantee
-              ...displayTiers.map(
-                (tier) => Padding(
-                  padding: const EdgeInsets.only(bottom: 14),
-                  child: _buildTierCard(
-                    context: context,
-                    tierId: tier.id,
-                    title: tier.title,
-                    priceText: 'from ₦${tier.startingPrice}',
-                    metaText: tier.turnaroundText.contains('Foam Guarantee')
-                        ? tier.turnaroundText
-                        : '${tier.turnaroundText}',
-                    isSelected: provider.selectedTierId == tier.id,
-                    badgeText: tier.badge,
-                    onTap: () => provider.selectTier(tier.id),
+              // Dynamic pricing tier cards with skeleton loader for initial load
+              if (isInitialLoading) ...[
+                AppSkeletonLoader.tierCard(),
+                AppSkeletonLoader.tierCard(),
+                AppSkeletonLoader.tierCard(),
+              ] else
+                ...displayTiers.map(
+                  (tier) => Padding(
+                    padding: const EdgeInsets.only(bottom: 14),
+                    child: _buildTierCard(
+                      context: context,
+                      tierId: tier.id,
+                      title: tier.title,
+                      priceText: 'from ₦${tier.startingPrice}',
+                      metaText: tier.turnaroundText.contains('Foam Guarantee')
+                          ? tier.turnaroundText
+                          : tier.turnaroundText,
+                      isSelected: provider.selectedTierId == tier.id,
+                      badgeText: tier.badge,
+                      onTap: () => provider.selectTier(tier.id),
+                    ),
                   ),
                 ),
-              ),
 
               const SizedBox(height: 20),
 
