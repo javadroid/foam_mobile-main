@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/basket/view/pickup_address_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen.dart';
@@ -284,53 +285,6 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                 },
               ),
 
-              const Divider(height: 24, color: Color(0xFFE4E4E4)),
-
-              // Pickup time slot row
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Pickup',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w400,
-                            color: const Color(0xFF5E5E5E),
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          provider.pickupSlot,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.dmSans(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF212828),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  TextButton(
-                    onPressed: () => _showPickupSlotPicker(context, provider),
-                    child: Text(
-                      'Edit',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF00AABC),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
               const SizedBox(height: 16),
 
               // Price Calculation Card
@@ -415,7 +369,7 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
 
               const SizedBox(height: 12),
 
-              // Pay button with Paystack only
+              // Pay button opens pickup address screen
               Container(
                 width: double.infinity,
                 height: 53,
@@ -435,24 +389,28 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  onPressed: _isProcessingPayment || provider.isLoading
+                  onPressed: provider.isLoading
                       ? null
-                      : () => _handlePaystackPayment(provider),
-                  child: _isProcessingPayment
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                        )
-                      : Text(
-                          'Pay ₦${currencyFormatter.format(provider.grandTotal)}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
+                      : () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => PickupAddressScreen(
+                                totalAmount: provider.grandTotal,
+                                isSchedulePickup: true,
+                              ),
+                            ),
+                          );
+                        },
+                  child: Text(
+                    'Pay ₦${currencyFormatter.format(provider.grandTotal)}',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),

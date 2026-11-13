@@ -21,7 +21,13 @@ class BasketProvider extends ChangeNotifier {
   int get totalAmount => _currentQuote?.subtotal ?? _basketItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
   int get foldingSurchargeTotal => _currentQuote?.foldingSurchargeTotal ?? 0;
   int get deliveryFee => _currentQuote?.deliveryFee ?? 3000;
-  int get totalPrice => _currentQuote?.totalPrice ?? (totalAmount + deliveryFee + (_isNoFolding ? foldingSurchargeTotal : 0));
+  int get serviceFee => _currentQuote?.serviceFee ?? 300;
+  int get totalPrice =>
+      _currentQuote?.totalPrice ??
+      (totalAmount +
+          deliveryFee +
+          serviceFee +
+          (_isNoFolding ? foldingSurchargeTotal : 0));
 
   int getQuantity(int categoryId) {
     final item = _basketItems.firstWhere(

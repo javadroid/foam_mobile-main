@@ -178,40 +178,30 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
-                  color: store.foldingPrice > 0
-                      ? const Color(0xFFFEF3C7)
-                      : const Color(0xFFF0FDF4),
+                  color: const Color(0xFFF0FDF4),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: store.foldingPrice > 0
-                        ? const Color(0xFFFDE68A)
-                        : const Color(0xFFDCFCE7),
+                    color: const Color(0xFFDCFCE7),
                     width: 0.8,
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      store.foldingPrice > 0
-                          ? Icons.inventory_2_outlined
-                          : Icons.check_circle_outline,
+                    const Icon(
+                      Icons.check_circle_outline,
                       size: 14,
-                      color: store.foldingPrice > 0
-                          ? const Color(0xFFD97706)
-                          : const Color(0xFF16A34A),
+                      color: Color(0xFF16A34A),
                     ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
                         store.foldingPrice > 0
-                            ? 'Store folding care: +₦${store.foldingPrice.round()} per item'
+                            ? 'Items with "Folding included" are free. Other items: optional +₦${store.foldingPrice.round()} folding'
                             : 'Folding care included for free by this store',
                         style: GoogleFonts.dmSans(
                           fontSize: 11.5,
                           fontWeight: FontWeight.w600,
-                          color: store.foldingPrice > 0
-                              ? const Color(0xFF92400E)
-                              : const Color(0xFF15803D),
+                          color: const Color(0xFF15803D),
                         ),
                       ),
                     ),
@@ -236,7 +226,7 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return _buildItemRow(
-                              context, item, provider, currencyFormatter);
+                              context, item, provider, store, currencyFormatter);
                         },
                       ),
               ),
@@ -312,6 +302,7 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
     BuildContext context,
     ScheduleItem item,
     SchedulePickupProvider provider,
+    NearbyStore store,
     NumberFormat formatter,
   ) {
     return Padding(
@@ -334,6 +325,8 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
               children: [
                 Text(
                   item.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.dmSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -349,6 +342,77 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                     color: const Color(0xFF5E5E5E),
                   ),
                 ),
+                const SizedBox(height: 4),
+                if (item.storeIncludesFolding)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5F7F8),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle, size: 11, color: Color(0xFF00AABC)),
+                        const SizedBox(width: 3),
+                        Text(
+                          'Folding included',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF00AABC),
+                          ),
+                        ),
+                      ],
+                    ),
+                  )
+                else
+                  InkWell(
+                    onTap: () => provider.toggleItemFolding(item.id),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: item.userWantsFolding
+                            ? const Color(0xFF00AABC).withValues(alpha: 0.12)
+                            : const Color(0xFFF3F4F6),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: item.userWantsFolding
+                              ? const Color(0xFF00AABC)
+                              : const Color(0xFFE5E7EB),
+                          width: 0.8,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            item.userWantsFolding
+                                ? Icons.check_box
+                                : Icons.check_box_outline_blank,
+                            size: 13,
+                            color: item.userWantsFolding
+                                ? const Color(0xFF00AABC)
+                                : const Color(0xFF6B7280),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            item.userWantsFolding
+                                ? 'Folding (+₦${store.foldingPrice.round()})'
+                                : '+ Add folding (+₦${store.foldingPrice.round()})',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: item.userWantsFolding
+                                  ? const Color(0xFF00AABC)
+                                  : const Color(0xFF4B5563),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

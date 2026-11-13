@@ -6,8 +6,9 @@ import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/provider/basket_provider.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
+import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
-import 'package:foam_mobile/widgets/click_button.dart';
 import 'package:foam_mobile/widgets/message_handler.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -18,11 +19,13 @@ import 'package:foam_mobile/core/services/foam_payment_service.dart';
 class PickupAddressScreen extends StatefulWidget {
   final int totalAmount;
   final bool noFolding;
+  final bool isSchedulePickup;
 
   const PickupAddressScreen({
     super.key,
     required this.totalAmount,
     this.noFolding = false,
+    this.isSchedulePickup = false,
   });
 
   @override
@@ -62,7 +65,19 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     final savedToTime = savedDetails['toTime'];
     final savedDeliveryDate = savedDetails['deliveryDate'];
 
-    if (savedAddress != null && savedAddress.isNotEmpty) {
+    if (widget.isSchedulePickup) {
+      final sched = Provider.of<SchedulePickupProvider>(context, listen: false);
+      if (sched.pickupAddress.isNotEmpty) {
+        selectedAddress = sched.pickupAddress;
+        _addressController.text = sched.pickupAddress;
+      } else if (savedAddress != null && savedAddress.isNotEmpty) {
+        selectedAddress = savedAddress;
+        _addressController.text = savedAddress;
+      } else if (authProvider.addressStreet.isNotEmpty) {
+        selectedAddress = authProvider.addressStreet;
+        _addressController.text = authProvider.addressStreet;
+      }
+    } else if (savedAddress != null && savedAddress.isNotEmpty) {
       selectedAddress = savedAddress;
       _addressController.text = savedAddress;
     } else if (authProvider.addressStreet.isNotEmpty) {
@@ -314,643 +329,775 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     final AuthProvider authProvider = Provider.of<AuthProvider>(context);
     final BasketProvider basketProvider =
         Provider.of<BasketProvider>(context, listen: false);
+    final currencyFormatter = NumberFormat('#,###');
+    final int effectiveAmount = widget.totalAmount > 0
+        ? widget.totalAmount
+        : basketProvider.totalPrice;
 
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+        backgroundColor: Colors.white,
         appBar: AppBar(
-          elevation: 0,
+          elevation: 0.5,
           backgroundColor: Colors.white,
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF0F172A),
+              Icons.arrow_back_ios_new,
+              color: Color(0xFF212828),
               size: 20,
             ),
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
-            'Schedule & Address',
+            'Pickup & Delivery Details',
             style: GoogleFonts.dmSans(
-              fontSize: 19,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF212828),
             ),
           ),
-          centerTitle: true,
+          centerTitle: false,
         ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              const Text(
-                'Pickup/Delivery Address',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-              ),
-              AppSpaces.verticalSpace10,
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 15),
-                decoration: BoxDecoration(
-                  color: AppColors.shadeGreyAccentColor,
-                  borderRadius: BorderRadius.circular(10),
+        body: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 1. Pickup Address Section Header
+                Text(
+                  'Pickup & Delivery Address',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF212828),
+                  ),
                 ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    value: selectedAddress,
-                    isExpanded: true,
-                    icon: const Icon(Icons.unfold_more),
-                    items: <DropdownMenuItem<String>>[
-                      DropdownMenuItem<String>(
-                        value: authProvider.addressStreet,
-                        child: Text(
-                          authProvider.addressStreet.isNotEmpty
-                              ? authProvider.addressStreet
-                              : 'Default Profile Address',
-                          style: const TextStyle(fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (selectedAddress != null &&
-                          selectedAddress != authProvider.addressStreet)
-                        DropdownMenuItem<String>(
-                          value: selectedAddress,
-                          child: Text(
-                            selectedAddress!,
-                            style: const TextStyle(fontSize: 14),
-                            overflow: TextOverflow.ellipsis,
+                const SizedBox(height: 10),
+
+                // Profile Address Quick Select (if user has a saved profile address)
+                if (authProvider.addressStreet.isNotEmpty) ...[
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF9FAFB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.home_outlined, color: Color(0xFF00AABC), size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Profile Address',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF5E5E5E),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                authProvider.addressStreet,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13.5,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF212828),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                    onChanged: (String? value) {
-                      setState(() {
-                        selectedAddress = value;
-                        _addressController.text = value ?? '';
-                      });
-                      _saveCurrentDetails();
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-
-              // Auto-Detect Location Button
-              InkWell(
-                onTap: _isDetectingLocation ? null : _handleAutoDetect,
-                borderRadius: BorderRadius.circular(10),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryAccentColor.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: AppColors.primaryAccentColor.withValues(alpha: 0.25),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      if (_isDetectingLocation)
-                        const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      else
-                        Icon(
-                          Icons.my_location,
-                          color: AppColors.primaryAccentColor,
-                          size: 18,
-                        ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _isDetectingLocation
-                            ? 'Detecting current location...'
-                            : 'Auto-detect My Location',
-                        style: TextStyle(
-                          color: AppColors.primaryAccentColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              AppSpaces.verticalSpace20,
-              const Text(
-                'Search or Enter Address',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-              ),
-              AppSpaces.verticalSpace10,
-              TextField(
-                controller: _addressController,
-                decoration: InputDecoration(
-                  hintText: 'Type street or address...',
-                  prefixIcon: const Icon(Icons.search, size: 20),
-                  suffixIcon: _addressController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear, size: 18),
+                        TextButton(
                           onPressed: () {
                             setState(() {
-                              _addressController.clear();
-                              _addressSuggestions = <AddressSuggestion>[];
                               selectedAddress = authProvider.addressStreet;
+                              _addressController.text = authProvider.addressStreet;
+                              _addressSuggestions = [];
                             });
                             _saveCurrentDetails();
                           },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: AppColors.shadeGreyAccentColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-
-              if (_isSearchingSuggestions) ...[
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0, vertical: 4.0),
-                  child: LinearProgressIndicator(
-                    minHeight: 2,
-                    backgroundColor: Colors.grey[200],
-                    valueColor:
-                        AlwaysStoppedAnimation<Color>(AppColors.primaryAccentColor),
-                  ),
-                ),
-              ],
-
-              if (_addressSuggestions.isNotEmpty) ...[
-                Container(
-                  margin: const EdgeInsets.only(top: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.grey[300]!),
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12.0, vertical: 6.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: <Widget>[
-                            Text(
-                              'Suggested Addresses',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.grey[600],
-                              ),
+                          child: Text(
+                            'Use',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFF00AABC),
                             ),
-                            GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _addressSuggestions = <AddressSuggestion>[];
-                                });
-                              },
-                              child: Icon(Icons.close,
-                                  size: 16, color: Colors.grey[500]),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Divider(height: 1),
-                      ListView.separated(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _addressSuggestions.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (BuildContext context, int index) {
-                          final AddressSuggestion suggestion =
-                              _addressSuggestions[index];
-                          return ListTile(
-                            dense: true,
-                            contentPadding: const EdgeInsets.symmetric(
-                                horizontal: 12.0, vertical: 2.0),
-                            leading: Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: AppColors.primaryAccentColor
-                                    .withValues(alpha: 0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.location_on_outlined,
-                                size: 16,
-                                color: AppColors.primaryAccentColor,
-                              ),
-                            ),
-                            title: Text(
-                              suggestion.title,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                            subtitle: Text(
-                              suggestion.subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: Colors.grey[600],
-                              ),
-                            ),
-                            onTap: () => _selectSuggestion(suggestion),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 4),
-              ],
-              const SizedBox(height: 18),
-              Text(
-                'Pickup Date',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () => _selectDate(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryAccentColor.withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.calendar_today_rounded,
-                          size: 18,
-                          color: AppColors.primaryAccentColor,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: const Color(0xFF0F172A),
-                              ),
-                            ),
-                            Text(
-                              'Tap to reschedule pickup day',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 12,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-              Text(
-                'Pickup Time Window (optional)',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context, true),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFF64748B)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                fromTime != null ? fromTime!.format(context) : 'Start Time',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: fromTime != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: InkWell(
-                      onTap: () => _selectTime(context, false),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.access_time_filled_rounded, size: 16, color: Color(0xFF64748B)),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                toTime != null ? toTime!.format(context) : 'End Time',
-                                style: GoogleFonts.dmSans(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w600,
-                                  color: toTime != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 16),
-              Text(
-                'Delivery Date (optional)',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: const Color(0xFF0F172A),
-                ),
-              ),
-              const SizedBox(height: 8),
-              InkWell(
-                onTap: () => _selectDeliveryDate(context),
-                borderRadius: BorderRadius.circular(12),
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF10B981).withValues(alpha: 0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.local_shipping_outlined,
-                          size: 18,
-                          color: Color(0xFF10B981),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              deliveryDate != null
-                                  ? DateFormat('EEEE, MMMM d, yyyy').format(deliveryDate!)
-                                  : 'Select estimated delivery date',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.w700,
-                                color: deliveryDate != null ? const Color(0xFF0F172A) : const Color(0xFF94A3B8),
-                              ),
-                            ),
-                            Text(
-                              deliveryDate != null ? 'Tap to change delivery date' : 'Optional standard 2-3 day return',
-                              style: GoogleFonts.dmSans(
-                                fontSize: 12,
-                                color: const Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
-                    ],
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              // Order Summary Badge
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Total to Pay',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            color: const Color(0xFF64748B),
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Text(
-                          widget.noFolding ? 'No Folding' : 'Standard Folding Included',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 11.5,
-                            color: const Color(0xFF94A3B8),
                           ),
                         ),
                       ],
                     ),
-                    Text(
-                      '₦${NumberFormat('#,###').format(widget.totalAmount > 0 ? widget.totalAmount : basketProvider.totalPrice)}',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.primaryAccentColor,
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+                // Auto-Detect Location Button
+                InkWell(
+                  onTap: _isDetectingLocation ? null : _handleAutoDetect,
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE5F7F8),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: const Color(0xFF00AABC).withValues(alpha: 0.25),
+                        width: 0.8,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (_isDetectingLocation)
+                          const SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF00AABC),
+                            ),
+                          )
+                        else
+                          const Icon(
+                            Icons.my_location,
+                            color: Color(0xFF00AABC),
+                            size: 17,
+                          ),
+                        const SizedBox(width: 8),
+                        Text(
+                          _isDetectingLocation
+                              ? 'Detecting current location...'
+                              : 'Auto-detect My Location',
+                          style: GoogleFonts.dmSans(
+                            color: const Color(0xFF00AABC),
+                            fontWeight: FontWeight.w600,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // Search or Enter Address
+                TextField(
+                  controller: _addressController,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    color: const Color(0xFF212828),
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Type street or house address...',
+                    hintStyle: GoogleFonts.dmSans(
+                      fontSize: 13.5,
+                      color: const Color(0xFF9E9E9E),
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      size: 20,
+                      color: Color(0xFF757575),
+                    ),
+                    suffixIcon: _addressController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 18, color: Color(0xFF757575)),
+                            onPressed: () {
+                              setState(() {
+                                _addressController.clear();
+                                _addressSuggestions = <AddressSuggestion>[];
+                                selectedAddress = authProvider.addressStreet;
+                              });
+                              _saveCurrentDetails();
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: const Color(0xFFF9FAFB),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE4E4E4), width: 0.8),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFFE4E4E4), width: 0.8),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide: const BorderSide(color: Color(0xFF00AABC), width: 1.2),
+                    ),
+                  ),
+                ),
+
+                if (_isSearchingSuggestions) ...[
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4.0),
+                    child: LinearProgressIndicator(
+                      minHeight: 2,
+                      backgroundColor: Colors.grey[200],
+                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
+                    ),
+                  ),
+                ],
+
+                if (_addressSuggestions.isNotEmpty) ...[
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Suggested Addresses',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF757575),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  setState(() {
+                                    _addressSuggestions = <AddressSuggestion>[];
+                                  });
+                                },
+                                child: const Icon(Icons.close, size: 16, color: Color(0xFF757575)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Divider(height: 1, color: Color(0xFFE4E4E4)),
+                        ListView.separated(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          itemCount: _addressSuggestions.length,
+                          separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE4E4E4)),
+                          itemBuilder: (context, index) {
+                            final suggestion = _addressSuggestions[index];
+                            return ListTile(
+                              dense: true,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.0),
+                              leading: Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: const BoxDecoration(
+                                  color: Color(0xFFE5F7F8),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 16,
+                                  color: Color(0xFF00AABC),
+                                ),
+                              ),
+                              title: Text(
+                                suggestion.title,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF212828),
+                                ),
+                              ),
+                              subtitle: Text(
+                                suggestion.subtitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  color: const Color(0xFF757575),
+                                ),
+                              ),
+                              onTap: () => _selectSuggestion(suggestion),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+
+                const SizedBox(height: 22),
+
+                // 2. Schedule Section
+                Text(
+                  'Pickup Schedule',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: const Color(0xFF212828),
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Pickup Date Picker Card
+                InkWell(
+                  onTap: () => _selectDate(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFE5F7F8),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.calendar_today_rounded,
+                            size: 16,
+                            color: Color(0xFF00AABC),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF212828),
+                                ),
+                              ),
+                              Text(
+                                'Tap to choose pickup day',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11.5,
+                                  color: const Color(0xFF757575),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF9E9E9E)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // Pickup Time Window
+                Text(
+                  'Pickup Time Window (optional)',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF5E5E5E),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectTime(context, true),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFF00AABC)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  fromTime != null ? fromTime!.format(context) : 'Start Time',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: fromTime != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectTime(context, false),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.access_time_filled_rounded, size: 16, color: Color(0xFF00AABC)),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  toTime != null ? toTime!.format(context) : 'End Time',
+                                  style: GoogleFonts.dmSans(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: toTime != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-              AppSpaces.verticalSpace40,
-              Center(
-                child: ClickButton(
-                  text: 'Pay Now',
-                  textColor: Colors.white,
-                  isLoading: isLoading,
-                  onPressed: () async {
-                    final String effectiveAddress = _addressController.text.trim().isNotEmpty
-                        ? _addressController.text.trim()
-                        : (selectedAddress ?? '');
 
-                    if (effectiveAddress.isEmpty) {
-                      MyMessageHandler.showSnackBar(
-                        scaffoldKey,
-                        'Please enter or auto-detect your pickup address',
-                      );
-                      return;
-                    }
+                const SizedBox(height: 14),
 
-                    _saveCurrentDetails();
-
-                    setState(() {
-                      isLoading = true;
-                    });
-                    final nav = Navigator.of(context);
-                    try {
-                      final double orderAmount = widget.totalAmount > 0
-                          ? widget.totalAmount.toDouble()
-                          : basketProvider.totalPrice.toDouble();
-
-                      final String? formattedPickupTime = fromTime != null && toTime != null
-                          ? '${fromTime!.format(context)} - ${toTime!.format(context)}'
-                          : fromTime?.format(context);
-
-                      final result = await FoamPaymentSheet.show(
-                        context: context,
-                        title: 'Complete Order Payment',
-                        itemTitle: '${basketProvider.totalItems} Laundry Items',
-                        itemSubtitle: widget.noFolding
-                            ? 'No Folding Service'
-                            : 'Standard Folding Included',
-                        amount: orderAmount,
-                        purpose: FoamPaymentPurpose.order,
-                        noFolding: widget.noFolding,
-                        pickupAddress: effectiveAddress,
-                        deliveryAddress: effectiveAddress,
-                        pickupDate: selectedDate,
-                        pickupTime: formattedPickupTime,
-                        deliveryDate: deliveryDate,
-                      );
-
-                      if (result != null) {
-                        if (result.success) {
-                          final previousTotalItems = basketProvider.totalItems;
-                          await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
-
-                          final orderData = result.data;
-                          final String orderRef = result.reference ??
-                              (orderData != null && orderData.containsKey('id')
-                                  ? '#FM-${orderData['id']}'
-                                  : (orderData != null && orderData.containsKey('reference') ? orderData['reference'].toString() : ''));
-
-                          await nav.push(
-                            MaterialPageRoute(
-                              builder: (_) => PaymentSuccessScreen(
-                                title: 'Order Placed Successfully! 🎉',
-                                subtitle: 'Your laundry order was placed and confirmed.',
-                                itemTitle: '$previousTotalItems Laundry Items',
-                                amount: orderAmount,
-                                paymentMethod: orderData != null && orderData.containsKey('paymentMethod')
-                                    ? orderData['paymentMethod'].toString()
-                                    : (orderData != null && orderData.containsKey('paymentType')
-                                        ? orderData['paymentType'].toString()
-                                        : 'Online Payment'),
-                                reference: orderRef.isNotEmpty ? orderRef : null,
-                                details: [
-                                  MapEntry('Pickup Address', effectiveAddress),
-                                  MapEntry('Pickup Date',
-                                      DateFormat('dd MMM yyyy').format(selectedDate)),
-                                  if (formattedPickupTime != null)
-                                    MapEntry('Pickup Time', formattedPickupTime),
-                                  if (deliveryDate != null)
-                                    MapEntry(
-                                        'Delivery Date',
-                                        DateFormat('dd MMM yyyy')
-                                            .format(deliveryDate!)),
-                                  MapEntry('Folding Service',
-                                      widget.noFolding ? 'No Folding' : 'Standard Folding Included'),
-                                ],
-                                primaryButtonLabel: 'View Order in History',
-                                onPrimaryPressed: () {
-                                  nav.pushAndRemoveUntil(
-                                    MaterialPageRoute(
-                                      builder: (_) => const MainScreen(initialIndex: 1),
-                                    ),
-                                    (route) => false,
-                                  );
-                                },
-                              ),
-                            ),
-                          );
-                        } else {
-                          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
-                        }
-                      }
-                    } finally {
-                      if (mounted) {
-                        setState(() {
-                          isLoading = false;
-                        });
-                      }
-                    }
-                  },
-                  fontSize: MediaQuery.sizeOf(context).height / 53,
-                  color: AppColors.primaryAccentColor,
+                // Delivery Date (Optional)
+                Text(
+                  'Estimated Delivery Date',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF5E5E5E),
+                  ),
                 ),
-              ),
-              AppSpaces.verticalSpace40,
-            ],
+                const SizedBox(height: 6),
+                InkWell(
+                  onTap: () => _selectDeliveryDate(context),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFFDCFCE7),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.local_shipping_outlined,
+                            size: 16,
+                            color: Color(0xFF15803D),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                deliveryDate != null
+                                    ? DateFormat('EEEE, MMMM d, yyyy').format(deliveryDate!)
+                                    : 'Select estimated delivery date',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: deliveryDate != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                ),
+                              ),
+                              Text(
+                                deliveryDate != null ? 'Tap to change delivery date' : 'Optional standard 2-day return',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11.5,
+                                  color: const Color(0xFF757575),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF9E9E9E)),
+                      ],
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 22),
+
+                // Order Summary Card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Total to Pay',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              color: const Color(0xFF5E5E5E),
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            widget.noFolding ? 'No Folding' : 'Standard Care Included',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11.5,
+                              color: const Color(0xFF9E9E9E),
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        '₦${currencyFormatter.format(effectiveAmount)}',
+                        style: GoogleFonts.dmSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF00AABC),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 26),
+
+                // Modern Pay Button (Foam gradient theme)
+                Container(
+                  width: double.infinity,
+                  height: 53,
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      colors: [Color(0xFF00AABC), Color(0xFFC5EFF3)],
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.transparent,
+                      shadowColor: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: isLoading ? null : _handlePayment,
+                    child: isLoading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            'Pay ₦${currencyFormatter.format(effectiveAmount)}',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.white,
+                              letterSpacing: 0.6,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
           ),
         ),
       ),
     );
+  }
+
+  Future<void> _handlePayment() async {
+    final String effectiveAddress = _addressController.text.trim().isNotEmpty
+        ? _addressController.text.trim()
+        : (selectedAddress ?? '');
+
+    if (effectiveAddress.isEmpty) {
+      MyMessageHandler.showSnackBar(
+        scaffoldKey,
+        'Please enter or auto-detect your pickup address',
+      );
+      return;
+    }
+
+    _saveCurrentDetails();
+
+    setState(() {
+      isLoading = true;
+    });
+
+    final String? formattedPickupTime = fromTime != null && toTime != null
+        ? '${fromTime!.format(context)} - ${toTime!.format(context)}'
+        : fromTime?.format(context);
+
+    if (widget.isSchedulePickup) {
+      final sched = Provider.of<SchedulePickupProvider>(context, listen: false);
+      sched.setPickupAddress(effectiveAddress);
+      final slot = '${DateFormat('MMM d').format(selectedDate)}, ${formattedPickupTime ?? "3:00 – 4:00 PM"}';
+      sched.setPickupSlot(slot);
+
+      try {
+        final success = await sched.processPaystackOrder(
+          paystackRef: 'fm_pay_${DateTime.now().millisecondsSinceEpoch}',
+        );
+        if (success) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(context, ScheduleOrderPlacedScreen.id);
+          }
+        } else {
+          if (mounted) {
+            MyMessageHandler.showSnackBar(
+              scaffoldKey,
+              'Could not complete Paystack order. Please try again.',
+            );
+          }
+        }
+      } catch (e) {
+        debugPrint('Schedule pickup order error: $e');
+        if (mounted) {
+          MyMessageHandler.showSnackBar(scaffoldKey, 'Error placing order: $e');
+        }
+      } finally {
+        if (mounted) setState(() => isLoading = false);
+      }
+      return;
+    }
+
+    // Regular basket order flow:
+    final BasketProvider basketProvider =
+        Provider.of<BasketProvider>(context, listen: false);
+    final nav = Navigator.of(context);
+    try {
+      final double orderAmount = widget.totalAmount > 0
+          ? widget.totalAmount.toDouble()
+          : basketProvider.totalPrice.toDouble();
+
+      final result = await FoamPaymentSheet.show(
+        context: context,
+        title: 'Complete Order Payment',
+        itemTitle: '${basketProvider.totalItems} Laundry Items',
+        itemSubtitle: widget.noFolding
+            ? 'No Folding Service'
+            : 'Standard Folding Included',
+        amount: orderAmount,
+        purpose: FoamPaymentPurpose.order,
+        noFolding: widget.noFolding,
+        pickupAddress: effectiveAddress,
+        deliveryAddress: effectiveAddress,
+        pickupDate: selectedDate,
+        pickupTime: formattedPickupTime,
+        deliveryDate: deliveryDate,
+      );
+
+      if (result != null) {
+        if (result.success) {
+          final previousTotalItems = basketProvider.totalItems;
+          await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
+
+          final orderData = result.data;
+          final String orderRef = result.reference ??
+              (orderData != null && orderData.containsKey('id')
+                  ? '#FM-${orderData['id']}'
+                  : (orderData != null && orderData.containsKey('reference')
+                      ? orderData['reference'].toString()
+                      : ''));
+
+          await nav.push(
+            MaterialPageRoute(
+              builder: (_) => PaymentSuccessScreen(
+                title: 'Order Placed Successfully! 🎉',
+                subtitle: 'Your laundry order was placed and confirmed.',
+                itemTitle: '$previousTotalItems Laundry Items',
+                amount: orderAmount,
+                paymentMethod: orderData != null && orderData.containsKey('paymentMethod')
+                    ? orderData['paymentMethod'].toString()
+                    : (orderData != null && orderData.containsKey('paymentType')
+                        ? orderData['paymentType'].toString()
+                        : 'Online Payment'),
+                reference: orderRef.isNotEmpty ? orderRef : null,
+                details: [
+                  MapEntry('Pickup Address', effectiveAddress),
+                  MapEntry('Pickup Date',
+                      DateFormat('dd MMM yyyy').format(selectedDate)),
+                  if (formattedPickupTime != null)
+                    MapEntry('Pickup Time', formattedPickupTime),
+                  if (deliveryDate != null)
+                    MapEntry(
+                        'Delivery Date',
+                        DateFormat('dd MMM yyyy')
+                            .format(deliveryDate!)),
+                  MapEntry('Folding Service',
+                      widget.noFolding ? 'No Folding' : 'Standard Folding Included'),
+                ],
+                primaryButtonLabel: 'View Order in History',
+                onPrimaryPressed: () {
+                  nav.pushAndRemoveUntil(
+                    MaterialPageRoute(
+                      builder: (_) => const MainScreen(initialIndex: 1),
+                    ),
+                    (route) => false,
+                  );
+                },
+              ),
+            ),
+          );
+        } else {
+          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
+        }
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          isLoading = false;
+        });
+      }
+    }
   }
 }

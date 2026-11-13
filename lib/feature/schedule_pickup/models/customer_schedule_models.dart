@@ -394,6 +394,7 @@ class ScheduleItem {
   final String category;
   final String foldType;
   final String? imageUrl;
+  bool userWantsFolding;
 
   ScheduleItem({
     required this.id,
@@ -403,7 +404,10 @@ class ScheduleItem {
     this.category = 'Laundry',
     this.foldType = 'Folding',
     this.imageUrl,
+    this.userWantsFolding = false,
   });
+
+  bool get storeIncludesFolding => foldType.toUpperCase().contains('FOLDING');
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     return ScheduleItem(
@@ -414,6 +418,7 @@ class ScheduleItem {
       category: json['category'] as String? ?? 'Laundry',
       foldType: json['foldType'] as String? ?? 'Folding',
       imageUrl: json['imageUrl'] as String?,
+      userWantsFolding: json['userWantsFolding'] == true,
     );
   }
 
@@ -424,6 +429,8 @@ class ScheduleItem {
         'quantity': quantity,
         'category': category,
         'foldType': foldType,
+        'userWantsFolding': userWantsFolding,
+        'storeIncludesFolding': storeIncludesFolding,
         if (imageUrl != null) 'imageUrl': imageUrl,
       };
 }
@@ -611,5 +618,43 @@ class OrderTrackingData {
         if (deliveryRider != null) 'deliveryRider': deliveryRider!.toJson(),
         'locations': locations.map((k, v) => MapEntry(k, v.toJson())),
         'timeline': timeline.map((s) => s.toJson()).toList(),
+      };
+}
+
+/// Delivery & service fee pricing configuration set by Admin
+@immutable
+class PricingConfig {
+  final int baseDeliveryFee;
+  final int deliveryFeePerKm;
+  final int serviceFeeThreshold;
+  final int serviceFeeFixed;
+  final double serviceFeePercentage;
+
+  const PricingConfig({
+    this.baseDeliveryFee = 1500,
+    this.deliveryFeePerKm = 100,
+    this.serviceFeeThreshold = 2000,
+    this.serviceFeeFixed = 300,
+    this.serviceFeePercentage = 5.0,
+  });
+
+  factory PricingConfig.fromJson(Map<String, dynamic> json) {
+    return PricingConfig(
+      baseDeliveryFee: (json['baseDeliveryFee'] as num?)?.toInt() ?? 1500,
+      deliveryFeePerKm: (json['deliveryFeePerKm'] as num?)?.toInt() ?? 100,
+      serviceFeeThreshold:
+          (json['serviceFeeThreshold'] as num?)?.toInt() ?? 2000,
+      serviceFeeFixed: (json['serviceFeeFixed'] as num?)?.toInt() ?? 300,
+      serviceFeePercentage:
+          (json['serviceFeePercentage'] as num?)?.toDouble() ?? 5.0,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'baseDeliveryFee': baseDeliveryFee,
+        'deliveryFeePerKm': deliveryFeePerKm,
+        'serviceFeeThreshold': serviceFeeThreshold,
+        'serviceFeeFixed': serviceFeeFixed,
+        'serviceFeePercentage': serviceFeePercentage,
       };
 }

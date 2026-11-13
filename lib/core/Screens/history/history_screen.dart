@@ -18,8 +18,9 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  String selectedHistory = "Ongoing";
+  String selectedHistory = "Pending";
   final List<String> differentHistory = [
+    "Pending",
     "Ongoing",
     "Completed",
     "Cancelled",
@@ -52,23 +53,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   List<Order> getFilteredOrders() {
     switch (selectedHistory) {
+      case "Pending":
+        return orders.where((order) {
+          final s = order.status.toUpperCase();
+          final vs = (order.vendorStatus ?? '').toUpperCase();
+          return s == "PENDING" || vs == "NEW" || vs == "PENDING";
+        }).toList();
       case "Ongoing":
         return orders.where((order) {
           final s = order.status.toUpperCase();
-          return s == "PENDING" ||
-              s == "ACCEPTED" ||
+          final vs = (order.vendorStatus ?? '').toUpperCase();
+          if (s == "PENDING" || vs == "NEW" || vs == "PENDING") return false;
+          return s == "ACCEPTED" ||
               s == "IN_PROGRESS" ||
-              s == "ONGOING";
+              s == "ONGOING" ||
+              [
+                'ACCEPTED',
+                'WASHING',
+                'READY',
+                'OUT_FOR_DELIVERY',
+              ].contains(vs);
         }).toList();
       case "Completed":
         return orders.where((order) {
           final s = order.status.toUpperCase();
-          return s == "COMPLETED" || s == "DELIVERED";
+          final vs = (order.vendorStatus ?? '').toUpperCase();
+          return s == "COMPLETED" || s == "DELIVERED" || vs == "COMPLETED";
         }).toList();
       case "Cancelled":
         return orders.where((order) {
           final s = order.status.toUpperCase();
-          return s == "CANCELLED";
+          final vs = (order.vendorStatus ?? '').toUpperCase();
+          return s == "CANCELLED" || vs == "DECLINED";
         }).toList();
       default:
         return orders;

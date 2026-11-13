@@ -482,23 +482,62 @@ class VendorProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void acceptOrder(String orderId) {
+  Future<bool> acceptOrder(String orderId) async {
     final idx = _orders.indexWhere((o) => o.id == orderId);
     if (idx != -1) {
       _orders[idx].status = 'ACCEPTED';
       notifyListeners();
     }
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty) {
+        final res = await http.patch(
+          Uri.parse('${Constants.url}/api/vendor/orders/$orderId/accept'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Accept': 'application/json',
+          },
+        ).timeout(const Duration(seconds: 6));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error accepting order on backend: $e');
+    }
+    return false;
   }
 
-  void declineOrder(String orderId, String reason) {
+  Future<bool> declineOrder(String orderId, String reason) async {
     final idx = _orders.indexWhere((o) => o.id == orderId);
     if (idx != -1) {
+      _orders[idx].status = 'DECLINED';
       _orders.removeAt(idx);
       notifyListeners();
     }
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty) {
+        final res = await http.patch(
+          Uri.parse('${Constants.url}/api/vendor/orders/$orderId/decline'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'reason': reason}),
+        ).timeout(const Duration(seconds: 6));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error declining order on backend: $e');
+    }
+    return false;
   }
 
-  void updateOrderStatus(String orderId, String nextStatus) {
+  Future<bool> updateOrderStatus(String orderId, String nextStatus) async {
     final idx = _orders.indexWhere((o) => o.id == orderId);
     if (idx != -1) {
       _orders[idx].status = nextStatus;
@@ -520,6 +559,26 @@ class VendorProvider extends ChangeNotifier {
       }
       notifyListeners();
     }
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty) {
+        final res = await http.patch(
+          Uri.parse('${Constants.url}/api/vendor/orders/$orderId/status'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({'vendorStatus': nextStatus}),
+        ).timeout(const Duration(seconds: 6));
+        if (res.statusCode == 200 || res.statusCode == 201) {
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error updating vendor order status on backend: $e');
+    }
+    return false;
   }
 
   void addVendorOrder(VendorOrder order) {

@@ -1,10 +1,164 @@
 {
-  "assets/fonts/DMSans-Regular.ttf": ["assets/fonts/DMSans-Regular.ttf"],
-  "assets/fonts/DMSans-Medium.ttf": ["assets/fonts/DMSans-Medium.ttf"],
-  "assets/fonts/DMSans-SemiBold.ttf": ["assets/fonts/DMSans-SemiBold.ttf"],
-  "assets/fonts/DMSans-Bold.ttf": ["assets/fonts/DMSans-Bold.ttf"],
-  "google_fonts/DMSans-Regular.ttf": ["assets/fonts/DMSans-Regular.ttf"],
-  "google_fonts/DMSans-Medium.ttf": ["assets/fonts/DMSans-Medium.ttf"],
-  "google_fonts/DMSans-SemiBold.ttf": ["assets/fonts/DMSans-SemiBold.ttf"],
-  "google_fonts/DMSans-Bold.ttf": ["assets/fonts/DMSans-Bold.ttf"]
+    "assets/fonts/DMSans-Regular.ttf":  [
+                                            "assets/fonts/DMSans-Regular.ttf"
+                                        ],
+    "assets/fonts/DMSans-Medium.ttf":  [
+                                           "assets/fonts/DMSans-Medium.ttf"
+                                       ],
+    "assets/fonts/DMSans-SemiBold.ttf":  [
+                                             "assets/fonts/DMSans-SemiBold.ttf"
+                                         ],
+    "assets/fonts/DMSans-Bold.ttf":  [
+                                         "assets/fonts/DMSans-Bold.ttf"
+                                     ],
+    "google_fonts/DMSans-Regular.ttf":  [
+                                            "assets/fonts/DMSans-Regular.ttf"
+                                        ],
+    "google_fonts/DMSans-Medium.ttf":  [
+                                           "assets/fonts/DMSans-Medium.ttf"
+                                       ],
+    "google_fonts/DMSans-SemiBold.ttf":  [
+                                             "assets/fonts/DMSans-SemiBold.ttf"
+                                         ],
+    "google_fonts/DMSans-Bold.ttf":  [
+                                         "assets/fonts/DMSans-Bold.ttf"
+                                     ],
+    "assets/AssetManifest.json":  [
+                                      "assets/AssetManifest.json"
+                                  ],
+    "assets/google_fonts/DMSans-Bold.ttf":  [
+                                                "assets/google_fonts/DMSans-Bold.ttf"
+                                            ],
+    "assets/google_fonts/DMSans-Medium.ttf":  [
+                                                  "assets/google_fonts/DMSans-Medium.ttf"
+                                              ],
+    "assets/google_fonts/DMSans-Regular.ttf":  [
+                                                   "assets/google_fonts/DMSans-Regular.ttf"
+                                               ],
+    "assets/google_fonts/DMSans-SemiBold.ttf":  [
+                                                    "assets/google_fonts/DMSans-SemiBold.ttf"
+                                                ],
+    "assets/images/apple.svg":  [
+                                    "assets/images/apple.svg"
+                                ],
+    "assets/images/basket2.png":  [
+                                      "assets/images/basket2.png"
+                                  ],
+    "assets/images/basket3.png":  [
+                                      "assets/images/basket3.png"
+                                  ],
+    "assets/images/basket_empty.svg":  [
+                                           "assets/images/basket_empty.svg"
+                                       ],
+    "assets/images/drycleaning.png":  [
+                                          "assets/images/drycleaning.png"
+                                      ],
+    "assets/images/female_tops.png":  [
+                                          "assets/images/female_tops.png"
+                                      ],
+    "assets/images/foam.png":  [
+                                   "assets/images/foam.png"
+                               ],
+    "assets/images/foam_discount.png":  [
+                                            "assets/images/foam_discount.png"
+                                        ],
+    "assets/images/foam_discount2.png":  [
+                                             "assets/images/foam_discount2.png"
+                                         ],
+    "assets/images/foam_discount3.png":  [
+                                             "assets/images/foam_discount3.png"
+                                         ],
+    "assets/images/folding.png":  [
+                                      "assets/images/folding.png"
+                                  ],
+    "assets/images/google.svg":  [
+                                     "assets/images/google.svg"
+                                 ],
+    "assets/images/google_pay_mark.png":  [
+                                              "assets/images/google_pay_mark.png"
+                                          ],
+    "assets/images/google_pay_mark.svg":  [
+                                              "assets/images/google_pay_mark.svg"
+                                          ],
+    "assets/images/iron.png":  [
+                                   "assets/images/iron.png"
+                               ],
+    "assets/images/laundry0.png":  [
+                                       "assets/images/laundry0.png"
+                                   ],
+    "assets/images/laundry1.png":  [
+                                       "assets/images/laundry1.png"
+                                   ],
+    "assets/images/laundry2.png":  [
+                                       "assets/images/laundry2.png"
+                                   ],
+    "assets/images/laundry3.png":  [
+                                       "assets/images/laundry3.png"
+                                   ],
+    "assets/images/logo.png":  [
+                                   "assets/images/logo.png"
+                               ],
+    "assets/images/logo_nanobanana_3d.png":  [
+                                                 "assets/images/logo_nanobanana_3d.png"
+                                             ],
+    "assets/images/logo_original_legacy.png":  [
+                                                   "assets/images/logo_original_legacy.png"
+                                               ],
+    "assets/images/logo_original_standard.png":  [
+                                                     "assets/images/logo_original_standard.png"
+                                                 ],
+    "assets/images/menu.svg":  [
+                                   "assets/images/menu.svg"
+                               ],
+    "assets/images/notification.svg":  [
+                                           "assets/images/notification.svg"
+                                       ],
+    "assets/images/photo_2026-05-24_21-42-25.jpg":  [
+                                                        "assets/images/photo_2026-05-24_21-42-25.jpg"
+                                                    ],
+    "assets/images/polo.png":  [
+                                   "assets/images/polo.png"
+                               ],
+    "assets/images/product0.jpg":  [
+                                       "assets/images/product0.jpg"
+                                   ],
+    "assets/images/product1.jpg":  [
+                                       "assets/images/product1.jpg"
+                                   ],
+    "assets/images/product2.jpg":  [
+                                       "assets/images/product2.jpg"
+                                   ],
+    "assets/images/profile_default.png":  [
+                                              "assets/images/profile_default.png"
+                                          ],
+    "assets/images/services0.png":  [
+                                        "assets/images/services0.png"
+                                    ],
+    "assets/images/services1.png":  [
+                                        "assets/images/services1.png"
+                                    ],
+    "assets/images/services2.png":  [
+                                        "assets/images/services2.png"
+                                    ],
+    "assets/images/services3.png":  [
+                                        "assets/images/services3.png"
+                                    ],
+    "assets/images/services4.png":  [
+                                        "assets/images/services4.png"
+                                    ],
+    "assets/images/shirt.png":  [
+                                    "assets/images/shirt.png"
+                                ],
+    "assets/images/singlet.png":  [
+                                      "assets/images/singlet.png"
+                                  ],
+    "assets/images/washing-machine.png":  [
+                                              "assets/images/washing-machine.png"
+                                          ],
+    "assets/payment/default_apple_pay_config.json":  [
+                                                         "assets/payment/default_apple_pay_config.json"
+                                                     ],
+    "assets/payment/default_google_pay_config.json":  [
+                                                          "assets/payment/default_google_pay_config.json"
+                                                      ]
 }

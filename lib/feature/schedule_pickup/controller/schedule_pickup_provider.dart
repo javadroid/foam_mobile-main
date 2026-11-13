@@ -195,6 +195,9 @@ class SchedulePickupProvider extends ChangeNotifier {
       );
 
       _tierMetadata = CustomerScheduleService.latestTierMetadata;
+      if (CustomerScheduleService.latestPricingConfig != null) {
+        _pricingConfig = CustomerScheduleService.latestPricingConfig!;
+      }
       if (fetchedTiers.isNotEmpty) {
         _tiers = fetchedTiers;
       }
@@ -317,20 +320,43 @@ class SchedulePickupProvider extends ChangeNotifier {
     return 1.0;
   }
 
+  PricingConfig _pricingConfig = const PricingConfig();
+  PricingConfig get pricingConfig => _pricingConfig;
+
   int getItemPrice(ScheduleItem item) {
     final basePrice = (item.price * turnaroundMultiplier).round();
-    final isFolding = item.foldType.toLowerCase().contains('folding');
-    final foldingExtra = isFolding ? currentStore.foldingPrice.round() : 0;
+    if (item.storeIncludesFolding) {
+      // Store includes folding automatically; user is not charged extra
+      return basePrice;
+    }
+    // Store does not include folding for this item; user can choose to add folding
+    final foldingExtra =
+        (item.userWantsFolding && currentStore.foldingPrice > 0)
+            ? currentStore.foldingPrice.round()
+            : 0;
     return basePrice + foldingExtra;
   }
 
   int get storeFoldingTotal {
-    return _items
-        .where((i) => i.foldType.toLowerCase().contains('folding'))
-        .fold(
-          0,
-          (sum, i) => sum + (currentStore.foldingPrice.round() * i.quantity),
-        );
+    return _items.fold(
+      0,
+      (sum, i) {
+        if (!i.storeIncludesFolding &&
+            i.userWantsFolding &&
+            currentStore.foldingPrice > 0) {
+          return sum + (currentStore.foldingPrice.round() * i.quantity);
+        }
+        return sum;
+      },
+    );
+  }
+
+  void toggleItemFolding(int itemId) {
+    final idx = _items.indexWhere((i) => i.id == itemId);
+    if (idx != -1) {
+      _items[idx].userWantsFolding = !_items[idx].userWantsFolding;
+      notifyListeners();
+    }
   }
 
   int get baseItemSubtotal {
@@ -436,8 +462,22 @@ class SchedulePickupProvider extends ChangeNotifier {
   int get itemSubtotal =>
       _items.fold(0, (sum, i) => sum + (getItemPrice(i) * i.quantity));
 
-  int get deliveryFee => 1500;
-  int get serviceFee => 300;
+  int get deliveryFee {
+    final distance = currentStore.distanceKm;
+    final perKm = _pricingConfig.deliveryFeePerKm;
+    final base = _pricingConfig.baseDeliveryFee;
+    return (base + (distance * perKm)).round();
+  }
+
+  int get serviceFee {
+    final subtotal = itemSubtotal;
+    if (subtotal == 0 || subtotal >= _pricingConfig.serviceFeeThreshold) {
+      return _pricingConfig.serviceFeeFixed;
+    } else {
+      return ((subtotal * _pricingConfig.serviceFeePercentage) / 100).round();
+    }
+  }
+
   int get grandTotal => itemSubtotal + deliveryFee + serviceFee;
 
   // Pickup Slot

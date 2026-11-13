@@ -237,7 +237,12 @@ class VendorOrder {
         'READY',
         'OUT_FOR_DELIVERY'
       ].contains(status);
-  bool get isDone => status == 'COMPLETED';
+  bool get isDone => [
+        'COMPLETED',
+        'DECLINED',
+        'CANCELLED',
+        'DELIVERED'
+      ].contains(status);
 
   String get formattedCountdown {
     final mins = secondsRemaining ~/ 60;

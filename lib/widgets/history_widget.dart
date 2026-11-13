@@ -28,10 +28,13 @@ class HistoryWidget extends StatelessWidget {
 
   Widget _buildModernOrderCard(BuildContext context, Order o) {
     final status = o.status.toUpperCase();
-    final isCompleted = status == 'COMPLETED' || status == 'DELIVERED';
-    final isCancelled = status == 'CANCELLED';
-    final isAccepted = status == 'ACCEPTED';
-    final isOngoing = status == 'ONGOING' || status == 'IN_PROGRESS';
+    final vendorStatus = (o.vendorStatus ?? '').toUpperCase();
+    final isCompleted = status == 'COMPLETED' || status == 'DELIVERED' || vendorStatus == 'COMPLETED';
+    final isCancelled = status == 'CANCELLED' || vendorStatus == 'DECLINED';
+    final isAccepted = status == 'ACCEPTED' || vendorStatus == 'ACCEPTED';
+    final isOngoing = status == 'ONGOING' ||
+        status == 'IN_PROGRESS' ||
+        ['WASHING', 'READY', 'OUT_FOR_DELIVERY'].contains(vendorStatus);
 
     Color badgeBg;
     Color badgeText;
@@ -44,7 +47,7 @@ class HistoryWidget extends StatelessWidget {
     } else if (isCancelled) {
       badgeBg = const Color(0xFFFEE2E2);
       badgeText = const Color(0xFFB91C1C);
-      statusLabel = 'Cancelled';
+      statusLabel = vendorStatus == 'DECLINED' ? 'Declined' : 'Cancelled';
     } else if (isAccepted) {
       badgeBg = const Color(0xFFE0F2FE);
       badgeText = const Color(0xFF0369A1);
@@ -52,7 +55,11 @@ class HistoryWidget extends StatelessWidget {
     } else if (isOngoing) {
       badgeBg = const Color(0xFFFEF3C7);
       badgeText = const Color(0xFFB45309);
-      statusLabel = 'In Progress';
+      statusLabel = vendorStatus == 'WASHING'
+          ? 'Washing'
+          : (vendorStatus == 'READY'
+              ? 'Ready'
+              : (vendorStatus == 'OUT_FOR_DELIVERY' ? 'Out for Delivery' : 'In Progress'));
     } else {
       badgeBg = const Color(0xFFF1F5F9);
       badgeText = const Color(0xFF475569);

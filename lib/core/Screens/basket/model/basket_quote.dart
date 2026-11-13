@@ -12,6 +12,7 @@ class BasketQuote {
   final int subtotal;
   final int foldingSurchargeTotal;
   final int deliveryFee;
+  final int serviceFee;
   final int totalPrice;
 
   BasketQuote({
@@ -19,6 +20,7 @@ class BasketQuote {
     required this.subtotal,
     required this.foldingSurchargeTotal,
     required this.deliveryFee,
+    this.serviceFee = 300,
     required this.totalPrice,
   });
 
@@ -27,6 +29,7 @@ class BasketQuote {
         subtotal: 0,
         foldingSurchargeTotal: 0,
         deliveryFee: 0,
+        serviceFee: 0,
         totalPrice: 0,
       );
 
@@ -39,6 +42,7 @@ class BasketQuote {
         foldingSurchargeTotal:
             (json["foldingSurchargeTotal"] as num?)?.toInt() ?? 0,
         deliveryFee: (json["deliveryFee"] as num?)?.toInt() ?? 0,
+        serviceFee: (json["serviceFee"] as num?)?.toInt() ?? 300,
         totalPrice: (json["totalPrice"] as num?)?.toInt() ?? 0,
       );
 
@@ -47,6 +51,7 @@ class BasketQuote {
         "subtotal": subtotal,
         "foldingSurchargeTotal": foldingSurchargeTotal,
         "deliveryFee": deliveryFee,
+        "serviceFee": serviceFee,
         "totalPrice": totalPrice,
       };
 }

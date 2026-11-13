@@ -58,19 +58,26 @@ void main() {
       provider.selectStore(testStore);
       provider.selectTurnaroundDays(3); // Basic (1.0x)
 
-      // Find shirt (base 500)
+      // Find shirt (base 500, foldType == 'Folding')
+      // Per Prompt 10: item auto comes with folding and users are not charged extra
       final shirt = provider.items.firstWhere((i) => i.id == 1);
-      // basePrice = round(500 * 1.0) = 500 + folding (150) = 650
-      expect(provider.getItemPrice(shirt), 650);
+      expect(provider.getItemPrice(shirt), 500);
 
       // Switch to Premium (1.5x)
       provider.selectTurnaroundDays(1);
-      // basePrice = round(500 * 1.5) = 750 + folding (150) = 900
-      expect(provider.getItemPrice(shirt), 900);
+      // basePrice = round(500 * 1.5) = 750 (folding included for free)
+      expect(provider.getItemPrice(shirt), 750);
 
-      // Verify store folding total
-      // Shirt qty: 4, T-shirt qty: 2 (both foldType == 'Folding') -> 6 * 150 = 900
-      expect(provider.storeFoldingTotal, 6 * 150);
+      // Verify item where store didn't include folding, user can choose folding
+      final customNonFoldItem = ScheduleItem(
+        id: 99,
+        name: 'Curtain',
+        price: 800,
+        foldType: 'Non-Folding',
+        userWantsFolding: true,
+      );
+      // basePrice = round(800 * 1.5) = 1200 + folding (150) = 1350
+      expect(provider.getItemPrice(customNonFoldItem), 1350);
     });
 
     test(
@@ -97,8 +104,8 @@ void main() {
       expect(storeWithFolding.hasFoldingFee, isTrue);
       expect(storeWithFolding.foldingPrice, 250.0);
 
-      // Total folding care fee for 6 initial basket items (4 shirts + 2 t-shirts) = 6 * 250 = 1500
-      expect(provider.storeFoldingTotal, 1500);
+      // Default items have store folding included for free
+      expect(provider.storeFoldingTotal, 0);
 
       // Base items subtotal + store folding total == itemSubtotal
       expect(provider.baseItemSubtotal + provider.storeFoldingTotal,
@@ -143,8 +150,7 @@ void main() {
       expect(find.textContaining('1d Next-day'), findsOneWidget);
 
       // Verify folding banner
-      expect(find.textContaining('Store folding care: +₦200 per item'),
-          findsOneWidget);
+      expect(find.textContaining('Folding included'), findsWidgets);
     });
 
     testWidgets(
@@ -181,7 +187,7 @@ void main() {
 
       // Verify folding care row in calculation card
       expect(find.text('Store folding care'), findsOneWidget);
-      expect(find.textContaining('₦300/item'), findsOneWidget);
+      expect(find.textContaining('Included (Free)'), findsOneWidget);
 
       // Verify items subtotal, delivery fee, service fee, total
       expect(find.text('Item subtotal'), findsOneWidget);

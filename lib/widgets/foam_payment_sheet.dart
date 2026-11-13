@@ -293,18 +293,19 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           ),
           const SizedBox(height: 12),
 
-          // 1. Google Pay (highlighted on Android)
+          // 1. Google Pay (highlighted on Android with official Google Pay Mark)
           _buildPaymentOptionTile(
             method: FoamPaymentMethod.googlePay,
             title: 'Google Pay',
             subtitle: 'Fast 1-tap checkout via Google Wallet',
             customIcon: SvgPicture.asset(
-              'assets/images/google.svg',
-              width: 22,
-              height: 22,
+              'assets/images/google_pay_mark.svg',
+              width: 48,
+              height: 32,
+              fit: BoxFit.contain,
             ),
-            iconColor: const Color(0xFF1A73E8),
-            iconBgColor: const Color(0xFFE8F0FE),
+            iconColor: Colors.transparent,
+            iconBgColor: Colors.transparent,
           ),
 
           // 2. Apple Pay (highlighted on iOS)
@@ -347,13 +348,12 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
 
     if (_selectedMethod == FoamPaymentMethod.googlePay) {
       // Official Google Pay pill button strictly complying with Google Pay Brand Guidelines
-      // (No amounts or custom text inside the button mark)
       return SizedBox(
         width: double.infinity,
         height: 52,
         child: ElevatedButton(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF1F1F1F),
+            backgroundColor: Colors.black,
             foregroundColor: Colors.white,
             elevation: 0,
             shape: const StadiumBorder(),
@@ -381,20 +381,11 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                         letterSpacing: 0.1,
                       ),
                     ),
-                    SvgPicture.asset(
-                      'assets/images/google.svg',
-                      width: 19,
-                      height: 19,
-                    ),
                     const SizedBox(width: 4),
-                    const Text(
-                      'Pay',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.1,
-                      ),
+                    SvgPicture.asset(
+                      'assets/images/google_pay_mark.svg',
+                      height: 26,
+                      fit: BoxFit.contain,
                     ),
                   ],
                 ),
@@ -478,6 +469,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
               )
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     isWallet
@@ -487,12 +479,16 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                     size: 18,
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    'Pay ₦$formattedAmount with ${_getMethodName(_selectedMethod)}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w700,
+                  Flexible(
+                    child: Text(
+                      'Pay ₦$formattedAmount with ${_getMethodName(_selectedMethod)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
                   ),
                 ],
@@ -514,6 +510,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
     Color? badgeBgColor,
   }) {
     final isSelected = _selectedMethod == method;
+    final isGooglePay = method == FoamPaymentMethod.googlePay;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
@@ -538,11 +535,12 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           child: Row(
             children: [
               Container(
-                width: 42,
-                height: 42,
+                width: isGooglePay ? 48 : 42,
+                height: isGooglePay ? 32 : 42,
                 decoration: BoxDecoration(
-                  color: iconBgColor,
-                  shape: BoxShape.circle,
+                  color: isGooglePay ? Colors.transparent : iconBgColor,
+                  shape: isGooglePay ? BoxShape.rectangle : BoxShape.circle,
+                  borderRadius: isGooglePay ? BorderRadius.circular(6) : null,
                 ),
                 child: Center(
                   child: customIcon ?? Icon(icon, color: iconColor, size: 22),

@@ -37,6 +37,7 @@ class Order {
   final String? storeName;
   final String? riderName;
   final String? riderPhone;
+  final String? vendorStatus;
   final List<OrderItem> items;
 
   Order({
@@ -60,6 +61,7 @@ class Order {
     this.storeName,
     this.riderName,
     this.riderPhone,
+    this.vendorStatus,
     required this.items,
   });
 
@@ -95,6 +97,7 @@ class Order {
       storeName: json['store'] != null ? json['store']['name'] : null,
       riderName: json['rider'] != null ? json['rider']['name'] : null,
       riderPhone: json['rider'] != null ? json['rider']['phone'] : null,
+      vendorStatus: json['vendorStatus']?.toString(),
       items: items,
     );
   }
@@ -104,6 +107,7 @@ class Order {
       'id': id,
       'userId': userId,
       'status': status,
+      'vendorStatus': vendorStatus,
       'pickupDate': pickupDate?.toIso8601String(),
       'deliveryDate': deliveryDate?.toIso8601String(),
       'totalPrice': totalPrice,
