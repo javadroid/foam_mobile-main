@@ -173,6 +173,27 @@ class CustomerScheduleService {
           quantity: 0,
           category: 'Laundry',
           foldType: 'Folding'),
+      ScheduleItem(
+          id: 5,
+          name: 'Suit',
+          price: 2500,
+          quantity: 0,
+          category: 'Dry cleaning',
+          foldType: 'Hanger'),
+      ScheduleItem(
+          id: 6,
+          name: 'Native Wear',
+          price: 1500,
+          quantity: 0,
+          category: 'Dry cleaning',
+          foldType: 'Hanger'),
+      ScheduleItem(
+          id: 7,
+          name: 'Dress',
+          price: 2000,
+          quantity: 0,
+          category: 'Dry cleaning',
+          foldType: 'Hanger'),
     ];
   }
 

@@ -52,10 +52,14 @@ String resolveImageUrl(String? rawUrl) {
         baseUri.host.toLowerCase() != 'localhost' &&
         baseUri.host != '127.0.0.1') {
       // Rewrite scheme, host, and port to match active Constants.url
-      final newUri = uri.replace(
+      final newUri = Uri(
         scheme: baseUri.scheme,
+        userInfo: uri.userInfo.isNotEmpty ? uri.userInfo : null,
         host: baseUri.host,
         port: baseUri.hasPort ? baseUri.port : null,
+        path: uri.path,
+        query: uri.hasQuery ? uri.query : null,
+        fragment: uri.hasFragment ? uri.fragment : null,
       );
       return newUri.toString();
     } else {

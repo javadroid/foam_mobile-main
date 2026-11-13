@@ -6,6 +6,8 @@ import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_mod
 import 'package:foam_mobile/feature/schedule_pickup/views/01_how_to_choose_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/02_tiers_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/04_store_page_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -22,6 +24,8 @@ Widget _buildTestApp(Widget child, SchedulePickupProvider provider,
       routes: {
         ScheduleTiersScreen.id: (_) => const ScheduleTiersScreen(),
         NearbyStoresScreen.id: (_) => const NearbyStoresScreen(),
+        CustomerStorePageScreen.id: (_) => const CustomerStorePageScreen(),
+        ScheduleItemsScreen.id: (_) => const ScheduleItemsScreen(),
       },
       home: child,
     ),
@@ -73,6 +77,68 @@ void main() {
       expect(find.text('Balanced'), findsOneWidget);
       expect(find.text('Premium'), findsOneWidget);
       expect(find.text('MOST PICKED'), findsOneWidget);
+    });
+
+    testWidgets(
+        'View 02 -> View 04 -> View 05: Tiers screen opens store page first, allows picking Laundry or Dry cleaning, and shows items accordingly',
+        (WidgetTester tester) async {
+      final provider = SchedulePickupProvider();
+      const testStore = NearbyStore(
+        id: '2',
+        name: 'Say Wat Laundry Abuja',
+        area: 'V2MJ+V53',
+        address: 'Eneka Rd, Rivers',
+        rating: 5.0,
+        distanceKm: 2.1,
+        turnaroundDays: 2,
+        turnaroundText: 'Ready in 2 days',
+        shirtStartingPrice: 500,
+        foldingPrice: 200.0,
+      );
+
+      await provider.selectStore(testStore);
+
+      await tester.pumpWidget(_buildTestApp(const ScheduleTiersScreen(), provider));
+      await tester.pumpAndSettle();
+
+      // Tap Continue with Balanced
+      final continueBtn = find.text('Continue with Balanced');
+      expect(continueBtn, findsOneWidget);
+      await tester.tap(continueBtn);
+      await tester.pumpAndSettle();
+
+      // Verify it opens the selected store page first (View 04)
+      expect(find.text('Say Wat Laundry Abuja'), findsOneWidget);
+      expect(find.text('Services'), findsOneWidget);
+      expect(find.text('Laundry'), findsOneWidget);
+
+      // Scroll down to tap Dry cleaning service card
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -200));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Dry cleaning'), findsOneWidget);
+      await tester.tap(find.text('Dry cleaning'));
+      await tester.pumpAndSettle();
+
+      // Verify it opens items screen (View 05) with Dry cleaning selected
+      expect(provider.selectedService, 'Dry cleaning');
+      for (final el in find.byType(Text).evaluate()) {
+        debugPrint('VISIBLE TEXT: ${(el.widget as Text).data}');
+      }
+      expect(find.text('Suit'), findsOneWidget);
+      expect(find.text('Native Wear'), findsOneWidget);
+
+      // Verify Laundry items like 'Shirt' are filtered out
+      expect(find.text('Shirt'), findsNothing);
+
+      // Tap Laundry tab at top of items screen to switch
+      await tester.tap(find.text('Laundry'));
+      await tester.pumpAndSettle();
+
+      // Verify now Laundry items are displayed and Dry cleaning items hidden
+      expect(provider.selectedService, 'Laundry');
+      expect(find.text('Shirt'), findsOneWidget);
+      expect(find.text('Suit'), findsNothing);
     });
 
     testWidgets('View 03: Renders stores with long names without RenderFlex overflow',

@@ -39,8 +39,7 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
     final currencyFormatter = NumberFormat('#,###');
     final items = provider.items;
     final store = provider.currentStore;
-    final hasLoadedBefore = provider.hasCatalogLoaded(store.id);
-    final isInitialLoading = provider.isItemsLoading && !hasLoadedBefore;
+    final isInitialLoading = provider.isItemsLoading && items.isEmpty;
     final storeName = store.name;
     final totalCount = provider.totalBasketCount;
     final subtotal = provider.itemSubtotal;
@@ -53,7 +52,8 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Color(0xFF212828), size: 18),
           onPressed: () => Navigator.pop(context),
         ),
         title: SizedBox(
@@ -62,7 +62,9 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Laundry · Folding',
+                provider.selectedService == 'Dry cleaning'
+                    ? 'Dry cleaning'
+                    : 'Laundry · Folding',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.dmSans(
@@ -142,8 +144,9 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                           provider.selectedTurnaroundDays == opt.days;
                       final multiplierPercent =
                           ((opt.priceMultiplier - 1.0) * 100).round();
-                      final markupText =
-                          multiplierPercent > 0 ? ' (+$multiplierPercent%)' : '';
+                      final markupText = multiplierPercent > 0
+                          ? ' (+$multiplierPercent%)'
+                          : '';
                       return Padding(
                         padding: const EdgeInsets.only(right: 8.0),
                         child: ChoiceChip(
@@ -173,40 +176,69 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
 
               const SizedBox(height: 10),
 
-              // Store Folding Care Banner
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0FDF4),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFFDCFCE7),
-                    width: 0.8,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.check_circle_outline,
-                      size: 14,
-                      color: Color(0xFF16A34A),
-                    ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: Text(
-                        store.foldingPrice > 0
-                            ? 'Items with "Folding included" are free. Other items: optional +₦${store.foldingPrice.round()} folding'
-                            : 'Folding care included for free by this store',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF15803D),
+              // Service category tabs (Laundry vs Dry cleaning)
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => provider.selectService('Laundry'),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: provider.selectedService == 'Laundry'
+                              ? const Color(0xFF00AABC)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Laundry',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: provider.selectedService == 'Laundry'
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: provider.selectedService == 'Laundry'
+                                  ? Colors.white
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
                         ),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: InkWell(
+                      onTap: () => provider.selectService('Dry cleaning'),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        decoration: BoxDecoration(
+                          color: provider.selectedService == 'Dry cleaning'
+                              ? const Color(0xFF00AABC)
+                              : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Center(
+                          child: Text(
+                            'Dry cleaning',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 13,
+                              fontWeight: provider.selectedService == 'Dry cleaning'
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: provider.selectedService == 'Dry cleaning'
+                                  ? Colors.white
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 10),
@@ -220,13 +252,13 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                         itemBuilder: (_, __) => AppSkeletonLoader.itemRow(),
                       )
                     : ListView.separated(
-                        itemCount: items.length,
+                        itemCount: provider.filteredItems.length,
                         separatorBuilder: (_, __) =>
                             const Divider(height: 1, color: Color(0xFFE4E4E4)),
                         itemBuilder: (context, index) {
-                          final item = items[index];
-                          return _buildItemRow(
-                              context, item, provider, store, currencyFormatter);
+                          final item = provider.filteredItems[index];
+                          return _buildItemRow(context, item, provider, store,
+                              currencyFormatter);
                         },
                       ),
               ),
@@ -316,7 +348,13 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
               color: const Color(0xFFE5F7F8),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.checkroom_outlined, color: Color(0xFF00AABC), size: 28),
+            child: Icon(
+              item.category.toLowerCase().contains('dry')
+                  ? Icons.dry_cleaning_outlined
+                  : Icons.checkroom_outlined,
+              color: const Color(0xFF00AABC),
+              size: 28,
+            ),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -345,7 +383,8 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                 const SizedBox(height: 4),
                 if (item.storeIncludesFolding)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5F7F8),
                       borderRadius: BorderRadius.circular(4),
@@ -353,7 +392,8 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.check_circle, size: 11, color: Color(0xFF00AABC)),
+                        const Icon(Icons.check_circle,
+                            size: 11, color: Color(0xFF00AABC)),
                         const SizedBox(width: 3),
                         Flexible(
                           child: Text(
@@ -375,7 +415,8 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                     onTap: () => provider.toggleItemFolding(item.id),
                     borderRadius: BorderRadius.circular(4),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
                         color: item.userWantsFolding
                             ? const Color(0xFF00AABC).withValues(alpha: 0.12)
@@ -428,7 +469,9 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
             children: [
               // Minus button
               InkWell(
-                onTap: item.quantity > 0 ? () => provider.decrementItem(item.id) : null,
+                onTap: item.quantity > 0
+                    ? () => provider.decrementItem(item.id)
+                    : null,
                 borderRadius: BorderRadius.circular(16),
                 child: Container(
                   width: 32,
@@ -436,7 +479,9 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: item.quantity > 0 ? const Color(0xFF777777) : const Color(0xFFE4E4E4),
+                      color: item.quantity > 0
+                          ? const Color(0xFF777777)
+                          : const Color(0xFFE4E4E4),
                       width: 0.8,
                     ),
                   ),
@@ -445,7 +490,9 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                       '−',
                       style: GoogleFonts.dmSans(
                         fontSize: 18,
-                        color: item.quantity > 0 ? const Color(0xFF212828) : const Color(0xFFCCCCCC),
+                        color: item.quantity > 0
+                            ? const Color(0xFF212828)
+                            : const Color(0xFFCCCCCC),
                       ),
                     ),
                   ),

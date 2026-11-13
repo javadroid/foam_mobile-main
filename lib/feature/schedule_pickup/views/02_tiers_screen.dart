@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
-import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/04_store_page_screen.dart';
 import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
@@ -177,7 +177,32 @@ class _ScheduleTiersScreenState extends State<ScheduleTiersScreen> {
                     ),
                   ),
                   onPressed: () {
-                    Navigator.pushNamed(context, ScheduleItemsScreen.id);
+                    final matched = selectedTier.matchedStore;
+                    if (matched != null) {
+                      final matchedStore = provider.nearbyStores.firstWhere(
+                        (s) => s.id == matched.id.toString(),
+                        orElse: () => NearbyStore(
+                          id: matched.id.toString(),
+                          name: matched.name,
+                          area: '',
+                          address: '',
+                          rating: matched.rating,
+                          distanceKm: matched.distanceKm,
+                          turnaroundDays: matched.turnaroundDays,
+                          turnaroundText:
+                              'Ready in ${matched.turnaroundDays} days',
+                          shirtStartingPrice: selectedTier.startingPrice,
+                        ),
+                      );
+                      provider.selectStore(matchedStore);
+                    }
+                    if (provider.currentStore.id.isNotEmpty) {
+                      provider.loadStoreCatalog(
+                        storeId: provider.currentStore.id,
+                        silent: true,
+                      );
+                    }
+                    Navigator.pushNamed(context, CustomerStorePageScreen.id);
                   },
                   child: Text(
                     'Continue with ${selectedTier.title}',

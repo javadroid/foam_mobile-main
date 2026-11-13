@@ -1,12 +1,24 @@
 part of '../values.dart';
 
 class Constants {
-  // URL
-  // static String url = "http://127.0.0.1:8545";
-  static String url = "http://10.69.179.217:8545";
-  // static String url = "http://192.168.0.75:8545";
-  // static String url = "http://localhost:8545";
-  // static String url = "https://foamlaundryapp.com";
+  // ── API URL ──
+  //
+  // .env → ENV=local  uses localhost (works via `adb reverse tcp:8545 tcp:8545`)
+  // .env → ENV=prod   uses production (default)
+  //
+
+  static const String _prodUrl = 'https://foamlaundryapp.com';
+  static const String _localUrl = 'http://127.0.0.1:8545';
+
+  // Initialized by Constants.init() after dotenv.load() in main()
+  static String url = _prodUrl;
+
+  /// Call once in main() after dotenv.load().
+  static void init() {
+    final env = dotenv.get('ENV', fallback: 'prod');
+    url = (env == 'local') ? _localUrl : _prodUrl;
+    debugPrint('[Constants] ENV=$env → url=$url');
+  }
 
   // PayStack public key
   static String payStackPublicKey =

@@ -243,6 +243,28 @@ class SchedulePickupProvider extends ChangeNotifier {
     } else if (tierId == 'PREMIUM') {
       _selectedTurnaroundDays = 1;
     }
+
+    final matched = currentTier.matchedStore;
+    if (matched != null) {
+      final found = _nearbyStores.firstWhere(
+        (s) => s.id == matched.id.toString(),
+        orElse: () => NearbyStore(
+          id: matched.id.toString(),
+          name: matched.name,
+          area: '',
+          address: '',
+          rating: matched.rating,
+          distanceKm: matched.distanceKm,
+          turnaroundDays: matched.turnaroundDays,
+          turnaroundText: 'Ready in ${matched.turnaroundDays} days',
+          shirtStartingPrice: currentTier.startingPrice,
+        ),
+      );
+      _selectedStore = found;
+      _selectedTurnaroundDays = found.turnaroundDays;
+    } else if (_nearbyStores.isNotEmpty && _selectedStore == null) {
+      _selectedStore = _nearbyStores.first;
+    }
     notifyListeners();
   }
 
@@ -366,6 +388,28 @@ class SchedulePickupProvider extends ChangeNotifier {
     );
   }
 
+  // Service selection: 'Laundry' vs 'Dry cleaning'
+  String _selectedService = 'Laundry';
+  String get selectedService => _selectedService;
+
+  void selectService(String service) {
+    _selectedService = service;
+    notifyListeners();
+  }
+
+  List<ScheduleItem> get filteredItems {
+    final isDryCleaning = _selectedService.toLowerCase().contains('dry');
+    final result = _items.where((i) {
+      final cat = i.category.toLowerCase();
+      if (isDryCleaning) {
+        return cat.contains('dry');
+      } else {
+        return !cat.contains('dry');
+      }
+    }).toList();
+    return result.isNotEmpty ? result : _items;
+  }
+
   // Items & Quantities
   final List<ScheduleItem> _items = [
     ScheduleItem(
@@ -396,6 +440,27 @@ class SchedulePickupProvider extends ChangeNotifier {
         quantity: 0,
         category: 'Laundry',
         foldType: 'Folding'),
+    ScheduleItem(
+        id: 5,
+        name: 'Suit',
+        price: 2500,
+        quantity: 0,
+        category: 'Dry cleaning',
+        foldType: 'Hanger'),
+    ScheduleItem(
+        id: 6,
+        name: 'Native Wear',
+        price: 1500,
+        quantity: 0,
+        category: 'Dry cleaning',
+        foldType: 'Hanger'),
+    ScheduleItem(
+        id: 7,
+        name: 'Dress',
+        price: 2000,
+        quantity: 0,
+        category: 'Dry cleaning',
+        foldType: 'Hanger'),
   ];
   List<ScheduleItem> get items => _items;
 

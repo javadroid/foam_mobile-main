@@ -4,10 +4,29 @@ import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
-class CustomerStorePageScreen extends StatelessWidget {
+class CustomerStorePageScreen extends StatefulWidget {
   static const String id = '/schedule_pickup/store_page';
 
   const CustomerStorePageScreen({super.key});
+
+  @override
+  State<CustomerStorePageScreen> createState() => _CustomerStorePageScreenState();
+}
+
+class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final provider =
+          Provider.of<SchedulePickupProvider>(context, listen: false);
+      final storeId = provider.currentStore.id;
+      if (storeId.isNotEmpty) {
+        provider.loadStoreCatalog(storeId: storeId, silent: true);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +166,7 @@ class CustomerStorePageScreen extends StatelessWidget {
                         'Folding or non-folding · from ₦${store.effectiveTurnaroundOptions.firstWhere((o) => o.days == provider.selectedTurnaroundDays, orElse: () => store.effectiveTurnaroundOptions.first).shirtStartingPrice}',
                     icon: Icons.local_laundry_service_outlined,
                     onTap: () {
+                      provider.selectService('Laundry');
                       Navigator.pushNamed(context, ScheduleItemsScreen.id);
                     },
                   ),
@@ -159,6 +179,7 @@ class CustomerStorePageScreen extends StatelessWidget {
                     subtitle: 'Suits, dresses, native wear · from ₦1,500',
                     icon: Icons.dry_cleaning_outlined,
                     onTap: () {
+                      provider.selectService('Dry cleaning');
                       Navigator.pushNamed(context, ScheduleItemsScreen.id);
                     },
                   ),
@@ -186,6 +207,7 @@ class CustomerStorePageScreen extends StatelessWidget {
                         ),
                       ),
                       onPressed: () {
+                        provider.selectService('Laundry');
                         Navigator.pushNamed(context, ScheduleItemsScreen.id);
                       },
                       child: Text(

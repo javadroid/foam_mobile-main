@@ -194,7 +194,70 @@ void main() {
       expect(find.text('Delivery fee'), findsOneWidget);
       expect(find.text('Service fee'), findsOneWidget);
       expect(find.text('Total'), findsOneWidget);
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -300));
+      await tester.pumpAndSettle();
       expect(find.text('Secure payment by Paystack'), findsOneWidget);
+    });
+
+    testWidgets(
+        '06_checkout_screen allows toggling folding for non-folding items and shows included for store-folded items',
+        (WidgetTester tester) async {
+      final provider = SchedulePickupProvider();
+      final store = const NearbyStore(
+        id: '20',
+        name: 'Deluxe Laundry Studio',
+        area: 'Maitama',
+        address: 'Gana Street',
+        rating: 4.9,
+        distanceKm: 3.5,
+        turnaroundDays: 2,
+        turnaroundText: 'Ready in 2 days',
+        shirtStartingPrice: 600,
+        foldingPrice: 300.0,
+      );
+
+      await provider.selectStore(store);
+
+      // Add a non-folding item to the basket
+      provider.items.add(
+        ScheduleItem(
+          id: 777,
+          name: 'Silk Drapery',
+          price: 1500,
+          foldType: 'NON-FOLDING',
+          quantity: 1,
+          userWantsFolding: false,
+        ),
+      );
+
+      await tester.pumpWidget(
+        ChangeNotifierProvider<SchedulePickupProvider>.value(
+          value: provider,
+          child: const MaterialApp(
+            home: ScheduleCheckoutScreen(),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Store-folded items show Folding included (Free)
+      expect(find.text('Folding included (Free)'), findsWidgets);
+
+      // Non-folding item shows toggleable + Add folding (+₦300)
+      final addFoldingBtn = find.text('+ Add folding (+₦300)');
+      expect(addFoldingBtn, findsOneWidget);
+
+      // Initial folding care is free (since Silk Drapery has not opted into folding yet)
+      expect(find.textContaining('Included (Free)'), findsOneWidget);
+
+      // Tap + Add folding (+₦300) on Silk Drapery right on 06_checkout_screen (Basket screen)
+      await tester.tap(addFoldingBtn);
+      await tester.pumpAndSettle();
+
+      // Now folding is selected on Silk Drapery
+      expect(find.text('Folding (+₦300)'), findsOneWidget);
+      // Store folding care now reflects the ₦300 charge
+      expect(find.textContaining('₦300 (₦300/item)'), findsOneWidget);
     });
 
     testWidgets(

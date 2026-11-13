@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:foam_mobile/core/Screens/profile/profile_image/controller/profile_pic_auth.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/intro_screens/onboarding_screen.dart';
@@ -20,6 +21,10 @@ import 'package:provider/provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Load .env before anything uses Constants.url
+  await dotenv.load(fileName: '.env');
+  Constants.init();
   
   // Use local font assets and filter repetitive GoogleFonts stack traces to a 1-line notice
   GoogleFonts.config.allowRuntimeFetching = true;

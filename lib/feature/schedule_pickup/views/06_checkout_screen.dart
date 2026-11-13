@@ -65,7 +65,8 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
     }
   }
 
-  void _showPickupSlotPicker(BuildContext context, SchedulePickupProvider provider) {
+  void _showPickupSlotPicker(
+      BuildContext context, SchedulePickupProvider provider) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -87,14 +88,16 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
               children: [
                 Text(
                   'Select Pickup Slot',
-                  style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w700),
+                  style: GoogleFonts.dmSans(
+                      fontSize: 18, fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 12),
                 ...slots.map(
                   (s) => ListTile(
                     title: Text(s, style: GoogleFonts.dmSans(fontSize: 15)),
                     trailing: provider.pickupSlot == s
-                        ? const Icon(Icons.check_circle, color: Color(0xFF00AABC))
+                        ? const Icon(Icons.check_circle,
+                            color: Color(0xFF00AABC))
                         : null,
                     onTap: () {
                       provider.setPickupSlot(s);
@@ -124,7 +127,8 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
         backgroundColor: Colors.white,
         elevation: 0.5,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 20),
+          icon: const Icon(Icons.arrow_back_ios_new,
+              color: Color(0xFF212828), size: 20),
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
@@ -146,7 +150,8 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
               // Matched Store Card matching Figma Screen 06
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE5F7F8),
                   borderRadius: BorderRadius.circular(12),
@@ -191,9 +196,11 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                           if (provider.selectedTurnaroundOption != null) ...[
                             const SizedBox(height: 5),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF00AABC).withValues(alpha: 0.12),
+                                color: const Color(0xFF00AABC)
+                                    .withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -234,11 +241,11 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
               // Items breakdown list
               ...items.map(
                 (item) {
-                  final hasFolding = item.foldType.toLowerCase().contains('folding');
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 8.0),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Expanded(
                           child: Column(
@@ -254,15 +261,88 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                                   color: const Color(0xFF212828),
                                 ),
                               ),
-                              if (hasFolding && store.hasFoldingFee)
-                                Text(
-                                  '+₦${store.foldingPrice.round()} folding/unit',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.dmSans(
-                                    fontSize: 11,
-                                    color: const Color(0xFF00AABC),
-                                    fontWeight: FontWeight.w500,
+                              const SizedBox(height: 4),
+                              if (item.storeIncludesFolding)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE5F7F8),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.check_circle,
+                                          size: 11, color: Color(0xFF00AABC)),
+                                      const SizedBox(width: 3),
+                                      Flexible(
+                                        child: Text(
+                                          'Folding included (Free)',
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: GoogleFonts.dmSans(
+                                            fontSize: 10.5,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF00AABC),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              else if (store.hasFoldingFee)
+                                InkWell(
+                                  onTap: () =>
+                                      provider.toggleItemFolding(item.id),
+                                  borderRadius: BorderRadius.circular(4),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: item.userWantsFolding
+                                          ? const Color(0xFF00AABC)
+                                              .withValues(alpha: 0.12)
+                                          : const Color(0xFFF3F4F6),
+                                      borderRadius: BorderRadius.circular(4),
+                                      border: Border.all(
+                                        color: item.userWantsFolding
+                                            ? const Color(0xFF00AABC)
+                                            : const Color(0xFFE5E7EB),
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          item.userWantsFolding
+                                              ? Icons.check_box
+                                              : Icons.check_box_outline_blank,
+                                          size: 13,
+                                          color: item.userWantsFolding
+                                              ? const Color(0xFF00AABC)
+                                              : const Color(0xFF6B7280),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            item.userWantsFolding
+                                                ? 'Folding (+₦${store.foldingPrice.round()})'
+                                                : '+ Add folding (+₦${store.foldingPrice.round()})',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.dmSans(
+                                              fontSize: 10.5,
+                                              fontWeight: FontWeight.w600,
+                                              color: item.userWantsFolding
+                                                  ? const Color(0xFF00AABC)
+                                                  : const Color(0xFF4B5563),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                             ],
@@ -294,11 +374,13 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                  border:
+                      Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
                 ),
                 child: Column(
                   children: [
-                    _buildCalcRow('Item subtotal', '₦${currencyFormatter.format(provider.itemSubtotal)}'),
+                    _buildCalcRow('Item subtotal',
+                        '₦${currencyFormatter.format(provider.itemSubtotal)}'),
                     const SizedBox(height: 10),
                     if (provider.selectedTurnaroundOption != null) ...[
                       _buildCalcRow(
@@ -307,7 +389,10 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                       ),
                       const SizedBox(height: 10),
                     ],
-                    if (provider.items.any((i) => i.quantity > 0 && i.foldType.toLowerCase().contains('folding'))) ...[
+                    if (provider.items.any((i) =>
+                        i.quantity > 0 &&
+                        (i.storeIncludesFolding ||
+                            (i.userWantsFolding && store.hasFoldingFee)))) ...[
                       _buildCalcRow(
                         'Store folding care',
                         store.hasFoldingFee && provider.storeFoldingTotal > 0
@@ -316,9 +401,11 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                       ),
                       const SizedBox(height: 10),
                     ],
-                    _buildCalcRow('Delivery fee', '₦${currencyFormatter.format(provider.deliveryFee)}'),
+                    _buildCalcRow('Delivery fee',
+                        '₦${currencyFormatter.format(provider.deliveryFee)}'),
                     const SizedBox(height: 10),
-                    _buildCalcRow('Service fee', '₦${currencyFormatter.format(provider.serviceFee)}'),
+                    _buildCalcRow('Service fee',
+                        '₦${currencyFormatter.format(provider.serviceFee)}'),
                     const Divider(height: 20, color: Color(0xFFE4E4E4)),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -353,7 +440,7 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
                 ),
               ),
 
-              const SizedBox(height: 28),
+              const SizedBox(height: 20),
 
               // Paystack secure text
               Center(
@@ -455,4 +542,3 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
     );
   }
 }
-
