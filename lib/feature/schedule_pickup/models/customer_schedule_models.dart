@@ -407,7 +407,9 @@ class ScheduleItem {
     this.userWantsFolding = false,
   });
 
-  bool get storeIncludesFolding => foldType.toUpperCase().contains('FOLDING');
+  bool get storeIncludesFolding =>
+      !foldType.toUpperCase().contains('NON') &&
+      foldType.toUpperCase().contains('FOLD');
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
     return ScheduleItem(

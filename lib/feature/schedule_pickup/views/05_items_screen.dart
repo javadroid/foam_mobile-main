@@ -355,12 +355,16 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                       children: [
                         const Icon(Icons.check_circle, size: 11, color: Color(0xFF00AABC)),
                         const SizedBox(width: 3),
-                        Text(
-                          'Folding included',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w600,
-                            color: const Color(0xFF00AABC),
+                        Flexible(
+                          child: Text(
+                            'Folding included',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.dmSans(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                              color: const Color(0xFF00AABC),
+                            ),
                           ),
                         ),
                       ],
@@ -397,16 +401,20 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                                 : const Color(0xFF6B7280),
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            item.userWantsFolding
-                                ? 'Folding (+₦${store.foldingPrice.round()})'
-                                : '+ Add folding (+₦${store.foldingPrice.round()})',
-                            style: GoogleFonts.dmSans(
-                              fontSize: 10.5,
-                              fontWeight: FontWeight.w600,
-                              color: item.userWantsFolding
-                                  ? const Color(0xFF00AABC)
-                                  : const Color(0xFF4B5563),
+                          Flexible(
+                            child: Text(
+                              item.userWantsFolding
+                                  ? 'Folding (+₦${store.foldingPrice.round()})'
+                                  : '+ Add folding (+₦${store.foldingPrice.round()})',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.dmSans(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w600,
+                                color: item.userWantsFolding
+                                    ? const Color(0xFF00AABC)
+                                    : const Color(0xFF4B5563),
+                              ),
                             ),
                           ),
                         ],
