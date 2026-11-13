@@ -163,9 +163,8 @@ class _SafeNetworkImageState extends State<SafeNetworkImage> {
     }
 
     try {
-      final response = await http
-          .get(Uri.parse(resolved))
-          .timeout(widget.timeout);
+      final response =
+          await http.get(Uri.parse(resolved)).timeout(widget.timeout);
 
       if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
         _safeImageCache[resolved] = response.bodyBytes;
@@ -232,11 +231,11 @@ class _SafeNetworkImageState extends State<SafeNetworkImage> {
         height: widget.height,
         fit: widget.fit,
         errorBuilder: (_, __, ___) =>
-            widget.fallbackBuilder?.call(context) ??
-            const SizedBox.shrink(),
+            widget.fallbackBuilder?.call(context) ?? const SizedBox.shrink(),
       );
     } else {
-      content = widget.fallbackBuilder?.call(context) ?? const SizedBox.shrink();
+      content =
+          widget.fallbackBuilder?.call(context) ?? const SizedBox.shrink();
     }
 
     if (widget.shape == BoxShape.circle) {

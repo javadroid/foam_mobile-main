@@ -10,7 +10,8 @@ class CustomerStorePageScreen extends StatefulWidget {
   const CustomerStorePageScreen({super.key});
 
   @override
-  State<CustomerStorePageScreen> createState() => _CustomerStorePageScreenState();
+  State<CustomerStorePageScreen> createState() =>
+      _CustomerStorePageScreenState();
 }
 
 class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
@@ -42,7 +43,8 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
             // Dark Header section matching Figma
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.only(left: 16, right: 16, top: 48, bottom: 24),
+              padding: const EdgeInsets.only(
+                  left: 16, right: 16, top: 48, bottom: 24),
               decoration: const BoxDecoration(
                 color: Color(0xFF001C1F),
               ),
@@ -52,7 +54,8 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                   IconButton(
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(),
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white, size: 18),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: Colors.white, size: 18),
                     onPressed: () => Navigator.pop(context),
                   ),
                   const SizedBox(height: 16),
@@ -77,6 +80,7 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
 
                   // 3 Stats columns
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Expanded(
                         child: _buildStatColumn(
@@ -84,14 +88,6 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                           '${store.reviewCount} reviews',
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildStatColumn(
-                          store.turnaroundText.replaceAll('Ready in ', ''),
-                          'Turnaround',
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
                         child: _buildStatColumn(
                           store.operatingHours,
@@ -106,49 +102,11 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
 
             // Services Body with Turnaround Speed selector
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Turnaround Speed',
-                    style: GoogleFonts.dmSans(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF212828),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: store.effectiveTurnaroundOptions.map((opt) {
-                      final isSelected =
-                          provider.selectedTurnaroundDays == opt.days;
-                      return ChoiceChip(
-                        label: Text(
-                          '${opt.days} ${opt.days == 1 ? "Day" : "Days"} (${opt.name}) · ₦${opt.shirtStartingPrice}',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            fontWeight: isSelected
-                                ? FontWeight.w700
-                                : FontWeight.w500,
-                            color: isSelected
-                                ? Colors.white
-                                : const Color(0xFF212828),
-                          ),
-                        ),
-                        selected: isSelected,
-                        selectedColor: const Color(0xFF00AABC),
-                        backgroundColor: const Color(0xFFF0F3F3),
-                        checkmarkColor: Colors.white,
-                        onSelected: (_) =>
-                            provider.selectTurnaroundDays(opt.days),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 20),
-
                   Text(
                     'Services',
                     style: GoogleFonts.dmSans(
@@ -249,6 +207,7 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
         Text(
           label,
           maxLines: 1,
+          textAlign: TextAlign.right,
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.dmSans(
             fontSize: 12,
@@ -312,7 +271,8 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 16, color: Color(0xFF212828)),
+            const Icon(Icons.arrow_forward_ios_rounded,
+                size: 16, color: Color(0xFF212828)),
           ],
         ),
       ),

@@ -64,7 +64,7 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
               Text(
                 provider.selectedService == 'Dry cleaning'
                     ? 'Dry cleaning'
-                    : 'Laundry · Folding',
+                    : 'Laundry',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.dmSans(
@@ -94,46 +94,6 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Turnaround Speed Selector Header
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Turnaround Speed',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: const Color(0xFF212828),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  if (turnaroundOption != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE5F7F8),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        '${turnaroundOption.name} · ${turnaroundOption.days}d SLA',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.dmSans(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF00AABC),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 8),
-
               // Turnaround Option Chips
               if (turnaroundOptions.isNotEmpty)
                 SingleChildScrollView(
@@ -180,9 +140,10 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
               Row(
                 children: [
                   Expanded(
-                    child: InkWell(
+                    child: GestureDetector(
+                      key: const Key('service_tab_laundry'),
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => provider.selectService('Laundry'),
-                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -210,9 +171,10 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: InkWell(
+                    child: GestureDetector(
+                      key: const Key('service_tab_dry_cleaning'),
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => provider.selectService('Dry cleaning'),
-                      borderRadius: BorderRadius.circular(8),
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 8),
                         decoration: BoxDecoration(
@@ -226,9 +188,10 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                             'Dry cleaning',
                             style: GoogleFonts.dmSans(
                               fontSize: 13,
-                              fontWeight: provider.selectedService == 'Dry cleaning'
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
+                              fontWeight:
+                                  provider.selectedService == 'Dry cleaning'
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                               color: provider.selectedService == 'Dry cleaning'
                                   ? Colors.white
                                   : const Color(0xFF475569),
@@ -251,16 +214,44 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
                             const Divider(height: 1, color: Color(0xFFE4E4E4)),
                         itemBuilder: (_, __) => AppSkeletonLoader.itemRow(),
                       )
-                    : ListView.separated(
-                        itemCount: provider.filteredItems.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1, color: Color(0xFFE4E4E4)),
-                        itemBuilder: (context, index) {
-                          final item = provider.filteredItems[index];
-                          return _buildItemRow(context, item, provider, store,
-                              currencyFormatter);
-                        },
-                      ),
+                    : provider.filteredItems.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 40.0),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    provider.selectedService == 'Dry cleaning'
+                                        ? Icons.dry_cleaning_outlined
+                                        : Icons.local_laundry_service_outlined,
+                                    size: 48,
+                                    color: const Color(0xFF94A3B8),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'No ${provider.selectedService.toLowerCase()} items available',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF64748B),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.separated(
+                            itemCount: provider.filteredItems.length,
+                            separatorBuilder: (_, __) => const Divider(
+                                height: 1, color: Color(0xFFE4E4E4)),
+                            itemBuilder: (context, index) {
+                              final item = provider.filteredItems[index];
+                              return _buildItemRow(context, item, provider,
+                                  store, currencyFormatter);
+                            },
+                          ),
               ),
 
               // Bottom sticky View Basket bar matching Figma Screen 05
@@ -349,7 +340,7 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              item.category.toLowerCase().contains('dry')
+              provider.isDryCleaningItem(item)
                   ? Icons.dry_cleaning_outlined
                   : Icons.checkroom_outlined,
               color: const Color(0xFF00AABC),

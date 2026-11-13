@@ -20,8 +20,8 @@ class CustomerScheduleService {
 
   /// Fetch dynamic tiers for "Let Foam choose" with geo-reach fallback
   static Future<List<ScheduleTier>> fetchTiers({
-    double lat = 6.4474,
-    double lng = 3.4723,
+    required double lat,
+    required double lng,
   }) async {
     try {
       final uri =
@@ -51,52 +51,17 @@ class CustomerScheduleService {
         }
       }
     } catch (e) {
-      debugPrint(
-          'Error fetching tiers from backend: $e. Using Figma tier fallback.');
+      debugPrint('Error fetching tiers from backend: $e');
     }
 
-    latestTierMetadata = const TierMetadata(
-      storeCount: 9,
-      radiusKm: 5.0,
-      isFallback: false,
-      subtitleText:
-          'Based on 9 live stores within 5 km. Prices are for a shirt, washed and folded.',
-    );
-
-    // Default Figma fallback matching Screen 02
-    return const [
-      ScheduleTier(
-        id: 'BEST_VALUE',
-        title: 'Best value',
-        startingPrice: 350,
-        turnaroundDays: 3,
-        turnaroundText: 'Ready in 3 days · ★ 4.2 average',
-        isMostPicked: false,
-      ),
-      ScheduleTier(
-        id: 'BALANCED',
-        title: 'Balanced',
-        startingPrice: 500,
-        turnaroundDays: 2,
-        turnaroundText: 'Ready in 2 days · ★ 4.6 average',
-        isMostPicked: true,
-        badge: 'MOST PICKED',
-      ),
-      ScheduleTier(
-        id: 'PREMIUM',
-        title: 'Premium',
-        startingPrice: 800,
-        turnaroundDays: 1,
-        turnaroundText: 'Next-day · ★ 4.8 average',
-        isMostPicked: false,
-      ),
-    ];
+    latestTierMetadata = null;
+    return const [];
   }
 
   /// Fetch nearby stores for "Pick a store" with geo-reach fallback
   static Future<List<NearbyStore>> fetchNearbyStores({
-    double lat = 6.4474,
-    double lng = 3.4723,
+    required double lat,
+    required double lng,
     String filter = 'closest',
   }) async {
     try {
@@ -115,10 +80,9 @@ class CustomerScheduleService {
         }
       }
     } catch (e) {
-      debugPrint('Error fetching nearby stores: $e. Using Figma fallback.');
+      debugPrint('Error fetching nearby stores: $e');
     }
 
-    // Figma Screen 03 store list fallback
     return const [];
   }
 
@@ -139,62 +103,10 @@ class CustomerScheduleService {
         }
       }
     } catch (e) {
-      debugPrint(
-          'Error fetching store catalog: $e. Using Figma catalog fallback.');
+      debugPrint('Error fetching store catalog: $e');
     }
 
-    // Figma Screen 05 fallback items
-    return [
-      ScheduleItem(
-          id: 1,
-          name: 'Shirt',
-          price: 500,
-          quantity: 4,
-          category: 'Laundry',
-          foldType: 'Folding'),
-      ScheduleItem(
-          id: 2,
-          name: 'T-shirt',
-          price: 400,
-          quantity: 2,
-          category: 'Laundry',
-          foldType: 'Folding'),
-      ScheduleItem(
-          id: 3,
-          name: 'Trousers',
-          price: 600,
-          quantity: 0,
-          category: 'Laundry',
-          foldType: 'Folding'),
-      ScheduleItem(
-          id: 4,
-          name: 'Bedsheet',
-          price: 900,
-          quantity: 0,
-          category: 'Laundry',
-          foldType: 'Folding'),
-      ScheduleItem(
-          id: 5,
-          name: 'Suit',
-          price: 2500,
-          quantity: 0,
-          category: 'Dry cleaning',
-          foldType: 'Hanger'),
-      ScheduleItem(
-          id: 6,
-          name: 'Native Wear',
-          price: 1500,
-          quantity: 0,
-          category: 'Dry cleaning',
-          foldType: 'Hanger'),
-      ScheduleItem(
-          id: 7,
-          name: 'Dress',
-          price: 2000,
-          quantity: 0,
-          category: 'Dry cleaning',
-          foldType: 'Hanger'),
-    ];
+    return const [];
   }
 
   /// Create order with Paystack only

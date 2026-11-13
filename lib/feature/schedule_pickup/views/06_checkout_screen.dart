@@ -442,18 +442,6 @@ class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
 
               const SizedBox(height: 20),
 
-              // Paystack secure text
-              Center(
-                child: Text(
-                  'Secure payment by Paystack',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w400,
-                    color: const Color(0xFF5E5E5E),
-                  ),
-                ),
-              ),
-
               const SizedBox(height: 12),
 
               // Pay button opens pickup address screen

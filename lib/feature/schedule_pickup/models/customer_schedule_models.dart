@@ -412,12 +412,24 @@ class ScheduleItem {
       foldType.toUpperCase().contains('FOLD');
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
+    String parsedCategory = 'Laundry';
+    final rawCat = json['category'];
+    if (rawCat is String && rawCat.trim().isNotEmpty) {
+      parsedCategory = rawCat.trim();
+    } else if (rawCat is Map && rawCat['name'] != null) {
+      parsedCategory = rawCat['name'].toString().trim();
+    } else if (json['serviceType'] is String) {
+      parsedCategory = (json['serviceType'] as String).trim();
+    } else if (json['service'] is String) {
+      parsedCategory = (json['service'] as String).trim();
+    }
+
     return ScheduleItem(
       id: (json['id'] ?? json['categoryId'] as num?)?.toInt() ?? 0,
       name: json['name'] as String? ?? 'Item',
       price: (json['price'] as num?)?.toInt() ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      category: json['category'] as String? ?? 'Laundry',
+      category: parsedCategory,
       foldType: json['foldType'] as String? ?? 'Folding',
       imageUrl: json['imageUrl'] as String?,
       userWantsFolding: json['userWantsFolding'] == true,

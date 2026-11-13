@@ -102,9 +102,22 @@ class SchedulePickupProvider extends ChangeNotifier {
       debugPrint('Error loading saved location from backend: $e');
     }
 
-    // 3. If address is present but coordinates are default placeholder, geocode the address
+    // 3. Check Hive stored delivery address if available
+    try {
+      if (!_isLocationLoaded || _pickupAddress.isEmpty) {
+        final savedDelivery = HiveClass.getDeliveryDetails();
+        final hiveAddress = savedDelivery['address'];
+        if (hiveAddress != null && hiveAddress.trim().isNotEmpty) {
+          _pickupAddress = hiveAddress.trim();
+          _isLocationLoaded = true;
+          notifyListeners();
+        }
+      }
+    } catch (_) {}
+
+    // 4. If address is present but coordinates are default placeholder, geocode the address
     final isLagosPlaceholder = (_pickupLat == 6.4474 && _pickupLng == 3.4723);
-    if (isLagosPlaceholder &&
+    if ((isLagosPlaceholder || _pickupLat == 0.0) &&
         _pickupAddress.isNotEmpty &&
         !_pickupAddress.contains('Lekki')) {
       try {
@@ -114,6 +127,25 @@ class SchedulePickupProvider extends ChangeNotifier {
             suggestions.first.details.latitude != 0.0) {
           _pickupLat = suggestions.first.details.latitude;
           _pickupLng = suggestions.first.details.longitude;
+          notifyListeners();
+        }
+      } catch (_) {}
+    }
+
+    // 5. If still no saved location, attempt to auto-detect device position
+    if (!_isLocationLoaded) {
+      try {
+        final pos = await LocationService.getCurrentPosition();
+        if (pos != null) {
+          _pickupLat = pos.latitude;
+          _pickupLng = pos.longitude;
+          try {
+            final details = await LocationService.autoDetectLocation();
+            if (details != null && details.formattedAddress.isNotEmpty) {
+              _pickupAddress = details.formattedAddress;
+            }
+          } catch (_) {}
+          _isLocationLoaded = true;
           notifyListeners();
         }
       } catch (_) {}
@@ -397,71 +429,90 @@ class SchedulePickupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  bool isDryCleaningItem(ScheduleItem item) {
+    final cat = item.category.trim().toLowerCase();
+    final fold = item.foldType.trim().toLowerCase();
+    final name = item.name.trim().toLowerCase();
+
+    // If category or fold explicitly denotes laundry/wash/fold, it is not dry cleaning
+    if (cat.contains('laund') ||
+        cat.contains('wash') ||
+        fold.contains('fold')) {
+      return false;
+    }
+
+    // Check dry cleaning explicitly
+    if (cat.startsWith('dry') ||
+        cat.contains('dry clean') ||
+        cat.contains('dryclean') ||
+        cat.contains('dry-clean')) {
+      return true;
+    }
+
+    // Hanger folding denotes dry cleaning
+    if (fold.contains('hanger')) {
+      return true;
+    }
+
+    // Common garment types traditionally dry-cleaned
+    if (name.contains('suit') ||
+        name.contains('tuxedo') ||
+        name.contains('blazer') ||
+        name.contains('gown') ||
+        name.contains('native')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  List<ScheduleItem> get laundryItems =>
+      _items.where((i) => !isDryCleaningItem(i)).toList();
+
+  List<ScheduleItem> get dryCleaningItems =>
+      _items.where((i) => isDryCleaningItem(i)).toList();
+
+  /// Starting (lowest) price for Laundry items taking the current turnaround multiplier into account
+  int get lowestLaundryStartingPrice {
+    final list = laundryItems;
+    if (list.isNotEmpty) {
+      final minBase = list.map((i) => i.price).reduce((a, b) => a < b ? a : b);
+      return (minBase * turnaroundMultiplier).round();
+    }
+    // Fallback to store shirt starting price if catalog items not yet loaded
+    final options = currentStore.effectiveTurnaroundOptions;
+    final opt = options.firstWhere(
+      (o) => o.days == _selectedTurnaroundDays,
+      orElse: () => options.first,
+    );
+    return opt.shirtStartingPrice;
+  }
+
+  /// Starting (lowest) price for Dry cleaning items taking the current turnaround multiplier into account
+  int get lowestDryCleaningStartingPrice {
+    final list = dryCleaningItems;
+    if (list.isNotEmpty) {
+      final minBase = list.map((i) => i.price).reduce((a, b) => a < b ? a : b);
+      return (minBase * turnaroundMultiplier).round();
+    }
+    // Fallback default for dry cleaning
+    return (1500 * turnaroundMultiplier).round();
+  }
+
+  bool isDryCleaningService(String service) {
+    final s = service.trim().toLowerCase();
+    return s.startsWith('dry') ||
+        s.contains('dry clean') ||
+        s.contains('dryclean');
+  }
+
   List<ScheduleItem> get filteredItems {
-    final isDryCleaning = _selectedService.toLowerCase().contains('dry');
-    final result = _items.where((i) {
-      final cat = i.category.toLowerCase();
-      if (isDryCleaning) {
-        return cat.contains('dry');
-      } else {
-        return !cat.contains('dry');
-      }
-    }).toList();
-    return result.isNotEmpty ? result : _items;
+    final isDryCleaning = isDryCleaningService(_selectedService);
+    return isDryCleaning ? dryCleaningItems : laundryItems;
   }
 
   // Items & Quantities
-  final List<ScheduleItem> _items = [
-    ScheduleItem(
-        id: 1,
-        name: 'Shirt',
-        price: 500,
-        quantity: 4,
-        category: 'Laundry',
-        foldType: 'Folding'),
-    ScheduleItem(
-        id: 2,
-        name: 'T-shirt',
-        price: 400,
-        quantity: 2,
-        category: 'Laundry',
-        foldType: 'Folding'),
-    ScheduleItem(
-        id: 3,
-        name: 'Trousers',
-        price: 600,
-        quantity: 0,
-        category: 'Laundry',
-        foldType: 'Folding'),
-    ScheduleItem(
-        id: 4,
-        name: 'Bedsheet',
-        price: 900,
-        quantity: 0,
-        category: 'Laundry',
-        foldType: 'Folding'),
-    ScheduleItem(
-        id: 5,
-        name: 'Suit',
-        price: 2500,
-        quantity: 0,
-        category: 'Dry cleaning',
-        foldType: 'Hanger'),
-    ScheduleItem(
-        id: 6,
-        name: 'Native Wear',
-        price: 1500,
-        quantity: 0,
-        category: 'Dry cleaning',
-        foldType: 'Hanger'),
-    ScheduleItem(
-        id: 7,
-        name: 'Dress',
-        price: 2000,
-        quantity: 0,
-        category: 'Dry cleaning',
-        foldType: 'Hanger'),
-  ];
+  final List<ScheduleItem> _items = [];
   List<ScheduleItem> get items => _items;
 
   bool _isItemsLoading = false;
