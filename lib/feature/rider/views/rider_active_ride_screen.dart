@@ -59,13 +59,25 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     });
   }
 
+  double _calculateDistanceKm(LatLng p1, LatLng p2) {
+    const earthRadius = 6371.0; // km
+    final dLat = (p2.latitude - p1.latitude) * (math.pi / 180.0);
+    final dLon = (p2.longitude - p1.longitude) * (math.pi / 180.0);
+    final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(p1.latitude * (math.pi / 180.0)) *
+            math.cos(p2.latitude * (math.pi / 180.0)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return earthRadius * c;
+  }
+
   void _promptPinModal({
     required String title,
     required String description,
-    required String expectedPin,
     required Function(String) onPinConfirmed,
   }) {
-    _pinController.text = expectedPin; // Pre-fill with expected PIN for smooth testing
+    _pinController.clear(); // Always blank; rider must ask customer in person
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -132,7 +144,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00AABC),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: () {
                   final pin = _pinController.text.trim();
@@ -141,7 +154,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                     onPinConfirmed(pin);
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter valid 4-digit PIN')),
+                      const SnackBar(
+                          content: Text('Please enter valid 4-digit PIN')),
                     );
                   }
                 },
@@ -206,17 +220,13 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Stage Progression Stepper
-              _buildProgressionStepper(stage),
-              const SizedBox(height: 18),
-
-              // 2. Interactive Navigation Map (Customer Location on accept -> Store Location after PIN)
+              // 1. Interactive Navigation Map (Customer Location on accept -> Store Location after PIN)
               if (stage != 'DELIVERED' && stage != 'DROPPED_AT_STORE') ...[
                 _buildNavigationMapCard(ride, stage, provider),
                 const SizedBox(height: 18),
               ],
 
-              // 3. Main Action Card or Completion Card
+              // 2. Main Action Card or Completion Card
               if (stage == 'DELIVERED' || stage == 'DROPPED_AT_STORE')
                 _buildDeliveryCelebrationCard(ride, provider)
               else
@@ -235,118 +245,18 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     );
   }
 
-  Widget _buildProgressionStepper(String currentStage) {
-    final steps = [
-      {'key': 'EN_ROUTE_TO_STORE', 'label': 'En Route'},
-      {'key': 'PICKED_UP', 'label': 'Picked Up'},
-      {'key': 'DROPPED_AT_STORE', 'label': 'At Store'},
-      {'key': 'DELIVERED', 'label': 'Delivered'},
-    ];
-
-    int currentIndex = steps.indexWhere((s) => s['key'] == currentStage);
-    if (currentIndex == -1) {
-      if (currentStage == 'OUT_FOR_DELIVERY') {
-        currentIndex = 2;
-      } else if (currentStage == 'DROPPED_AT_STORE') {
-        currentIndex = 3;
-      } else {
-        currentIndex = 0;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black.withOpacity(0.06)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Delivery Progression',
-            style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 14),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(steps.length, (index) {
-              final step = steps[index];
-              final isDone = index < currentIndex;
-              final isCurrent = index == currentIndex;
-
-              return Expanded(
-                child: Column(
-                  children: [
-                    Row(
-                      children: [
-                        if (index > 0)
-                          Expanded(
-                            child: Container(
-                              height: 3,
-                              color: isDone || isCurrent
-                                  ? const Color(0xFF00AABC)
-                                  : Colors.black12,
-                            ),
-                          ),
-                        Container(
-                          width: 24,
-                          height: 24,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDone
-                                ? const Color(0xFF21CAAD)
-                                : (isCurrent
-                                    ? const Color(0xFF00AABC)
-                                    : Colors.black12),
-                          ),
-                          child: Icon(
-                            isDone ? Icons.check : Icons.circle,
-                            size: 14,
-                            color: Colors.white,
-                          ),
-                        ),
-                        if (index < steps.length - 1)
-                          Expanded(
-                            child: Container(
-                              height: 3,
-                              color: isDone ? const Color(0xFF00AABC) : Colors.black12,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      step['label']!,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 10,
-                        fontWeight: isCurrent ? FontWeight.bold : FontWeight.w500,
-                        color: isCurrent
-                            ? const Color(0xFF00AABC)
-                            : (isDone ? const Color(0xFF21CAAD) : Colors.black45),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            }),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationMapCard(ActiveRide ride, String stage, RiderProvider provider) {
+  Widget _buildNavigationMapCard(
+      ActiveRide ride, String stage, RiderProvider provider) {
     final rider = provider.currentRider;
-    final riderPos = (rider?.coverageLatitude != null && rider?.coverageLongitude != null)
-        ? LatLng(rider!.coverageLatitude!, rider.coverageLongitude!)
-        : const LatLng(4.8633, 7.0292);
+    final riderPos =
+        (rider?.coverageLatitude != null && rider?.coverageLongitude != null)
+            ? LatLng(rider!.coverageLatitude!, rider.coverageLongitude!)
+            : const LatLng(4.8633, 7.0292);
 
-    final customerPos = (ride.customerLatitude != null && ride.customerLongitude != null)
-        ? LatLng(ride.customerLatitude!, ride.customerLongitude!)
-        : LatLng(riderPos.latitude + 0.012, riderPos.longitude + 0.008);
+    final customerPos =
+        (ride.customerLatitude != null && ride.customerLongitude != null)
+            ? LatLng(ride.customerLatitude!, ride.customerLongitude!)
+            : LatLng(riderPos.latitude + 0.012, riderPos.longitude + 0.008);
 
     final storePos = (ride.storeLatitude != null && ride.storeLongitude != null)
         ? LatLng(ride.storeLatitude!, ride.storeLongitude!)
@@ -355,33 +265,44 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     final bool isHeadingToStore = (stage == 'PICKED_UP');
     final LatLng targetPos = isHeadingToStore ? storePos : customerPos;
 
+    final double distanceKm = _calculateDistanceKm(riderPos, targetPos);
+    final int etaMins = math.max(3, (distanceKm / 25.0 * 60).round() + 2);
+
     final String targetTitle = isHeadingToStore
         ? 'Store Drop-off: ${ride.storeName}'
         : 'Customer Pickup: ${ride.customerName}';
 
     final String targetAddress = isHeadingToStore
         ? (ride.storeAddress.isNotEmpty ? ride.storeAddress : 'Store Location')
-        : (ride.pickupAddress.isNotEmpty ? ride.pickupAddress : 'Customer Pickup Address');
+        : (ride.pickupAddress.isNotEmpty
+            ? ride.pickupAddress
+            : 'Customer Pickup Address');
 
     final String badgeLabel = isHeadingToStore
         ? 'NAVIGATING TO STORE LOCATION'
         : 'NAVIGATING TO CUSTOMER LOCATION';
 
-    final Color badgeColor = isHeadingToStore ? const Color(0xFFFFA000) : const Color(0xFF00AABC);
-    final IconData badgeIcon = isHeadingToStore ? Icons.storefront_rounded : Icons.location_on_rounded;
+    final Color badgeColor =
+        isHeadingToStore ? const Color(0xFFFFA000) : const Color(0xFF00AABC);
+    final IconData badgeIcon =
+        isHeadingToStore ? Icons.storefront_rounded : Icons.location_on_rounded;
 
     final markers = <Marker>{
       Marker(
         markerId: const MarkerId('rider_pos'),
         position: riderPos,
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
-        infoWindow: const InfoWindow(title: 'You (Rider)', snippet: 'Current Position'),
+        infoWindow:
+            const InfoWindow(title: 'You (Rider)', snippet: 'Current Position'),
       ),
       Marker(
-        markerId: MarkerId(isHeadingToStore ? 'store_target' : 'customer_target'),
+        markerId:
+            MarkerId(isHeadingToStore ? 'store_target' : 'customer_target'),
         position: targetPos,
         icon: BitmapDescriptor.defaultMarkerWithHue(
-          isHeadingToStore ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed,
+          isHeadingToStore
+              ? BitmapDescriptor.hueOrange
+              : BitmapDescriptor.hueRed,
         ),
         infoWindow: InfoWindow(title: targetTitle, snippet: targetAddress),
       ),
@@ -389,7 +310,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
 
     final polylines = <Polyline>{
       Polyline(
-        polylineId: PolylineId(isHeadingToStore ? 'route_to_store' : 'route_to_customer'),
+        polylineId: PolylineId(
+            isHeadingToStore ? 'route_to_store' : 'route_to_customer'),
         points: [riderPos, targetPos],
         color: const Color(0xFF00AABC),
         width: 4,
@@ -442,7 +364,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                   onTap: () => _fitRouteBounds(riderPos, targetPos),
                   borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF1F5F9),
                       borderRadius: BorderRadius.circular(6),
@@ -450,7 +373,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.my_location, size: 13, color: Color(0xFF00AABC)),
+                        const Icon(Icons.my_location,
+                            size: 13, color: Color(0xFF00AABC)),
                         const SizedBox(width: 4),
                         Text(
                           'Recenter',
@@ -468,28 +392,89 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
             ),
           ),
           SizedBox(
-            height: 220,
+            height: 350,
             width: double.infinity,
-            child: ClipRRect(
-              child: GoogleMap(
-                initialCameraPosition: CameraPosition(
-                  target: riderPos,
-                  zoom: 14.0,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: ClipRRect(
+                    child: GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: riderPos,
+                        zoom: 14.0,
+                      ),
+                      markers: markers,
+                      polylines: polylines,
+                      zoomControlsEnabled: false,
+                      myLocationButtonEnabled: false,
+                      compassEnabled: false,
+                      mapToolbarEnabled: false,
+                      gestureRecognizers:
+                          <Factory<OneSequenceGestureRecognizer>>{
+                        Factory<OneSequenceGestureRecognizer>(
+                            () => EagerGestureRecognizer()),
+                      },
+                      onMapCreated: (controller) {
+                        _mapController = controller;
+                        _fitRouteBounds(riderPos, targetPos);
+                      },
+                    ),
+                  ),
                 ),
-                markers: markers,
-                polylines: polylines,
-                zoomControlsEnabled: false,
-                myLocationButtonEnabled: false,
-                compassEnabled: false,
-                mapToolbarEnabled: false,
-                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                  Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
-                },
-                onMapCreated: (controller) {
-                  _mapController = controller;
-                  _fitRouteBounds(riderPos, targetPos);
-                },
-              ),
+                // Prominent Floating ETA Badge over the map
+                Positioned(
+                  top: 12,
+                  left: 12,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF001C1F).withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(10),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.timer_outlined,
+                            color: Color(0xFF21CAAD), size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Est. Arrival: ~$etaMins mins',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF21CAAD).withOpacity(0.22),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            '${distanceKm.toStringAsFixed(1)} km',
+                            style: GoogleFonts.dmSans(
+                              color: const Color(0xFF21CAAD),
+                              fontWeight: FontWeight.bold,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Container(
@@ -511,7 +496,9 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    isHeadingToStore ? Icons.storefront : Icons.person_pin_circle,
+                    isHeadingToStore
+                        ? Icons.storefront
+                        : Icons.person_pin_circle,
                     size: 16,
                     color: badgeColor,
                   ),
@@ -550,7 +537,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     );
   }
 
-  Widget _buildActiveLegCard(ActiveRide ride, String stage, RiderProvider provider) {
+  Widget _buildActiveLegCard(
+      ActiveRide ride, String stage, RiderProvider provider) {
     String title = '';
     String subtitle = '';
     String buttonText = '';
@@ -559,33 +547,34 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
 
     if (stage == 'EN_ROUTE_TO_STORE') {
       title = 'Head to Pickup Location';
-      subtitle = 'Arrive at ${ride.pickupAddress.isNotEmpty ? ride.pickupAddress : ride.storeName} to collect laundry and input customer PIN.';
+      subtitle =
+          'Arrive at ${ride.pickupAddress.isNotEmpty ? ride.pickupAddress : ride.storeName} to collect laundry and input customer PIN.';
       buttonText = 'Arrived at Pickup & Enter Customer PIN';
       buttonIcon = Icons.pin;
       onAction = () {
         _promptPinModal(
           title: 'Confirm Pickup from Customer',
           description: 'Ask customer for their 4-digit pickup PIN.',
-          expectedPin: ride.pickupPin ?? '1234',
           onPinConfirmed: (pin) => _advanceStage('PICKED_UP', pin: pin),
         );
       };
     } else if (stage == 'PICKED_UP') {
       title = 'Head to Store Drop-off';
-      subtitle = 'Items collected! Follow the map to ${ride.storeName} (${ride.storeAddress.isNotEmpty ? ride.storeAddress : "Store location"}).';
+      subtitle =
+          'Items collected! Follow the map to ${ride.storeName} (${ride.storeAddress.isNotEmpty ? ride.storeAddress : "Store location"}).';
       buttonText = 'Confirm Drop-off at Store';
       buttonIcon = Icons.storefront;
       onAction = () => _advanceStage('DROPPED_AT_STORE');
     } else if (stage == 'OUT_FOR_DELIVERY') {
       title = 'Delivering to Destination';
-      subtitle = 'Deliver package to ${ride.customerName} at ${ride.deliveryAddress}.';
+      subtitle =
+          'Deliver package to ${ride.customerName} at ${ride.deliveryAddress}.';
       buttonText = 'Confirm Handover & Enter Delivery PIN';
       buttonIcon = Icons.verified;
       onAction = () {
         _promptPinModal(
           title: 'Customer Delivery PIN',
           description: 'Ask customer for the 4-digit delivery PIN to complete.',
-          expectedPin: ride.deliveryPin ?? '5678',
           onPinConfirmed: (pin) => _advanceStage('DELIVERED', pin: pin),
         );
       };
@@ -620,7 +609,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.schedule_rounded, color: Color(0xFFF57F17), size: 18),
+                  const Icon(Icons.schedule_rounded,
+                      color: Color(0xFFF57F17), size: 18),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -656,7 +646,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
             child: ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00AABC),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
               ),
               onPressed: provider.isLoading ? null : onAction,
               icon: provider.isLoading
@@ -683,9 +674,12 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.redAccent,
                   side: const BorderSide(color: Colors.redAccent, width: 1.2),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10)),
                 ),
-                onPressed: provider.isLoading ? null : () => _confirmCancelRide(ride.orderId),
+                onPressed: provider.isLoading
+                    ? null
+                    : () => _confirmCancelRide(ride.orderId),
                 icon: const Icon(Icons.close_rounded, size: 18),
                 label: Text(
                   'Cancel Ride (Release to Nearby Riders)',
@@ -709,37 +703,45 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
-            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 26),
+            const Icon(Icons.warning_amber_rounded,
+                color: Colors.redAccent, size: 26),
             const SizedBox(width: 8),
             Text(
               'Cancel This Ride?',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
+              style:
+                  GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
             ),
           ],
         ),
         content: Text(
           'Are you sure you want to cancel this pickup? The ride will immediately be made available to other nearby riders.',
-          style: GoogleFonts.dmSans(fontSize: 14, color: const Color(0xFF5E5E5E)),
+          style:
+              GoogleFonts.dmSans(fontSize: 14, color: const Color(0xFF5E5E5E)),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: Text('Keep Ride', style: GoogleFonts.dmSans(color: Colors.black54, fontWeight: FontWeight.bold)),
+            child: Text('Keep Ride',
+                style: GoogleFonts.dmSans(
+                    color: Colors.black54, fontWeight: FontWeight.bold)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             onPressed: () async {
               Navigator.pop(ctx);
-              final provider = Provider.of<RiderProvider>(context, listen: false);
+              final provider =
+                  Provider.of<RiderProvider>(context, listen: false);
               final ok = await provider.cancelRide(orderId);
               if (!mounted) return;
               if (ok) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text('Ride cancelled. Order released to nearby riders.'),
+                    content: Text(
+                        'Ride cancelled. Order released to nearby riders.'),
                     backgroundColor: Colors.green,
                   ),
                 );
@@ -747,20 +749,24 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text(provider.errorMessage ?? 'Failed to cancel ride'),
+                    content:
+                        Text(provider.errorMessage ?? 'Failed to cancel ride'),
                     backgroundColor: Colors.redAccent,
                   ),
                 );
               }
             },
-            child: Text('Cancel Ride', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text('Cancel Ride',
+                style: GoogleFonts.dmSans(
+                    color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildDeliveryCelebrationCard(ActiveRide ride, RiderProvider provider) {
+  Widget _buildDeliveryCelebrationCard(
+      ActiveRide ride, RiderProvider provider) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(24),
@@ -846,7 +852,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00AABC),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
                 provider.finishActiveRide();
@@ -854,7 +861,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
               },
               child: Text(
                 'Return to Rider Dashboard',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
@@ -876,7 +884,8 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
         children: [
           Text(
             'Delivery Information',
-            style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 14),
+            style:
+                GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 14),
           ),
           const SizedBox(height: 14),
           _buildDetailRow(
@@ -897,7 +906,9 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Trip Payout', style: GoogleFonts.dmSans(fontSize: 13, color: Colors.black54)),
+              Text('Trip Payout',
+                  style:
+                      GoogleFonts.dmSans(fontSize: 13, color: Colors.black54)),
               Text(
                 '₦${currencyFormatter.format(ride.earnings)}',
                 style: GoogleFonts.dmSans(
@@ -929,9 +940,17 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black45, fontWeight: FontWeight.w600)),
-              Text(title, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.bold)),
-              Text(subtitle, style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54)),
+              Text(label,
+                  style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      color: Colors.black45,
+                      fontWeight: FontWeight.w600)),
+              Text(title,
+                  style: GoogleFonts.dmSans(
+                      fontSize: 13, fontWeight: FontWeight.bold)),
+              Text(subtitle,
+                  style:
+                      GoogleFonts.dmSans(fontSize: 12, color: Colors.black54)),
             ],
           ),
         ),

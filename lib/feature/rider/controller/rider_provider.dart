@@ -604,7 +604,6 @@ class RiderProvider extends ChangeNotifier {
         if (data['order'] != null) {
           _currentActiveRide = ActiveRide.fromJson({
             ...data,
-            'pin': data['order']?['pickupPin'] ?? ride.pin,
             'scheduledPickupTime': data['scheduledPickupTime'] ?? ride.scheduledPickupTime,
           });
         } else {

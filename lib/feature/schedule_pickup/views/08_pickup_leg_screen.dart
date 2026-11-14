@@ -133,9 +133,6 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     final turnaroundOpt = provider.selectedTurnaroundOption;
     final turnaroundName =
         turnaroundOpt?.name ?? provider.currentStore.turnaroundText;
-    final deliveryPin = tracking?.deliveryPin.isNotEmpty == true
-        ? tracking!.deliveryPin
-        : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '');
     final pickupPin = tracking?.pickupPin.isNotEmpty == true
         ? tracking!.pickupPin
         : (provider.lastCreatedOrder?['pickupPin'] as String? ?? '');
@@ -432,7 +429,7 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Delivery PIN',
+                                  'Pickup PIN',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w500,
@@ -441,40 +438,32 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  deliveryPin,
+                                  pickupPin.isNotEmpty ? pickupPin : '••••',
                                   style: GoogleFonts.dmSans(
-                                    fontSize: 22,
+                                    fontSize: 24,
                                     fontWeight: FontWeight.w800,
-                                    color: const Color(0xFF001C1F),
+                                    color: const Color(0xFF00AABC),
                                     letterSpacing: 4,
                                   ),
                                 ),
                               ],
                             ),
-                            if (pickupPin.isNotEmpty)
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Text(
-                                    'Pickup PIN',
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w500,
-                                      color: const Color(0xFF6B7280),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    pickupPin,
-                                    style: GoogleFonts.dmSans(
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      color: const Color(0xFF00AABC),
-                                      letterSpacing: 4,
-                                    ),
-                                  ),
-                                ],
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE0F7FA),
+                                borderRadius: BorderRadius.circular(8),
                               ),
+                              child: Text(
+                                'Give to Rider at Pickup',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF00AABC),
+                                ),
+                              ),
+                            ),
                           ],
                         ),
                       ],
