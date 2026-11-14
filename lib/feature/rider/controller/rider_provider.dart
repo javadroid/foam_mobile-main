@@ -7,6 +7,7 @@ import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
 import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_registration_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/models/rate_model.dart';
 import 'package:foam_mobile/utils/values.dart';
 
 class RiderProvider extends ChangeNotifier {
@@ -20,6 +21,11 @@ class RiderProvider extends ChangeNotifier {
   List<RiderDeliveryHistoryItem> _history = [];
   List<RiderTransactionItem> _transactions = [];
   double _walletBalance = 0.0;
+  List<RateModel> _reviews = [];
+  RatingSummary _ratingSummary = const RatingSummary();
+
+  List<RateModel> get reviews => _reviews;
+  RatingSummary get ratingSummary => _ratingSummary;
 
   RiderProfile? get currentRider => _currentRider;
   String? get token => _token;
@@ -527,8 +533,10 @@ class RiderProvider extends ChangeNotifier {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['rides'] is List) {
+          final maxRadius = _currentRider?.coverageRadiusKm ?? 10.0;
           _availableRides = (data['rides'] as List)
               .map((r) => AvailableRide.fromJson(r))
+              .where((r) => r.distanceKm <= maxRadius)
               .toList();
         }
       } else {
@@ -696,7 +704,7 @@ class RiderProvider extends ChangeNotifier {
         final data = jsonDecode(response.body);
         _currentActiveRide!.stage = nextStage;
 
-        if (nextStage == 'DELIVERED') {
+        if (nextStage == 'DELIVERED' || nextStage == 'DROPPED_AT_STORE') {
           if (data['newWalletBalance'] != null) {
             _walletBalance = double.tryParse(data['newWalletBalance'].toString()) ?? _walletBalance;
           } else {
@@ -967,6 +975,39 @@ class RiderProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return true;
+    }
+  }
+
+  /// Fetch real customer reviews and ratings for this rider
+  Future<void> fetchRiderReviews() async {
+    try {
+      final activeToken =
+          (_token != null && _token!.isNotEmpty) ? _token! : HiveClass.getToken();
+      if (activeToken.isEmpty) return;
+
+      final response = await http.get(
+        Uri.parse('$_baseUrl/api/rider/reviews'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $activeToken',
+        },
+      ).timeout(const Duration(seconds: 8));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['summary'] is Map<String, dynamic>) {
+          _ratingSummary =
+              RatingSummary.fromJson(data['summary'] as Map<String, dynamic>);
+        }
+        if (data['ratings'] is List) {
+          _reviews = (data['ratings'] as List)
+              .map((r) => RateModel.fromJson(r as Map<String, dynamic>))
+              .toList();
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      debugPrint('Error fetching rider reviews: $e');
     }
   }
 }

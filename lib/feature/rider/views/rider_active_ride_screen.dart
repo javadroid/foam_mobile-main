@@ -1,5 +1,9 @@
+import 'dart:math' as math;
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
@@ -18,11 +22,41 @@ class RiderActiveRideScreen extends StatefulWidget {
 class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
   final currencyFormatter = NumberFormat('#,###');
   final _pinController = TextEditingController();
+  GoogleMapController? _mapController;
+  String? _lastRenderedStage;
 
   @override
   void dispose() {
     _pinController.dispose();
+    _mapController?.dispose();
     super.dispose();
+  }
+
+  void _fitRouteBounds(LatLng p1, LatLng p2) {
+    if (_mapController == null) return;
+    final south = math.min(p1.latitude, p2.latitude);
+    final north = math.max(p1.latitude, p2.latitude);
+    final west = math.min(p1.longitude, p2.longitude);
+    final east = math.max(p1.longitude, p2.longitude);
+
+    final bounds = LatLngBounds(
+      southwest: LatLng(south, west),
+      northeast: LatLng(north, east),
+    );
+
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted && _mapController != null) {
+        if ((north - south).abs() < 0.0005 && (east - west).abs() < 0.0005) {
+          _mapController!
+              .animateCamera(CameraUpdate.newLatLngZoom(p1, 15.0))
+              .catchError((_) {});
+        } else {
+          _mapController!
+              .animateCamera(CameraUpdate.newLatLngBounds(bounds, 50))
+              .catchError((_) {});
+        }
+      }
+    });
   }
 
   void _promptPinModal({
@@ -174,17 +208,23 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
             children: [
               // 1. Stage Progression Stepper
               _buildProgressionStepper(stage),
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // 2. Main Action Card or Completion Card
-              if (stage == 'DELIVERED')
+              // 2. Interactive Navigation Map (Customer Location on accept -> Store Location after PIN)
+              if (stage != 'DELIVERED' && stage != 'DROPPED_AT_STORE') ...[
+                _buildNavigationMapCard(ride, stage, provider),
+                const SizedBox(height: 18),
+              ],
+
+              // 3. Main Action Card or Completion Card
+              if (stage == 'DELIVERED' || stage == 'DROPPED_AT_STORE')
                 _buildDeliveryCelebrationCard(ride, provider)
               else
                 _buildActiveLegCard(ride, stage, provider),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 18),
 
-              // 3. Trip & Contact Details
+              // 4. Trip & Contact Details
               _buildTripDetailsCard(ride),
 
               const SizedBox(height: 40),
@@ -199,12 +239,20 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     final steps = [
       {'key': 'EN_ROUTE_TO_STORE', 'label': 'En Route'},
       {'key': 'PICKED_UP', 'label': 'Picked Up'},
-      {'key': 'OUT_FOR_DELIVERY', 'label': 'On The Way'},
+      {'key': 'DROPPED_AT_STORE', 'label': 'At Store'},
       {'key': 'DELIVERED', 'label': 'Delivered'},
     ];
 
     int currentIndex = steps.indexWhere((s) => s['key'] == currentStage);
-    if (currentIndex == -1) currentIndex = 0;
+    if (currentIndex == -1) {
+      if (currentStage == 'OUT_FOR_DELIVERY') {
+        currentIndex = 2;
+      } else if (currentStage == 'DROPPED_AT_STORE') {
+        currentIndex = 3;
+      } else {
+        currentIndex = 0;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -290,6 +338,218 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     );
   }
 
+  Widget _buildNavigationMapCard(ActiveRide ride, String stage, RiderProvider provider) {
+    final rider = provider.currentRider;
+    final riderPos = (rider?.coverageLatitude != null && rider?.coverageLongitude != null)
+        ? LatLng(rider!.coverageLatitude!, rider.coverageLongitude!)
+        : const LatLng(4.8633, 7.0292);
+
+    final customerPos = (ride.customerLatitude != null && ride.customerLongitude != null)
+        ? LatLng(ride.customerLatitude!, ride.customerLongitude!)
+        : LatLng(riderPos.latitude + 0.012, riderPos.longitude + 0.008);
+
+    final storePos = (ride.storeLatitude != null && ride.storeLongitude != null)
+        ? LatLng(ride.storeLatitude!, ride.storeLongitude!)
+        : const LatLng(4.8156, 7.0498);
+
+    final bool isHeadingToStore = (stage == 'PICKED_UP');
+    final LatLng targetPos = isHeadingToStore ? storePos : customerPos;
+
+    final String targetTitle = isHeadingToStore
+        ? 'Store Drop-off: ${ride.storeName}'
+        : 'Customer Pickup: ${ride.customerName}';
+
+    final String targetAddress = isHeadingToStore
+        ? (ride.storeAddress.isNotEmpty ? ride.storeAddress : 'Store Location')
+        : (ride.pickupAddress.isNotEmpty ? ride.pickupAddress : 'Customer Pickup Address');
+
+    final String badgeLabel = isHeadingToStore
+        ? 'NAVIGATING TO STORE LOCATION'
+        : 'NAVIGATING TO CUSTOMER LOCATION';
+
+    final Color badgeColor = isHeadingToStore ? const Color(0xFFFFA000) : const Color(0xFF00AABC);
+    final IconData badgeIcon = isHeadingToStore ? Icons.storefront_rounded : Icons.location_on_rounded;
+
+    final markers = <Marker>{
+      Marker(
+        markerId: const MarkerId('rider_pos'),
+        position: riderPos,
+        icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
+        infoWindow: const InfoWindow(title: 'You (Rider)', snippet: 'Current Position'),
+      ),
+      Marker(
+        markerId: MarkerId(isHeadingToStore ? 'store_target' : 'customer_target'),
+        position: targetPos,
+        icon: BitmapDescriptor.defaultMarkerWithHue(
+          isHeadingToStore ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed,
+        ),
+        infoWindow: InfoWindow(title: targetTitle, snippet: targetAddress),
+      ),
+    };
+
+    final polylines = <Polyline>{
+      Polyline(
+        polylineId: PolylineId(isHeadingToStore ? 'route_to_store' : 'route_to_customer'),
+        points: [riderPos, targetPos],
+        color: const Color(0xFF00AABC),
+        width: 4,
+        patterns: [PatternItem.dash(14), PatternItem.gap(6)],
+      ),
+    };
+
+    if (_lastRenderedStage != stage) {
+      _lastRenderedStage = stage;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _fitRouteBounds(riderPos, targetPos);
+      });
+    }
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.black.withOpacity(0.08)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            child: Row(
+              children: [
+                Icon(badgeIcon, color: badgeColor, size: 18),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    badgeLabel,
+                    style: GoogleFonts.dmSans(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                      color: badgeColor,
+                    ),
+                  ),
+                ),
+                InkWell(
+                  onTap: () => _fitRouteBounds(riderPos, targetPos),
+                  borderRadius: BorderRadius.circular(6),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.my_location, size: 13, color: Color(0xFF00AABC)),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Recenter',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF00AABC),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 220,
+            width: double.infinity,
+            child: ClipRRect(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: riderPos,
+                  zoom: 14.0,
+                ),
+                markers: markers,
+                polylines: polylines,
+                zoomControlsEnabled: false,
+                myLocationButtonEnabled: false,
+                compassEnabled: false,
+                mapToolbarEnabled: false,
+                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                  Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                },
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                  _fitRouteBounds(riderPos, targetPos);
+                },
+              ),
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFAFAFA),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(14),
+                bottomRight: Radius.circular(14),
+              ),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: badgeColor.withOpacity(0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isHeadingToStore ? Icons.storefront : Icons.person_pin_circle,
+                    size: 16,
+                    color: badgeColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        targetTitle,
+                        style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: const Color(0xFF212828),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        targetAddress,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontSize: 12,
+                          color: Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActiveLegCard(ActiveRide ride, String stage, RiderProvider provider) {
     String title = '';
     String subtitle = '';
@@ -311,11 +571,11 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
         );
       };
     } else if (stage == 'PICKED_UP') {
-      title = 'Items Picked Up Successfully';
-      subtitle = 'Packages secured in vehicle. Proceed towards destination (${ride.deliveryAddress.isNotEmpty ? ride.deliveryAddress : ride.storeAddress}).';
-      buttonText = 'Start Journey to Delivery / Store';
-      buttonIcon = Icons.directions_bike;
-      onAction = () => _advanceStage('OUT_FOR_DELIVERY');
+      title = 'Head to Store Drop-off';
+      subtitle = 'Items collected! Follow the map to ${ride.storeName} (${ride.storeAddress.isNotEmpty ? ride.storeAddress : "Store location"}).';
+      buttonText = 'Confirm Drop-off at Store';
+      buttonIcon = Icons.storefront;
+      onAction = () => _advanceStage('DROPPED_AT_STORE');
     } else if (stage == 'OUT_FOR_DELIVERY') {
       title = 'Delivering to Destination';
       subtitle = 'Deliver package to ${ride.customerName} at ${ride.deliveryAddress}.';
@@ -532,7 +792,9 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Delivery Completed!',
+            ride.stage == 'DROPPED_AT_STORE'
+                ? 'Dropped Off at Store!'
+                : 'Delivery Completed!',
             style: GoogleFonts.dmSans(
               fontSize: 22,
               fontWeight: FontWeight.bold,
@@ -541,7 +803,9 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            'Order ${ride.orderNumber} successfully completed and verified.',
+            ride.stage == 'DROPPED_AT_STORE'
+                ? 'Order ${ride.orderNumber} successfully delivered to ${ride.storeName}. Earnings credited to your wallet.'
+                : 'Order ${ride.orderNumber} successfully completed and verified.',
             textAlign: TextAlign.center,
             style: GoogleFonts.dmSans(fontSize: 13, color: Colors.black54),
           ),

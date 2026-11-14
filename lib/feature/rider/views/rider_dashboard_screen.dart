@@ -8,6 +8,7 @@ import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
 import 'package:foam_mobile/feature/rider/views/rider_active_ride_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_history_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_profile_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_wallet_screen.dart';
 
 class RiderDashboardScreen extends StatefulWidget {
@@ -24,8 +25,9 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final provider = Provider.of<RiderProvider>(context, listen: false);
+      await provider.fetchRiderProfile();
       if (provider.isApproved) {
         provider.fetchAvailableRides();
         provider.fetchWallet();
@@ -43,7 +45,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => RiderActiveRideScreen(ride: provider.currentActiveRide!),
+          builder: (_) =>
+              RiderActiveRideScreen(ride: provider.currentActiveRide!),
         ),
       );
     } else {
@@ -72,161 +75,177 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
         }
       },
       child: Scaffold(
-      backgroundColor: const Color(0xFFF8FAFB),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              rider?.name.isNotEmpty == true ? rider!.name : 'Rider Console',
-              style: GoogleFonts.dmSans(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: const Color(0xFF212828),
+        backgroundColor: const Color(0xFFF8FAFB),
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0.5,
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                rider?.name.isNotEmpty == true ? rider!.name : 'Rider Console',
+                style: GoogleFonts.dmSans(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: const Color(0xFF212828),
+                ),
               ),
+              Row(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: !isApproved
+                          ? const Color(0xFFFFA000)
+                          : (isOnline ? const Color(0xFF21CAAD) : Colors.grey),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    !isApproved
+                        ? 'PENDING APPROVAL'
+                        : (isOnline ? 'ONLINE & READY' : 'OFFLINE'),
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: !isApproved
+                          ? const Color(0xFFFFA000)
+                          : (isOnline ? const Color(0xFF21CAAD) : Colors.grey),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            if (isApproved)
+              Row(
+                children: [
+                  Text(
+                    isOnline ? 'Go Offline' : 'Go Online',
+                    style: GoogleFonts.dmSans(
+                        fontSize: 12, fontWeight: FontWeight.w600),
+                  ),
+                  Switch(
+                    value: isOnline,
+                    activeThumbColor: const Color(0xFF00AABC),
+                    onChanged: (val) => provider.toggleOnlineStatus(val),
+                  ),
+                ],
+              ),
+            IconButton(
+              icon: const Icon(Icons.account_balance_wallet_outlined,
+                  color: Color(0xFF00AABC)),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiderWalletScreen()),
+                );
+              },
             ),
-            Row(
-              children: [
-                Container(
-                  width: 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: !isApproved
-                        ? const Color(0xFFFFA000)
-                        : (isOnline ? const Color(0xFF21CAAD) : Colors.grey),
-                  ),
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  !isApproved
-                      ? 'PENDING APPROVAL'
-                      : (isOnline ? 'ONLINE & READY' : 'OFFLINE'),
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: !isApproved
-                        ? const Color(0xFFFFA000)
-                        : (isOnline ? const Color(0xFF21CAAD) : Colors.grey),
-                  ),
-                ),
-              ],
+            IconButton(
+              icon: const Icon(Icons.history, color: Color(0xFF212828)),
+              tooltip: 'Ride History',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiderHistoryScreen()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.person_outline_rounded,
+                  color: Color(0xFF212828)),
+              tooltip: 'Rider Profile',
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const RiderProfileScreen()),
+                );
+              },
             ),
           ],
         ),
-        actions: [
-          if (isApproved)
-            Row(
-              children: [
-                Text(
-                  isOnline ? 'Go Offline' : 'Go Online',
-                  style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w600),
-                ),
-                Switch(
-                  value: isOnline,
-                  activeThumbColor: const Color(0xFF00AABC),
-                  onChanged: (val) => provider.toggleOnlineStatus(val),
-                ),
-              ],
-            ),
-          IconButton(
-            icon: const Icon(Icons.account_balance_wallet_outlined, color: Color(0xFF00AABC)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RiderWalletScreen()),
-              );
+        body: SafeArea(
+          child: RefreshIndicator(
+            color: const Color(0xFF00AABC),
+            onRefresh: () async {
+              await provider.fetchRiderProfile();
+              if (provider.isApproved) {
+                await provider.fetchAvailableRides();
+                await provider.fetchWallet();
+              }
             },
-          ),
-          IconButton(
-            icon: const Icon(Icons.history, color: Color(0xFF212828)),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const RiderHistoryScreen()),
-              );
-            },
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: RefreshIndicator(
-          color: const Color(0xFF00AABC),
-          onRefresh: () async {
-            if (isApproved) {
-              await provider.fetchAvailableRides();
-              await provider.fetchWallet();
-            }
-          },
-          child: SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 1. Pending Approval Banner
-                if (!isApproved) ...[
-                  _buildPendingApprovalBanner(),
-                  const SizedBox(height: 20),
-                ],
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 1. Pending Approval Banner
+                  if (!isApproved) ...[
+                    _buildPendingApprovalBanner(),
+                    const SizedBox(height: 20),
+                  ],
 
-                // 2. Metrics Summary Row
-                _buildMetricsRow(provider),
-                const SizedBox(height: 16),
+                  // 2. Metrics Summary Row
+                  _buildMetricsRow(provider),
+                  const SizedBox(height: 16),
 
-                // Coverage Zone & Radius Adjust Card
-                _buildCoverageZoneCard(provider),
-                const SizedBox(height: 24),
+                  // Coverage Zone & Radius Adjust Card
+                  _buildCoverageZoneCard(provider),
+                  const SizedBox(height: 24),
 
-                // 3. Active Delivery Alert Banner (if ride active)
-                if (provider.currentActiveRide != null) ...[
-                  _buildActiveRideBanner(provider.currentActiveRide!),
-                  const SizedBox(height: 20),
-                ],
+                  // 3. Active Delivery Alert Banner (if ride active)
+                  if (provider.currentActiveRide != null) ...[
+                    _buildActiveRideBanner(provider.currentActiveRide!),
+                    const SizedBox(height: 20),
+                  ],
 
-                // 4. Section Title & Broadcast Header
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Available Broadcast Rides',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: const Color(0xFF212828),
-                      ),
-                    ),
-                    if (isApproved)
+                  // 4. Section Title & Broadcast Header
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
                       Text(
-                        '${provider.availableRides.length} Live',
+                        'Available Broadcast Rides',
                         style: GoogleFonts.dmSans(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF00AABC),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: const Color(0xFF212828),
                         ),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 12),
+                      if (isApproved)
+                        Text(
+                          '${provider.availableRides.length} Live',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF00AABC),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
 
-                // 5. Available Rides List or Gated / Empty State
-                if (!isApproved)
-                  _buildGatedState()
-                else if (provider.availableRides.isEmpty)
-                  _buildEmptyRidesState()
-                else
-                  ...provider.availableRides.map((ride) => _buildRideCard(ride, provider)),
+                  // 5. Available Rides List or Gated / Empty State
+                  if (!isApproved)
+                    _buildGatedState()
+                  else if (provider.availableRides.isEmpty)
+                    _buildEmptyRidesState()
+                  else
+                    ...provider.availableRides
+                        .map((ride) => _buildRideCard(ride, provider)),
 
-                const SizedBox(height: 40),
-              ],
+                  const SizedBox(height: 40),
+                ],
+              ),
             ),
           ),
         ),
       ),
-    ),
-  );
+    );
   }
 
   Widget _buildPendingApprovalBanner() {
@@ -243,7 +262,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.warning_amber_rounded, color: Color(0xFFFFA000), size: 24),
+              const Icon(Icons.warning_amber_rounded,
+                  color: Color(0xFFFFA000), size: 24),
               const SizedBox(width: 8),
               Text(
                 'Approval In Progress',
@@ -258,7 +278,55 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             'Your rider profile is currently pending verification by Foam Operations. Live customer dispatch alerts will appear automatically as soon as your registration is approved.',
-            style: GoogleFonts.dmSans(fontSize: 13, color: const Color(0xFF5D4037)),
+            style: GoogleFonts.dmSans(
+                fontSize: 13, color: const Color(0xFF5D4037)),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () async {
+                final p = Provider.of<RiderProvider>(context, listen: false);
+                final updated = await p.fetchRiderProfile();
+                if (mounted) {
+                  if (updated?.approvalStatus.toUpperCase() == 'APPROVED') {
+                    await p.fetchAvailableRides();
+                    await p.fetchWallet();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('🎉 Your rider account is now approved!'),
+                        backgroundColor: Color(0xFF10B981),
+                      ),
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                            'Status refreshed. Account is still pending approval.'),
+                        backgroundColor: Color(0xFFFFA000),
+                      ),
+                    );
+                  }
+                }
+              },
+              icon: const Icon(Icons.refresh_rounded, size: 18),
+              label: Text(
+                'Check Approval Status',
+                style: GoogleFonts.dmSans(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 13,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFFFA000),
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -280,7 +348,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
         Expanded(
           child: _buildMetricCard(
             title: 'Completed',
-            value: '${provider.currentRider?.totalRides ?? provider.history.length}',
+            value:
+                '${provider.currentRider?.totalRides ?? provider.history.length}',
             icon: Icons.check_circle_outline,
             color: const Color(0xFF21CAAD),
           ),
@@ -289,7 +358,9 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
         Expanded(
           child: _buildMetricCard(
             title: 'Rider Rating',
-            value: '★ ${provider.currentRider?.rating ?? 5.0}',
+            value: (provider.currentRider?.isNew ?? true)
+                ? 'New'
+                : '★ ${provider.currentRider!.rating.toStringAsFixed(1)}',
             icon: Icons.star_border,
             color: const Color(0xFFFFA000),
           ),
@@ -353,20 +424,27 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.directions_bike, color: Color(0xFF00AABC)),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Active Delivery (${ride.orderNumber})',
-                    style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 15,
-                      color: const Color(0xFF00AABC),
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.directions_bike, color: Color(0xFF00AABC)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Active Delivery (${ride.orderNumber})',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: const Color(0xFF00AABC),
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
@@ -387,7 +465,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           const SizedBox(height: 8),
           Text(
             'Deliver from ${ride.storeName} to ${ride.deliveryAddress}',
-            style: GoogleFonts.dmSans(fontSize: 13, color: const Color(0xFF212828)),
+            style: GoogleFonts.dmSans(
+                fontSize: 13, color: const Color(0xFF212828)),
           ),
           const SizedBox(height: 12),
           SizedBox(
@@ -395,17 +474,20 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF00AABC),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => RiderActiveRideScreen(ride: ride)),
+                  MaterialPageRoute(
+                      builder: (_) => RiderActiveRideScreen(ride: ride)),
                 );
               },
               child: Text(
                 'Open Delivery Progress Tracker',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, color: Colors.white),
+                style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold, color: Colors.white),
               ),
             ),
           ),
@@ -436,16 +518,22 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                ride.orderNumber,
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: const Color(0xFF212828),
+              Expanded(
+                child: Text(
+                  ride.orderNumber,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: const Color(0xFF212828),
+                  ),
                 ),
               ),
+              const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: const Color(0xFFE5F7F8),
                   borderRadius: BorderRadius.circular(6),
@@ -465,7 +553,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.storefront_outlined, size: 18, color: Color(0xFF00AABC)),
+              const Icon(Icons.storefront_outlined,
+                  size: 18, color: Color(0xFF00AABC)),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -473,11 +562,13 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                   children: [
                     Text(
                       ride.storeName,
-                      style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     Text(
                       ride.pickupAddress,
-                      style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 12),
+                      style: GoogleFonts.dmSans(
+                          color: Colors.black54, fontSize: 12),
                     ),
                   ],
                 ),
@@ -488,7 +579,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.location_on_outlined, size: 18, color: Colors.redAccent),
+              const Icon(Icons.location_on_outlined,
+                  size: 18, color: Colors.redAccent),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
@@ -496,11 +588,13 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                   children: [
                     Text(
                       'Customer: ${ride.customerName}',
-                      style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 13),
+                      style: GoogleFonts.dmSans(
+                          fontWeight: FontWeight.bold, fontSize: 13),
                     ),
                     Text(
                       ride.deliveryAddress,
-                      style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 12),
+                      style: GoogleFonts.dmSans(
+                          color: Colors.black54, fontSize: 12),
                     ),
                   ],
                 ),
@@ -519,7 +613,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFFF57F17)),
+                  const Icon(Icons.schedule_rounded,
+                      size: 14, color: Color(0xFFF57F17)),
                   const SizedBox(width: 6),
                   Text(
                     'Pickup Schedule: ${ride.pickupTime}',
@@ -539,21 +634,26 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.route_outlined, size: 16, color: Colors.black54),
+                  const Icon(Icons.route_outlined,
+                      size: 16, color: Colors.black54),
                   const SizedBox(width: 4),
                   Text(
                     '${ride.distanceKm} km trip',
-                    style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+                    style:
+                        GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
                   ),
                 ],
               ),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF00AABC),
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
-                onPressed: provider.isLoading ? null : () => _handleAcceptRide(ride),
+                onPressed:
+                    provider.isLoading ? null : () => _handleAcceptRide(ride),
                 icon: const Icon(Icons.flash_on, size: 16, color: Colors.white),
                 label: Text(
                   'Accept Ride',
@@ -582,7 +682,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
       ),
       child: Column(
         children: [
-          const Icon(Icons.lock_clock_outlined, size: 48, color: Color(0xFFFFA000)),
+          const Icon(Icons.lock_clock_outlined,
+              size: 48, color: Color(0xFFFFA000)),
           const SizedBox(height: 12),
           Text(
             'Order Broadcast Locked',
@@ -671,7 +772,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                       color: const Color(0xFFE0F7FA),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.radar_rounded, color: Color(0xFF00AABC), size: 20),
+                    child: const Icon(Icons.radar_rounded,
+                        color: Color(0xFF00AABC), size: 20),
                   ),
                   const SizedBox(width: 10),
                   Column(
@@ -700,11 +802,14 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
               OutlinedButton.icon(
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFF00AABC)),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8)),
                 ),
                 onPressed: () => _showAdjustCoverageModal(provider),
-                icon: const Icon(Icons.tune_rounded, size: 16, color: Color(0xFF00AABC)),
+                icon: const Icon(Icons.tune_rounded,
+                    size: 16, color: Color(0xFF00AABC)),
                 label: Text(
                   'Adjust',
                   style: GoogleFonts.dmSans(
@@ -725,12 +830,14 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF6B7280)),
+                const Icon(Icons.location_on_outlined,
+                    size: 14, color: Color(0xFF6B7280)),
                 const SizedBox(width: 4),
                 Expanded(
                   child: Text(
                     'Center: ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)} · Orders broadcast within this radius',
-                    style: GoogleFonts.dmSans(fontSize: 11, color: const Color(0xFF6B7280)),
+                    style: GoogleFonts.dmSans(
+                        fontSize: 11, color: const Color(0xFF6B7280)),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -822,7 +929,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF00AABC),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
                   ),
                   onPressed: isSaving
                       ? null
@@ -850,7 +958,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
                       ? const SizedBox(
                           width: 20,
                           height: 20,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
                         )
                       : Text(
                           'Save Coverage Area',

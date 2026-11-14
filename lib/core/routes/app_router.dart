@@ -3,6 +3,7 @@ import 'package:foam_mobile/feature/rider/views/rider_dashboard_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_active_ride_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_history_screen.dart';
 import 'package:foam_mobile/feature/rider/views/rider_wallet_screen.dart';
+import 'package:foam_mobile/feature/rider/views/rider_profile_screen.dart';
 import 'package:foam_mobile/feature/rider/models/rider_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/01_how_to_choose_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/02_tiers_screen.dart';
@@ -370,6 +371,12 @@ class AppRouter {
       case RiderWalletScreen.id:
         return MaterialPageRoute(
           builder: (_) => const RiderWalletScreen(),
+          settings: settings,
+        );
+
+      case RiderProfileScreen.id:
+        return MaterialPageRoute(
+          builder: (_) => const RiderProfileScreen(),
           settings: settings,
         );
 

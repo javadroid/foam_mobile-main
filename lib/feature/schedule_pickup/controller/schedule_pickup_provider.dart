@@ -605,17 +605,31 @@ class SchedulePickupProvider extends ChangeNotifier {
   OrderTrackingData? _trackingData;
   OrderTrackingData? get trackingData => _trackingData;
 
-  int _ratingStore = 4;
+  int _ratingStore = 0;
   int get ratingStore => _ratingStore;
   void setRatingStore(int r) {
     _ratingStore = r;
     notifyListeners();
   }
 
-  int _ratingRider = 5;
+  int _ratingRider = 0;
   int get ratingRider => _ratingRider;
   void setRatingRider(int r) {
     _ratingRider = r;
+    notifyListeners();
+  }
+
+  String _reviewComments = '';
+  String get reviewComments => _reviewComments;
+  void setReviewComments(String c) {
+    _reviewComments = c;
+    notifyListeners();
+  }
+
+  void resetRatings() {
+    _ratingStore = 0;
+    _ratingRider = 0;
+    _reviewComments = '';
     notifyListeners();
   }
 
@@ -880,12 +894,15 @@ class SchedulePickupProvider extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      return await CustomerScheduleService.submitReview(
+      final res = await CustomerScheduleService.submitReview(
         orderId: orderId,
-        storeRating: _ratingStore,
-        riderRating: _ratingRider,
-        comments: comments,
+        storeRating: _ratingStore > 0 ? _ratingStore : null,
+        riderRating: _ratingRider > 0 ? _ratingRider : null,
+        comments: (comments != null && comments.trim().isNotEmpty)
+            ? comments
+            : (_reviewComments.trim().isNotEmpty ? _reviewComments : null),
       );
+      return res['status'] == true;
     } finally {
       _isLoading = false;
       notifyListeners();

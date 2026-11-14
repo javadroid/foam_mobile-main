@@ -332,22 +332,49 @@ class NearbyStoresScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.star_rounded,
-                              size: 16, color: Color(0xFFF59E0B)),
-                          const SizedBox(width: 2),
-                          Text(
-                            store.rating.toStringAsFixed(1),
+                      if (store.isNew)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFE0F2FE),
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                          child: Text(
+                            'New',
                             style: GoogleFonts.dmSans(
-                              fontSize: 13,
+                              fontSize: 11.5,
                               fontWeight: FontWeight.w700,
-                              color: const Color(0xFF212828),
+                              color: const Color(0xFF0284C7),
                             ),
                           ),
-                        ],
-                      ),
+                        )
+                      else
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.star_rounded,
+                                size: 16, color: Color(0xFFF59E0B)),
+                            const SizedBox(width: 2),
+                            Text(
+                              store.rating.toStringAsFixed(1),
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF212828),
+                              ),
+                            ),
+                            if (store.reviewCount > 0)
+                              Text(
+                                ' (${store.reviewCount})',
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 11.5,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xFF6B7280),
+                                ),
+                              ),
+                          ],
+                        ),
                     ],
                   ),
                   const SizedBox(height: 3),

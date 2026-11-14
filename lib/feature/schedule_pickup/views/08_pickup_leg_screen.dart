@@ -852,7 +852,7 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              '★ ${rider?.rating ?? 4.9} · ${rider?.vehicle ?? rider?.subtitle ?? 'Express Delivery'}',
+                              '${rider != null ? (rider.isNew ? 'New Rider' : '★ ${rider.rating.toStringAsFixed(1)}') : 'Foam Rider'} · ${rider?.vehicle ?? rider?.subtitle ?? 'Express Delivery'}',
                               style: GoogleFonts.dmSans(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w400,

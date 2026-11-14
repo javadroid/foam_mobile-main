@@ -1,3 +1,20 @@
+String formatCleanOrderNumber(dynamic raw) {
+  if (raw == null) return 'FOAM-0000';
+  String val = raw.toString().trim();
+  if (val.isEmpty) return 'FOAM-0000';
+  if (val.toUpperCase().startsWith('FOAM-')) {
+    val = val.substring(5);
+  } else if (val.toUpperCase().startsWith('FM-')) {
+    val = val.substring(3);
+  }
+  final clean = val.replaceAll('-', '').trim();
+  if (clean.isEmpty) return 'FOAM-0000';
+  if (clean.length <= 8) {
+    return 'FOAM-${clean.toUpperCase()}';
+  }
+  return 'FOAM-${clean.substring(0, 8).toUpperCase()}';
+}
+
 class RiderProfile {
   final String id;
   final String name;
@@ -15,6 +32,7 @@ class RiderProfile {
   final String approvalStatus; // "PENDING", "APPROVED", "REJECTED"
   final bool isOnline;
   final double rating;
+  final int ratingCount;
   final int totalRides;
   final double walletBalance;
 
@@ -34,10 +52,16 @@ class RiderProfile {
     this.coverageRoute,
     this.approvalStatus = 'PENDING',
     this.isOnline = false,
-    this.rating = 5.0,
+    this.rating = 0.0,
+    this.ratingCount = 0,
     this.totalRides = 0,
     this.walletBalance = 0.0,
   });
+
+  bool get isNew => ratingCount == 0 || rating == 0.0;
+  String get formattedRating => isNew ? 'New' : rating.toStringAsFixed(1);
+  String get displayRating =>
+      isNew ? 'New Rider' : '★ ${rating.toStringAsFixed(1)}';
 
   factory RiderProfile.fromJson(Map<String, dynamic> json) {
     return RiderProfile(
@@ -63,8 +87,9 @@ class RiderProfile {
       approvalStatus: json['approvalStatus']?.toString() ?? 'PENDING',
       isOnline: json['isOnline'] == true,
       rating: json['rating'] != null
-          ? (double.tryParse(json['rating'].toString()) ?? 5.0)
-          : 5.0,
+          ? (double.tryParse(json['rating'].toString()) ?? 0.0)
+          : 0.0,
+      ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
       totalRides: json['totalRides'] is int
           ? json['totalRides']
           : (int.tryParse(json['totalRides'].toString()) ?? 0),
@@ -90,6 +115,10 @@ class AvailableRide {
   final double earnings;
   final double deliveryFee;
   final double distanceKm;
+  final double? customerLatitude;
+  final double? customerLongitude;
+  final double? storeLatitude;
+  final double? storeLongitude;
   final String? scheduledPickupTime;
   final String? pickupTime;
   final String? pickupDate;
@@ -109,6 +138,10 @@ class AvailableRide {
     required this.earnings,
     required this.deliveryFee,
     this.distanceKm = 4.2,
+    this.customerLatitude,
+    this.customerLongitude,
+    this.storeLatitude,
+    this.storeLongitude,
     this.scheduledPickupTime,
     this.pickupTime,
     this.pickupDate,
@@ -119,7 +152,7 @@ class AvailableRide {
   factory AvailableRide.fromJson(Map<String, dynamic> json) {
     return AvailableRide(
       id: json['id']?.toString() ?? (json['orderId']?.toString() ?? ''),
-      orderNumber: json['orderNumber']?.toString() ?? 'FOAM-0000',
+      orderNumber: formatCleanOrderNumber(json['orderNumber'] ?? json['id'] ?? json['orderId']),
       storeName: json['storeName']?.toString() ?? 'Foam Laundry Hub',
       storeAddress: json['storeAddress']?.toString() ?? '',
       pickupAddress: json['pickupAddress']?.toString() ?? '',
@@ -138,6 +171,18 @@ class AvailableRide {
       distanceKm: json['distanceKm'] != null
           ? (double.tryParse(json['distanceKm'].toString()) ?? 4.2)
           : 4.2,
+      customerLatitude: json['customerLatitude'] != null
+          ? double.tryParse(json['customerLatitude'].toString())
+          : null,
+      customerLongitude: json['customerLongitude'] != null
+          ? double.tryParse(json['customerLongitude'].toString())
+          : null,
+      storeLatitude: json['storeLatitude'] != null
+          ? double.tryParse(json['storeLatitude'].toString())
+          : null,
+      storeLongitude: json['storeLongitude'] != null
+          ? double.tryParse(json['storeLongitude'].toString())
+          : null,
       scheduledPickupTime: json['scheduledPickupTime']?.toString(),
       pickupTime: json['pickupTime']?.toString(),
       pickupDate: json['pickupDate']?.toString(),
@@ -162,6 +207,10 @@ class ActiveRide {
   final String? pickupPin;
   final String? deliveryPin;
   final double earnings;
+  final double? customerLatitude;
+  final double? customerLongitude;
+  final double? storeLatitude;
+  final double? storeLongitude;
   final String? scheduledPickupTime;
   final String? pickupTime;
   final String? pickupDate;
@@ -181,6 +230,10 @@ class ActiveRide {
     this.pickupPin,
     this.deliveryPin,
     required this.earnings,
+    this.customerLatitude,
+    this.customerLongitude,
+    this.storeLatitude,
+    this.storeLongitude,
     this.scheduledPickupTime,
     this.pickupTime,
     this.pickupDate,
@@ -200,6 +253,10 @@ class ActiveRide {
       pickupPin: ride.pin ?? '1234',
       deliveryPin: '5678',
       earnings: ride.earnings,
+      customerLatitude: ride.customerLatitude,
+      customerLongitude: ride.customerLongitude,
+      storeLatitude: ride.storeLatitude,
+      storeLongitude: ride.storeLongitude,
       scheduledPickupTime: ride.scheduledPickupTime,
       pickupTime: ride.pickupTime,
       pickupDate: ride.pickupDate,
@@ -217,7 +274,7 @@ class ActiveRide {
 
     return ActiveRide(
       orderId: order['id']?.toString() ?? (order['orderId']?.toString() ?? ''),
-      orderNumber: order['orderNumber']?.toString() ?? 'FOAM-${order['id'] ?? ''}',
+      orderNumber: formatCleanOrderNumber(order['orderNumber'] ?? order['id'] ?? order['orderId'] ?? json['orderNumber']),
       storeName: store?['name']?.toString() ?? order['storeName']?.toString() ?? 'Foam Laundry Hub',
       storeAddress: store?['address']?.toString() ?? order['storeAddress']?.toString() ?? '',
       pickupAddress: order['pickupAddress']?.toString() ?? '',
@@ -230,6 +287,22 @@ class ActiveRide {
       earnings: (json['earnings'] != null)
           ? (double.tryParse(json['earnings'].toString()) ?? 1500.0)
           : (order['deliveryFee'] != null ? (double.tryParse(order['deliveryFee'].toString()) ?? 1500.0) : 1500.0),
+      customerLatitude: (order['customerLatitude'] != null)
+          ? double.tryParse(order['customerLatitude'].toString())
+          : (json['customerLatitude'] != null ? double.tryParse(json['customerLatitude'].toString()) : null),
+      customerLongitude: (order['customerLongitude'] != null)
+          ? double.tryParse(order['customerLongitude'].toString())
+          : (json['customerLongitude'] != null ? double.tryParse(json['customerLongitude'].toString()) : null),
+      storeLatitude: (store?['latitude'] != null)
+          ? double.tryParse(store!['latitude'].toString())
+          : (order['storeLatitude'] != null
+              ? double.tryParse(order['storeLatitude'].toString())
+              : (json['storeLatitude'] != null ? double.tryParse(json['storeLatitude'].toString()) : null)),
+      storeLongitude: (store?['longitude'] != null)
+          ? double.tryParse(store!['longitude'].toString())
+          : (order['storeLongitude'] != null
+              ? double.tryParse(order['storeLongitude'].toString())
+              : (json['storeLongitude'] != null ? double.tryParse(json['storeLongitude'].toString()) : null)),
       scheduledPickupTime: json['scheduledPickupTime']?.toString() ?? order['scheduledPickupTime']?.toString(),
       pickupTime: order['pickupTime']?.toString(),
       pickupDate: order['pickupDate']?.toString(),
@@ -263,7 +336,7 @@ class RiderDeliveryHistoryItem {
   factory RiderDeliveryHistoryItem.fromJson(Map<String, dynamic> json) {
     return RiderDeliveryHistoryItem(
       orderId: json['orderId']?.toString() ?? (json['id']?.toString() ?? ''),
-      orderNumber: json['orderNumber']?.toString() ?? 'FOAM-0000',
+      orderNumber: formatCleanOrderNumber(json['orderNumber'] ?? json['orderId'] ?? json['id']),
       date: json['date']?.toString() ?? '',
       storeName: json['storeName']?.toString() ?? 'Foam Hub',
       pickupAddress: json['pickupAddress']?.toString() ?? '',

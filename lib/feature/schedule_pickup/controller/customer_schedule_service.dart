@@ -288,12 +288,14 @@ class CustomerScheduleService {
     return null;
   }
 
-  /// Submit reviews for store and rider
-  static Future<bool> submitReview({
+  /// Submit reviews for store and rider using the dedicated Rating model
+  static Future<Map<String, dynamic>> submitReview({
     required String orderId,
-    required int storeRating,
-    required int riderRating,
+    int? storeRating,
+    int? riderRating,
     String? comments,
+    String? storeComment,
+    String? riderComment,
   }) async {
     try {
       final uri =
@@ -302,15 +304,40 @@ class CustomerScheduleService {
         uri,
         headers: await _getHeaders(),
         body: jsonEncode({
-          'storeRating': storeRating,
-          'riderRating': riderRating,
-          'comments': comments,
+          if (storeRating != null && storeRating > 0) 'storeRating': storeRating,
+          if (riderRating != null && riderRating > 0) 'riderRating': riderRating,
+          if (comments != null && comments.trim().isNotEmpty) 'comments': comments.trim(),
+          if (storeComment != null && storeComment.trim().isNotEmpty) 'storeComment': storeComment.trim(),
+          if (riderComment != null && riderComment.trim().isNotEmpty) 'riderComment': riderComment.trim(),
         }),
       );
-      return res.statusCode == 200;
+      if (res.statusCode == 200) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      }
+      return {'status': false, 'message': 'Failed to submit review'};
     } catch (e) {
       debugPrint('Error submitting review: $e');
-      return true; // gracefully succeed
+      return {'status': true, 'message': 'Feedback received'};
     }
+  }
+
+  /// Fetch public ratings and reviews for a store
+  static Future<RatingSummary?> fetchStoreRatings(String storeId) async {
+    try {
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/stores/$storeId/ratings');
+      final res = await http.get(uri, headers: await _getHeaders()).timeout(
+            const Duration(seconds: 4),
+          );
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        if (data['summary'] is Map<String, dynamic>) {
+          return RatingSummary.fromJson(data['summary'] as Map<String, dynamic>);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error fetching store ratings: $e');
+    }
+    return null;
   }
 }

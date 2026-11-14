@@ -89,8 +89,12 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                     children: [
                       Expanded(
                         child: _buildStatColumn(
-                          '★ ${store.rating.toStringAsFixed(1)}',
-                          '${store.reviewCount} reviews',
+                          store.isNew
+                              ? 'New'
+                              : '★ ${store.rating.toStringAsFixed(1)}',
+                          store.isNew
+                              ? 'New store'
+                              : '${store.reviewCount} review${store.reviewCount == 1 ? '' : 's'}',
                         ),
                       ),
                       Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+export 'rate_model.dart';
 
 /// Geographical coordinate representation
 @immutable
@@ -34,6 +35,7 @@ class MatchedTierStore {
   final String id;
   final String name;
   final double rating;
+  final int ratingCount;
   final int turnaroundDays;
   final double distanceKm;
 
@@ -41,15 +43,24 @@ class MatchedTierStore {
     required this.id,
     required this.name,
     required this.rating,
+    this.ratingCount = 0,
     required this.turnaroundDays,
     required this.distanceKm,
   });
 
+  bool get isNew => ratingCount == 0 || rating == 0.0;
+  String get formattedRating => isNew ? 'New' : rating.toStringAsFixed(1);
+  String get formattedWithCount =>
+      isNew ? 'New' : '★ ${rating.toStringAsFixed(1)} ($ratingCount)';
+
   factory MatchedTierStore.fromJson(Map<String, dynamic> json) {
+    final rawRating = (json['rating'] as num?)?.toDouble() ?? 0.0;
+    final count = (json['ratingCount'] ?? json['reviewCount'] as num?)?.toInt() ?? 0;
     return MatchedTierStore(
       id: json['id']?.toString() ?? '',
       name: json['name'] as String? ?? 'Nearby Store',
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
+      rating: rawRating,
+      ratingCount: count,
       turnaroundDays: (json['turnaroundDays'] as num?)?.toInt() ?? 2,
       distanceKm: (json['distanceKm'] as num?)?.toDouble() ?? 0.0,
     );
@@ -59,6 +70,7 @@ class MatchedTierStore {
         'id': id,
         'name': name,
         'rating': rating,
+        'ratingCount': ratingCount,
         'turnaroundDays': turnaroundDays,
         'distanceKm': distanceKm,
       };
@@ -269,6 +281,11 @@ class NearbyStore {
 
   bool get hasFoldingFee => foldingPrice > 0;
 
+  bool get isNew => reviewCount == 0 || rating == 0.0;
+  String get formattedRating => isNew ? 'New' : rating.toStringAsFixed(1);
+  String get formattedWithCount =>
+      isNew ? 'New' : '★ ${rating.toStringAsFixed(1)} ($reviewCount)';
+
   bool get usesFoamRiders =>
       logisticsType == 'FOAM_RIDERS' || logisticsType == 'BOTH';
   bool get usesOwnLogistics =>
@@ -358,8 +375,8 @@ class NearbyStore {
       name: json['name'] as String? ?? 'Laundry Store',
       area: json['area'] as String? ?? (json['city'] as String? ?? 'Area'),
       address: json['address'] as String? ?? '',
-      rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
-      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      reviewCount: (json['ratingCount'] ?? json['reviewCount'] as num?)?.toInt() ?? 0,
       distanceKm:
           (json['distanceKm'] ?? json['distance'] as num?)?.toDouble() ?? 0.0,
       turnaroundDays: (json['turnaroundDays'] as num?)?.toInt() ?? 2,
@@ -462,6 +479,7 @@ class RiderInfo {
   final String initials;
   final String? phone;
   final double rating;
+  final int ratingCount;
   final String? vehicle;
   final String? subtitle;
 
@@ -469,10 +487,16 @@ class RiderInfo {
     required this.name,
     this.initials = '',
     this.phone,
-    this.rating = 5.0,
+    this.rating = 0.0,
+    this.ratingCount = 0,
     this.vehicle,
     this.subtitle,
   });
+
+  bool get isNew => ratingCount == 0 || rating == 0.0;
+  String get formattedRating => isNew ? 'New' : rating.toStringAsFixed(1);
+  String get displayRatingWithStar =>
+      isNew ? 'New Rider' : '★ ${rating.toStringAsFixed(1)}';
 
   factory RiderInfo.fromJson(Map<String, dynamic> json) {
     final name = json['name'] as String? ?? 'Rider';
@@ -489,7 +513,8 @@ class RiderInfo {
       name: name,
       initials: derivedInitials,
       phone: json['phone'] as String?,
-      rating: (json['rating'] as num?)?.toDouble() ?? 5.0,
+      rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
+      ratingCount: (json['ratingCount'] as num?)?.toInt() ?? 0,
       vehicle: json['vehicle'] as String?,
       subtitle: json['subtitle'] as String?,
     );
@@ -500,6 +525,7 @@ class RiderInfo {
         'initials': initials,
         if (phone != null) 'phone': phone,
         'rating': rating,
+        'ratingCount': ratingCount,
         if (vehicle != null) 'vehicle': vehicle,
         if (subtitle != null) 'subtitle': subtitle,
       };
