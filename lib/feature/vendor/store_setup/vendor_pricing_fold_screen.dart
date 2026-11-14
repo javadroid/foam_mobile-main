@@ -14,8 +14,11 @@ class VendorPricingFoldScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final vendorProvider = Provider.of<VendorProvider>(context);
     final store = vendorProvider.currentStore;
-    final foldingCount = vendorProvider.getItemPrices(store.id, serviceType, 'Folding').length;
-    final nonFoldingCount = vendorProvider.getItemPrices(store.id, serviceType, 'Non-folding').length;
+    final foldingCount =
+        vendorProvider.getItemPrices(store.id, serviceType, 'Folding').length;
+    final nonFoldingCount = vendorProvider
+        .getItemPrices(store.id, serviceType, 'Non-folding')
+        .length;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,8 +77,11 @@ class VendorPricingFoldScreen extends StatelessWidget {
               // Option 1: Folding
               _buildFoldCard(
                 title: 'Folding',
-                subtitle: 'Items washed, dried, ironed, and folded in Foam packaging',
-                status: foldingCount > 0 ? '✓ $foldingCount items priced' : 'Not priced',
+                subtitle:
+                    'Items washed, dried, ironed, and folded in Foam packaging',
+                status: foldingCount > 0
+                    ? '✓ $foldingCount items priced'
+                    : 'Not priced',
                 isPriced: foldingCount > 0,
                 onTap: () {
                   Navigator.push(
@@ -83,6 +89,7 @@ class VendorPricingFoldScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => VendorPricingItemsScreen(
                         serviceType: serviceType,
+                        storeId: store.id,
                         foldType: 'Folding',
                       ),
                     ),
@@ -94,8 +101,11 @@ class VendorPricingFoldScreen extends StatelessWidget {
               // Option 2: Non-folding
               _buildFoldCard(
                 title: 'Non-folding',
-                subtitle: 'Items washed, dried, ironed, and returned on hangers',
-                status: nonFoldingCount > 0 ? '✓ $nonFoldingCount items priced' : 'Not priced',
+                subtitle:
+                    'Items washed, dried, ironed, and returned on hangers',
+                status: nonFoldingCount > 0
+                    ? '✓ $nonFoldingCount items priced'
+                    : 'Not priced',
                 isPriced: nonFoldingCount > 0,
                 onTap: () {
                   Navigator.push(
@@ -103,6 +113,7 @@ class VendorPricingFoldScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => VendorPricingItemsScreen(
                         serviceType: serviceType,
+                        storeId: store.id,
                         foldType: 'Non-folding',
                       ),
                     ),

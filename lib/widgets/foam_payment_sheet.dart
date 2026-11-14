@@ -100,12 +100,10 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
   @override
   void initState() {
     super.initState();
-    // Default smart selection based on platform
+    // Default smart selection based on platform: Google Pay on Android/default, Apple Pay on iOS
     _selectedMethod = Platform.isIOS
         ? FoamPaymentMethod.applePay
-        : (Platform.isAndroid
-            ? FoamPaymentMethod.googlePay
-            : FoamPaymentMethod.paystack);
+        : FoamPaymentMethod.googlePay;
   }
 
   String _getMethodName(FoamPaymentMethod method) {
@@ -179,190 +177,200 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
         24,
         MediaQuery.of(context).viewInsets.bottom + 28,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Drag handle
-          Center(
-            child: Container(
-              width: 44,
-              height: 4.5,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(3),
-              ),
-            ),
-          ),
-          const SizedBox(height: 18),
-
-          // Header
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.title,
-                      style: const TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    if (widget.itemTitle.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        widget.itemTitle,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF0098A6),
-                        ),
-                      ),
-                    ],
-                    if (widget.itemSubtitle != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        widget.itemSubtitle!,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ],
+      child: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Drag handle
+            Center(
+              child: Container(
+                width: 44,
+                height: 4.5,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(3),
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.close_rounded, color: Colors.grey),
-                onPressed: _isProcessing ? null : () => Navigator.pop(context),
-              ),
-            ],
-          ),
-          const SizedBox(height: 18),
-
-          // Price banner
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF8FAFC),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
-            child: Row(
+            const SizedBox(height: 18),
+
+            // Header
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Total Payable',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF64748B),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      // if (widget.itemTitle.isNotEmpty) ...[
+                      //   const SizedBox(height: 4),
+                      //   Text(
+                      //     widget.itemTitle,
+                      //     style: const TextStyle(
+                      //       fontSize: 14,
+                      //       fontWeight: FontWeight.w500,
+                      //       color: Color(0xFF0098A6),
+                      //     ),
+                      //   ),
+                      // ],
+                      // if (widget.itemSubtitle != null) ...[
+                      //   const SizedBox(height: 2),
+                      //   Text(
+                      //     widget.itemSubtitle!,
+                      //     style: TextStyle(
+                      //       fontSize: 12,
+                      //       color: Colors.grey.shade600,
+                      //     ),
+                      //   ),
+                      // ],
+                    ],
                   ),
                 ),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.baseline,
-                  textBaseline: TextBaseline.alphabetic,
-                  children: [
-                    Text(
-                      '₦${widget.amount.toStringAsFixed(0)}',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF0F172A),
-                      ),
-                    ),
-                    if (widget.cycleLabel != null)
-                      Text(
-                        ' ${widget.cycleLabel}',
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
-                          color: Color(0xFF64748B),
-                        ),
-                      ),
-                  ],
+                IconButton(
+                  icon: const Icon(Icons.close_rounded, color: Colors.grey),
+                  onPressed:
+                      _isProcessing ? null : () => Navigator.pop(context),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-          const Text(
-            'Choose Payment Method',
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF334155),
+            // Price banner
+            // Container(
+            //   width: double.infinity,
+            //   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+            //   decoration: BoxDecoration(
+            //     color: const Color(0xFFF8FAFC),
+            //     borderRadius: BorderRadius.circular(16),
+            //     border: Border.all(color: const Color(0xFFE2E8F0)),
+            //   ),
+            //   child: Row(
+            //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            //     children: [
+            //       const Text(
+            //         'Total Payable',
+            //         style: TextStyle(
+            //           fontSize: 14,
+            //           fontWeight: FontWeight.w500,
+            //           color: Color(0xFF64748B),
+            //         ),
+            //       ),
+            //       Flexible(
+            //         child: Row(
+            //           mainAxisSize: MainAxisSize.min,
+            //           crossAxisAlignment: CrossAxisAlignment.baseline,
+            //           textBaseline: TextBaseline.alphabetic,
+            //           children: [
+            //             Flexible(
+            //               child: Text(
+            //                 '₦${widget.amount.toStringAsFixed(0)}',
+            //                 style: const TextStyle(
+            //                   fontSize: 22,
+            //                   fontWeight: FontWeight.w800,
+            //                   color: Color(0xFF0F172A),
+            //                 ),
+            //                 overflow: TextOverflow.ellipsis,
+            //               ),
+            //             ),
+            //             if (widget.cycleLabel != null)
+            //               Text(
+            //                 ' ${widget.cycleLabel}',
+            //                 style: const TextStyle(
+            //                   fontSize: 13,
+            //                   fontWeight: FontWeight.w500,
+            //                   color: Color(0xFF64748B),
+            //                 ),
+            //               ),
+            //           ],
+            //         ),
+            //       ),
+            //     ],
+            //   ),
+            // ),
+            // const SizedBox(height: 20),
+
+            const Text(
+              'Choose Payment Method',
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF334155),
+              ),
             ),
-          ),
-          const SizedBox(height: 12),
+            const SizedBox(height: 12),
 
-          // 1. Google Pay (highlighted on Android with official Google Pay Mark)
-          _buildPaymentOptionTile(
-            method: FoamPaymentMethod.googlePay,
-            title: 'Google Pay',
-            subtitle: 'Fast 1-tap checkout via Google Wallet',
-            customIcon: SvgPicture.asset(
-              'assets/images/google_pay_mark.svg',
-              width: 48,
-              height: 32,
-              fit: BoxFit.contain,
-            ),
-            iconColor: Colors.transparent,
-            iconBgColor: Colors.transparent,
-          ),
-
-          // 2. Apple Pay (highlighted on iOS)
-          _buildPaymentOptionTile(
-            method: FoamPaymentMethod.applePay,
-            title: 'Apple Pay',
-            subtitle: 'Instant authorization with Touch ID / Face ID',
-            icon: Icons.apple,
-            iconColor: Colors.black,
-            iconBgColor: Colors.grey.shade200,
-            badgeText: 'Pay',
-            badgeColor: Colors.black87,
-            badgeBgColor: Colors.grey.shade200,
-          ),
-
-          // 3. Paystack Checkout
-          _buildPaymentOptionTile(
-            method: FoamPaymentMethod.paystack,
-            title: 'Paystack Checkout',
-            subtitle: 'Debit Cards (Visa, Verve, Mastercard), Bank & USSD',
-            icon: Icons.credit_card_rounded,
-            iconColor: const Color(0xFF0284C7),
-            iconBgColor: const Color(0xFFE0F2FE),
-            badgeText: 'Cards/Bank',
-            badgeColor: const Color(0xFF0369A1),
-            badgeBgColor: const Color(0xFFE0F2FE),
-          ),
-
-          // 4. Foam Wallet (for orders and subscriptions)
-          if (widget.purpose != FoamPaymentPurpose.walletDeposit)
+            // 1. Google Pay (highlighted on Android with official Google Pay Mark)
             _buildPaymentOptionTile(
-              method: FoamPaymentMethod.wallet,
-              title: 'Foam Wallet',
-              subtitle: 'Instant deduction from your in-app wallet balance',
-              icon: Icons.account_balance_wallet_rounded,
-              iconColor: const Color(0xFF16A34A),
-              iconBgColor: const Color(0xFFDCFCE7),
-              badgeText: 'Instant',
-              badgeColor: const Color(0xFF15803D),
-              badgeBgColor: const Color(0xFFDCFCE7),
+              method: FoamPaymentMethod.googlePay,
+              title: 'Google Pay',
+              subtitle: 'Fast 1-tap checkout via Google Wallet',
+              customIcon: SvgPicture.asset(
+                'assets/images/google_pay_mark.svg',
+                width: 54,
+                height: 29,
+                fit: BoxFit.contain,
+              ),
+              iconColor: Colors.transparent,
+              iconBgColor: Colors.transparent,
             ),
 
-          const SizedBox(height: 22),
+            // 2. Apple Pay (highlighted on iOS)
+            _buildPaymentOptionTile(
+              method: FoamPaymentMethod.applePay,
+              title: 'Apple Pay',
+              subtitle: 'Instant authorization with Touch ID / Face ID',
+              icon: Icons.apple,
+              iconColor: Colors.black,
+              iconBgColor: Colors.grey.shade200,
+              badgeText: 'Pay',
+              badgeColor: Colors.black87,
+              badgeBgColor: Colors.grey.shade200,
+            ),
 
-          // Dynamic CTA Action Button matching selected provider
-          _buildCtaButton(),
-        ],
+            // 3. Paystack Checkout
+            _buildPaymentOptionTile(
+              method: FoamPaymentMethod.paystack,
+              title: 'Paystack Checkout',
+              subtitle: 'Debit Cards (Visa, Verve, Mastercard), Bank & USSD',
+              icon: Icons.credit_card_rounded,
+              iconColor: const Color(0xFF0284C7),
+              iconBgColor: const Color(0xFFE0F2FE),
+              badgeText: 'Cards/Bank',
+              badgeColor: const Color(0xFF0369A1),
+              badgeBgColor: const Color(0xFFE0F2FE),
+            ),
+
+            // 4. Foam Wallet (for orders and subscriptions)
+            // if (widget.purpose != FoamPaymentPurpose.walletDeposit)
+            //   _buildPaymentOptionTile(
+            //     method: FoamPaymentMethod.wallet,
+            //     title: 'Foam Wallet',
+            //     subtitle: 'Instant deduction from your in-app wallet balance',
+            //     icon: Icons.account_balance_wallet_rounded,
+            //     iconColor: const Color(0xFF16A34A),
+            //     iconBgColor: const Color(0xFFDCFCE7),
+            //     badgeText: 'Instant',
+            //     badgeColor: const Color(0xFF15803D),
+            //     badgeBgColor: const Color(0xFFDCFCE7),
+            //   ),
+
+            const SizedBox(height: 22),
+
+            // Dynamic CTA Action Button matching selected provider
+            _buildCtaButton(),
+          ],
+        ),
       ),
     );
   }
@@ -407,9 +415,19 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                     ),
                     const SizedBox(width: 4),
                     SvgPicture.asset(
-                      'assets/images/google_pay_mark.svg',
-                      height: 26,
-                      fit: BoxFit.contain,
+                      'assets/images/google.svg',
+                      width: 19,
+                      height: 19,
+                    ),
+                    const SizedBox(width: 4),
+                    const Text(
+                      'Pay',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.1,
+                      ),
                     ),
                   ],
                 ),
@@ -559,12 +577,12 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           child: Row(
             children: [
               Container(
-                width: isGooglePay ? 48 : 42,
-                height: isGooglePay ? 32 : 42,
+                width: isGooglePay ? 54 : 42,
+                height: isGooglePay ? 29 : 42,
                 decoration: BoxDecoration(
                   color: isGooglePay ? Colors.transparent : iconBgColor,
                   shape: isGooglePay ? BoxShape.rectangle : BoxShape.circle,
-                  borderRadius: isGooglePay ? BorderRadius.circular(6) : null,
+                  borderRadius: isGooglePay ? BorderRadius.circular(4) : null,
                 ),
                 child: Center(
                   child: customIcon ?? Icon(icon, color: iconColor, size: 22),
@@ -610,14 +628,14 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                         ],
                       ],
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
+                    // const SizedBox(height: 3),
+                    // Text(
+                    //   subtitle,
+                    //   style: TextStyle(
+                    //     fontSize: 12,
+                    //     color: Colors.grey.shade600,
+                    //   ),
+                    // ),
                   ],
                 ),
               ),

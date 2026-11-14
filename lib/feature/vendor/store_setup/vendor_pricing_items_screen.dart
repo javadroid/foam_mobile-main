@@ -11,9 +11,11 @@ import 'package:provider/provider.dart';
 class VendorPricingItemsScreen extends StatefulWidget {
   final String serviceType;
   final String foldType;
+  final String storeId;
 
   const VendorPricingItemsScreen({
     super.key,
+    required this.storeId,
     required this.serviceType,
     this.foldType = 'Folding',
   });
@@ -64,7 +66,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
   void _initLocalItems() {
     final provider = Provider.of<VendorProvider>(context, listen: false);
-    final storeId = provider.currentStore.id;
+    final storeId = widget.storeId;
 
     final defaults = widget.serviceType == 'Dry cleaning'
         ? _defaultDryCleaningItems
@@ -117,10 +119,8 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
   Future<void> _loadPricingData() async {
     if (!mounted) return;
     final provider = Provider.of<VendorProvider>(context, listen: false);
-    final targetStoreId = provider.currentStore.id.isNotEmpty &&
-            provider.currentStore.id != 'store_default'
-        ? provider.currentStore.id
-        : 'f4cf9610-5a2c-4894-9f83-768158a8c8e3';
+    final targetStoreId = widget.storeId;
+    debugPrint('Target store ID: ${targetStoreId}');
 
     setState(() => _isLoading = true);
 
@@ -137,16 +137,6 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
           headers: {'Accept': 'application/json'},
         ).timeout(const Duration(seconds: 4));
 
-        if (res.statusCode != 200 &&
-            Constants.url != 'http://127.0.0.1:8545') {
-          // Fallback to local url if primary failed
-          res = await http.get(
-            Uri.parse(
-                'http://127.0.0.1:8545/api/customer/stores/$targetStoreId'),
-            headers: {'Accept': 'application/json'},
-          ).timeout(const Duration(seconds: 4));
-        }
-
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           if (data['store'] != null && data['store']['items'] is List) {
@@ -156,19 +146,6 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
       } catch (e) {
         debugPrint('Error fetching store customer catalog: $e');
         // Fallback to direct local port 8545
-        try {
-          final res = await http.get(
-            Uri.parse(
-                'http://127.0.0.1:8545/api/customer/stores/$targetStoreId'),
-            headers: {'Accept': 'application/json'},
-          ).timeout(const Duration(seconds: 3));
-          if (res.statusCode == 200) {
-            final data = jsonDecode(res.body);
-            if (data['store'] != null && data['store']['items'] is List) {
-              rawCatalogItems = data['store']['items'] as List;
-            }
-          }
-        } catch (_) {}
       }
 
       if (!mounted) return;
@@ -190,8 +167,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
               : (cat.contains('laundry') ||
                   (!cat.contains('dry') && !cat.contains('clean')));
 
-          final name =
-              (map['name'] ?? map['itemName'] ?? '').toString().trim();
+          final name = (map['name'] ?? map['itemName'] ?? '').toString().trim();
           if (matchesService && name.isNotEmpty) {
             final lower = name.toLowerCase();
             // Deduplicate: if duplicate name exists, keep the first
@@ -549,7 +525,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
                     final provider =
                         Provider.of<VendorProvider>(context, listen: false);
-                    final storeId = provider.currentStore.id;
+                    final storeId = widget.storeId;
 
                     setState(() {
                       _removedItems.remove(name);
@@ -593,7 +569,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
   void _removeItem(String item) {
     final provider = Provider.of<VendorProvider>(context, listen: false);
-    final storeId = provider.currentStore.id;
+    final storeId = widget.storeId;
 
     setState(() {
       _items.remove(item);
@@ -636,7 +612,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
 
   void _restoreDefaults() {
     final provider = Provider.of<VendorProvider>(context, listen: false);
-    final storeId = provider.currentStore.id;
+    final storeId = widget.storeId;
     final defaults = widget.serviceType == 'Dry cleaning'
         ? _defaultDryCleaningItems
         : _defaultLaundryItems;
@@ -966,7 +942,7 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
   Future<void> _savePrices() async {
     setState(() => _isSaving = true);
     final provider = Provider.of<VendorProvider>(context, listen: false);
-    final storeId = provider.currentStore.id;
+    final storeId = widget.storeId;
 
     final pricesMap = <String, double>{};
     for (final entry in _controllers.entries) {
@@ -1113,16 +1089,6 @@ class _VendorPricingItemsScreenState extends State<VendorPricingItemsScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Expanded(
-                        child: Text(
-                          '$_pricedCount of ${_items.length} items priced',
-                          style: GoogleFonts.dmSans(
-                            color: VendorColors.primary,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
                       if (vendor.stores.length > 1) ...[
                         InkWell(
                           onTap: () => _showCopyFromStoreDialog(vendor),

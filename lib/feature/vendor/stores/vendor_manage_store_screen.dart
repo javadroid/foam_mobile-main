@@ -51,7 +51,8 @@ class VendorManageStoreScreen extends StatelessWidget {
         centerTitle: true,
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit_location_alt_outlined, color: VendorColors.primary),
+            icon: const Icon(Icons.edit_location_alt_outlined,
+                color: VendorColors.primary),
             tooltip: 'Edit Store Profile',
             onPressed: () {
               Navigator.push(
@@ -146,7 +147,9 @@ class VendorManageStoreScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: store.isLive ? VendorColors.liveBg : Colors.transparent,
+                            color: store.isLive
+                                ? VendorColors.liveBg
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
@@ -186,7 +189,9 @@ class VendorManageStoreScreen extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
-                            color: store.isPaused ? VendorColors.pausedBg : Colors.transparent,
+                            color: store.isPaused
+                                ? VendorColors.pausedBg
+                                : Colors.transparent,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Center(
@@ -236,13 +241,15 @@ class VendorManageStoreScreen extends StatelessWidget {
 
               _buildManagePriceRow(
                 title: 'Laundry',
-                subtitle: _getPriceSummary(provider, store.id, 'Laundry', 'Folding'),
+                subtitle:
+                    _getPriceSummary(provider, store.id, 'Laundry', 'Folding'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
+                      builder: (context) => VendorPricingItemsScreen(
                         serviceType: 'Laundry',
+                        storeId: store.id,
                         foldType: 'Folding',
                       ),
                     ),
@@ -252,13 +259,15 @@ class VendorManageStoreScreen extends StatelessWidget {
               const Divider(height: 16, color: VendorColors.border),
               _buildManagePriceRow(
                 title: 'Dry cleaning',
-                subtitle: _getPriceSummary(provider, store.id, 'Dry cleaning', 'Standard'),
+                subtitle: _getPriceSummary(
+                    provider, store.id, 'Dry cleaning', 'Standard'),
                 onEdit: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
+                      builder: (context) => VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
+                        storeId: store.id,
                         foldType: 'Standard',
                       ),
                     ),

@@ -82,8 +82,9 @@ class VendorPricingServiceScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
+                      builder: (context) => VendorPricingItemsScreen(
                         serviceType: 'Laundry',
+                        storeId: store.id,
                         foldType: 'Folding',
                       ),
                     ),
@@ -104,8 +105,9 @@ class VendorPricingServiceScreen extends StatelessWidget {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => const VendorPricingItemsScreen(
+                      builder: (context) => VendorPricingItemsScreen(
                         serviceType: 'Dry cleaning',
+                        storeId: store.id,
                         foldType: 'Standard',
                       ),
                     ),
