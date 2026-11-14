@@ -97,6 +97,7 @@ class CustomerScheduleService {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data['store'] != null && data['store']['items'] is List) {
+          debugPrint('Catalog11: ${data['store']['items']}');
           return (data['store']['items'] as List)
               .map((i) => ScheduleItem.fromJson(i as Map<String, dynamic>))
               .toList();

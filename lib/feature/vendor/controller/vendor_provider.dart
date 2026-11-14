@@ -84,14 +84,18 @@ class VendorProvider extends ChangeNotifier {
       {String fallback = 'An unexpected error occurred'}) {
     try {
       if (res.body.trim().isEmpty) {
-        if (res.statusCode == 401)
+        if (res.statusCode == 401) {
           return 'Session expired. Please log in again.';
-        if (res.statusCode == 403)
+        }
+        if (res.statusCode == 403) {
           return 'You do not have permission to perform this action.';
-        if (res.statusCode == 404)
+        }
+        if (res.statusCode == 404) {
           return 'The requested resource was not found.';
-        if (res.statusCode >= 500)
+        }
+        if (res.statusCode >= 500) {
           return 'Server error (${res.statusCode}). Please try again shortly.';
+        }
         return fallback;
       }
 
@@ -142,9 +146,12 @@ class VendorProvider extends ChangeNotifier {
         return data.trim();
       }
     } catch (_) {}
-    if (res.statusCode == 401) return 'Session expired. Please log in again.';
-    if (res.statusCode >= 500)
+    if (res.statusCode == 401) {
+      return 'Session expired. Please log in again.';
+    }
+    if (res.statusCode >= 500) {
       return 'Server error (${res.statusCode}). Please try again shortly.';
+    }
     return fallback;
   }
 
@@ -185,13 +192,33 @@ class VendorProvider extends ChangeNotifier {
   // Custom Items added by vendor: StoreId_ServiceType -> List<String>
   final Map<String, List<String>> _customItemsMap = {};
 
+  // Removed Items (default or custom) removed by vendor: StoreId_ServiceType -> Set<String>
+  final Map<String, Set<String>> _removedItemsMap = {};
+
   List<String> getCustomItems(String storeId, String service) {
     final key = '${storeId}_$service';
     return List<String>.from(_customItemsMap[key] ?? []);
   }
 
+  bool isItemRemoved(String storeId, String service, String item) {
+    final key = '${storeId}_$service';
+    return _removedItemsMap[key]?.contains(item) ?? false;
+  }
+
+  Set<String> getRemovedItems(String storeId, String service) {
+    final key = '${storeId}_$service';
+    return Set<String>.from(_removedItemsMap[key] ?? {});
+  }
+
+  void unmarkItemRemoved(String storeId, String service, String item) {
+    final key = '${storeId}_$service';
+    _removedItemsMap[key]?.remove(item);
+    notifyListeners();
+  }
+
   void addCustomItem(String storeId, String service, String item) {
     final key = '${storeId}_$service';
+    _removedItemsMap[key]?.remove(item); // Unmark if previously removed
     _customItemsMap.putIfAbsent(key, () => []);
     if (!_customItemsMap[key]!.contains(item)) {
       _customItemsMap[key]!.add(item);
@@ -201,9 +228,10 @@ class VendorProvider extends ChangeNotifier {
     }
   }
 
-  void removeCustomItem(String storeId, String service, String item) {
+  void removeStoreItem(String storeId, String service, String item) {
     final key = '${storeId}_$service';
     _customItemsMap[key]?.remove(item);
+    _removedItemsMap.putIfAbsent(key, () => <String>{}).add(item);
     final itemKey = '${storeId}_${service}_$item';
     _itemFoldingMap.remove(itemKey);
     for (final k in _pricingMap.keys) {
@@ -212,6 +240,10 @@ class VendorProvider extends ChangeNotifier {
       }
     }
     notifyListeners();
+  }
+
+  void removeCustomItem(String storeId, String service, String item) {
+    removeStoreItem(storeId, service, item);
   }
 
   bool getStoreIncludeFolding(String storeId) {
@@ -320,9 +352,7 @@ class VendorProvider extends ChangeNotifier {
 
   void addStore(VendorStore store) {
     _stores.add(store);
-    if (_selectedStoreId == null) {
-      _selectedStoreId = store.id;
-    }
+    _selectedStoreId ??= store.id;
     notifyListeners();
   }
 
@@ -671,27 +701,63 @@ class VendorProvider extends ChangeNotifier {
       _loadedPricingStoreKeys.contains('${storeId}_all');
 
   void populatePricingFromJson(String storeId, List<dynamic> pricingList) {
+    final seen = <String>{};
     for (final item in pricingList) {
       if (item is Map) {
         final rawService =
             item['serviceType']?.toString().toUpperCase() ?? '';
         final service =
             rawService == 'DRY_CLEANING' ? 'Dry cleaning' : 'Laundry';
+        final itemName = item['itemName']?.toString().trim() ?? '';
+        if (itemName.isEmpty) continue;
+
+        // Deduplicate in case DB had both FOLDING & NON_FOLDING for same item
+        final dedupeKey = '${service}_${itemName.toLowerCase()}';
+        if (seen.contains(dedupeKey)) continue;
+        seen.add(dedupeKey);
+
         final rawFold = item['foldType']?.toString().toUpperCase() ?? 'FOLDING';
         final fold = rawFold == 'NON_FOLDING'
             ? 'Non-folding'
             : (rawFold == 'FOLDING' ? 'Folding' : 'Standard');
-        final itemName = item['itemName']?.toString() ?? '';
         final price =
             (item['price'] is num) ? (item['price'] as num).toDouble() : 0.0;
         final isFolding = rawFold != 'NON_FOLDING';
 
-        if (itemName.isNotEmpty) {
-          setItemPrice(storeId, service, fold, itemName, price);
-          setItemPrice(storeId, service, 'Folding', itemName, price);
-          setItemPrice(storeId, service, 'Non-folding', itemName, price);
-          setItemPrice(storeId, service, 'Standard', itemName, price);
-          setItemFoldingIncluded(storeId, service, itemName, isFolding);
+        setItemPrice(storeId, service, fold, itemName, price);
+        setItemPrice(storeId, service, 'Folding', itemName, price);
+        setItemPrice(storeId, service, 'Non-folding', itemName, price);
+        setItemPrice(storeId, service, 'Standard', itemName, price);
+        setItemFoldingIncluded(storeId, service, itemName, isFolding);
+
+        // Make sure non-default items are tracked in custom items map
+        final defaultList = service == 'Dry cleaning'
+            ? [
+                'Suit (2-piece)',
+                'Suit (3-piece)',
+                'Blazer / Jacket',
+                'Dress / Gown',
+                'Evening Gown',
+                'Winter Coat',
+                'Silk / Delicate Top',
+                'Agbada Complete',
+              ]
+            : [
+                'Shirt',
+                'T-shirt',
+                'Trouser',
+                'Jeans',
+                'Bedsheet',
+                'Duvet',
+                'Towel',
+                'Native (agbada)',
+              ];
+        if (!defaultList.contains(itemName)) {
+          final customKey = '${storeId}_$service';
+          _customItemsMap.putIfAbsent(customKey, () => []);
+          if (!_customItemsMap[customKey]!.contains(itemName)) {
+            _customItemsMap[customKey]!.add(itemName);
+          }
         }
       }
     }
@@ -744,6 +810,7 @@ class VendorProvider extends ChangeNotifier {
     required String serviceType,
     required Map<String, double> itemPrices,
     required Map<String, bool> itemFolding,
+    List<String>? deletedItems,
   }) async {
     // 1. Update local cache
     for (final entry in itemPrices.entries) {
@@ -780,7 +847,12 @@ class VendorProvider extends ChangeNotifier {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
           },
-          body: jsonEncode({'items': itemsPayload}),
+          body: jsonEncode({
+            'serviceType': backendServiceType,
+            'items': itemsPayload,
+            if (deletedItems != null && deletedItems.isNotEmpty)
+              'deletedItemNames': deletedItems,
+          }),
         );
         return res.statusCode == 200;
       }
@@ -788,6 +860,51 @@ class VendorProvider extends ChangeNotifier {
       debugPrint('Error syncing store pricing to backend: $e');
     }
     return true;
+  }
+
+  /// Copy all pricing or a specific service's pricing from a source store to a target store
+  Future<bool> copyPricingBetweenStores({
+    required String sourceStoreId,
+    required String targetStoreId,
+    String? serviceType,
+  }) async {
+    try {
+      final token = HiveClass.getToken();
+      if (token.isNotEmpty && sourceStoreId.isNotEmpty && targetStoreId.isNotEmpty) {
+        final backendServiceType = serviceType == null
+            ? null
+            : (serviceType == 'Dry cleaning' ? 'DRY_CLEANING' : 'LAUNDRY');
+
+        final res = await http.post(
+          Uri.parse('${Constants.url}/api/vendor/stores/$targetStoreId/copy-pricing'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: jsonEncode({
+            'sourceStoreId': sourceStoreId,
+            if (backendServiceType != null) 'serviceType': backendServiceType,
+          }),
+        );
+
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          if (data['pricing'] is List) {
+            populatePricingFromJson(targetStoreId, data['pricing'] as List);
+          }
+          _loadedPricingStoreKeys.remove('${targetStoreId}_all');
+          _loadedPricingStoreKeys.remove('${targetStoreId}_Laundry');
+          _loadedPricingStoreKeys.remove('${targetStoreId}_Dry cleaning');
+          await fetchStorePricing(storeId: targetStoreId, silent: true);
+          notifyListeners();
+          return true;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error copying pricing between stores: $e');
+    }
+    return false;
   }
 
   bool withdraw(double amount, String ref) {

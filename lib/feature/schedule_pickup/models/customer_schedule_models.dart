@@ -200,7 +200,8 @@ class TurnaroundOption {
 
     return TurnaroundOption(
       days: (json['days'] as num?)?.toInt() ?? 2,
-      name: json['name'] as String? ?? (json['package'] as String? ?? 'Standard'),
+      name:
+          json['name'] as String? ?? (json['package'] as String? ?? 'Standard'),
       priceMultiplier: mult,
       shirtStartingPrice: (json['shirtStartingPrice'] as num?)?.toInt() ??
           (json['startingPrice'] as num?)?.toInt() ??
@@ -285,7 +286,8 @@ class NearbyStore {
             days: opt.days,
             name: opt.name,
             priceMultiplier: opt.priceMultiplier,
-            shirtStartingPrice: (shirtStartingPrice * opt.priceMultiplier).round(),
+            shirtStartingPrice:
+                (shirtStartingPrice * opt.priceMultiplier).round(),
           );
         }
         return opt;
@@ -330,10 +332,13 @@ class NearbyStore {
     if (rawHours is String && rawHours.trim().isNotEmpty) {
       parsedHours = rawHours;
     } else if (rawHours is Map) {
-      if (rawHours['monFri'] != null && rawHours['monFri'].toString().trim().isNotEmpty) {
+      if (rawHours['monFri'] != null &&
+          rawHours['monFri'].toString().trim().isNotEmpty) {
         parsedHours = rawHours['monFri'].toString();
-      } else if (rawHours['monday'] is Map && rawHours['monday']['open'] != null) {
-        parsedHours = '${rawHours['monday']['open']} – ${rawHours['monday']['close']}';
+      } else if (rawHours['monday'] is Map &&
+          rawHours['monday']['open'] != null) {
+        parsedHours =
+            '${rawHours['monday']['open']} – ${rawHours['monday']['close']}';
       } else {
         parsedHours = '8:00 AM – 6:00 PM';
       }
@@ -346,7 +351,8 @@ class NearbyStore {
       address: json['address'] as String? ?? '',
       rating: (json['rating'] as num?)?.toDouble() ?? 4.5,
       reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
-      distanceKm: (json['distanceKm'] ?? json['distance'] as num?)?.toDouble() ?? 0.0,
+      distanceKm:
+          (json['distanceKm'] ?? json['distance'] as num?)?.toDouble() ?? 0.0,
       turnaroundDays: (json['turnaroundDays'] as num?)?.toInt() ?? 2,
       turnaroundText: json['turnaroundText'] as String? ??
           'Ready in ${(json['turnaroundDays'] as num?)?.toInt() ?? 2} days',
@@ -381,7 +387,8 @@ class NearbyStore {
         if (latitude != null) 'latitude': latitude,
         if (longitude != null) 'longitude': longitude,
         if (turnaroundOptions.isNotEmpty)
-          'turnaroundOptions': turnaroundOptions.map((o) => o.toJson()).toList(),
+          'turnaroundOptions':
+              turnaroundOptions.map((o) => o.toJson()).toList(),
       };
 }
 
@@ -401,8 +408,8 @@ class ScheduleItem {
     required this.name,
     required this.price,
     this.quantity = 0,
-    this.category = 'Laundry',
-    this.foldType = 'Folding',
+    this.category = '',
+    this.foldType = '',
     this.imageUrl,
     this.userWantsFolding = false,
   });
@@ -412,24 +419,14 @@ class ScheduleItem {
       foldType.toUpperCase().contains('FOLD');
 
   factory ScheduleItem.fromJson(Map<String, dynamic> json) {
-    String parsedCategory = 'Laundry';
     final rawCat = json['category'];
-    if (rawCat is String && rawCat.trim().isNotEmpty) {
-      parsedCategory = rawCat.trim();
-    } else if (rawCat is Map && rawCat['name'] != null) {
-      parsedCategory = rawCat['name'].toString().trim();
-    } else if (json['serviceType'] is String) {
-      parsedCategory = (json['serviceType'] as String).trim();
-    } else if (json['service'] is String) {
-      parsedCategory = (json['service'] as String).trim();
-    }
 
     return ScheduleItem(
       id: (json['id'] ?? json['categoryId'] as num?)?.toInt() ?? 0,
       name: json['name'] as String? ?? 'Item',
       price: (json['price'] as num?)?.toInt() ?? 0,
       quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      category: parsedCategory,
+      category: rawCat,
       foldType: json['foldType'] as String? ?? 'Folding',
       imageUrl: json['imageUrl'] as String?,
       userWantsFolding: json['userWantsFolding'] == true,
@@ -473,7 +470,11 @@ class RiderInfo {
     String derivedInitials = json['initials'] as String? ?? '';
     if (derivedInitials.isEmpty && name.isNotEmpty) {
       final parts = name.trim().split(RegExp(r'\s+'));
-      derivedInitials = parts.map((p) => p.isNotEmpty ? p[0] : '').take(2).join().toUpperCase();
+      derivedInitials = parts
+          .map((p) => p.isNotEmpty ? p[0] : '')
+          .take(2)
+          .join()
+          .toUpperCase();
     }
     return RiderInfo(
       name: name,

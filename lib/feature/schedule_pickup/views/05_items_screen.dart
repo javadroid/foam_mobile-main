@@ -44,7 +44,6 @@ class _ScheduleItemsScreenState extends State<ScheduleItemsScreen> {
     final totalCount = provider.totalBasketCount;
     final subtotal = provider.itemSubtotal;
     final turnaroundOptions = store.effectiveTurnaroundOptions;
-    final turnaroundOption = provider.selectedTurnaroundOption;
 
     return Scaffold(
       backgroundColor: Colors.white,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 class CustomerStorePageScreen extends StatefulWidget {
@@ -33,6 +34,9 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final store = provider.currentStore;
+    final currencyFormatter = NumberFormat('#,###');
+    final laundryStartingPrice = provider.lowestLaundryStartingPrice;
+    final dryCleaningStartingPrice = provider.lowestDryCleaningStartingPrice;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -121,7 +125,7 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                   _buildServiceCard(
                     title: 'Laundry',
                     subtitle:
-                        'Folding or non-folding · from ₦${store.effectiveTurnaroundOptions.firstWhere((o) => o.days == provider.selectedTurnaroundDays, orElse: () => store.effectiveTurnaroundOptions.first).shirtStartingPrice}',
+                        'Folding or non-folding · from ₦${currencyFormatter.format(laundryStartingPrice)}',
                     icon: Icons.local_laundry_service_outlined,
                     onTap: () {
                       provider.selectService('Laundry');
@@ -134,7 +138,8 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                   // Service 2: Dry cleaning
                   _buildServiceCard(
                     title: 'Dry cleaning',
-                    subtitle: 'Suits, dresses, native wear · from ₦1,500',
+                    subtitle:
+                        'Suits, dresses, native wear · from ₦${currencyFormatter.format(dryCleaningStartingPrice)}',
                     icon: Icons.dry_cleaning_outlined,
                     onTap: () {
                       provider.selectService('Dry cleaning');

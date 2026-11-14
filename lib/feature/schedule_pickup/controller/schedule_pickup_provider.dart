@@ -431,46 +431,28 @@ class SchedulePickupProvider extends ChangeNotifier {
 
   bool isDryCleaningItem(ScheduleItem item) {
     final cat = item.category.trim().toLowerCase();
-    final fold = item.foldType.trim().toLowerCase();
-    final name = item.name.trim().toLowerCase();
+    debugPrint('Category: $cat');
+    debugPrint('Laundry items: ${item.toJson()}');
 
-    // If category or fold explicitly denotes laundry/wash/fold, it is not dry cleaning
-    if (cat.contains('laund') ||
-        cat.contains('wash') ||
-        fold.contains('fold')) {
-      return false;
-    }
-
-    // Check dry cleaning explicitly
-    if (cat.startsWith('dry') ||
-        cat.contains('dry clean') ||
+    // 1. Direct match on category from store.items[i].category
+    if (cat.contains('dry') ||
         cat.contains('dryclean') ||
         cat.contains('dry-clean')) {
       return true;
     }
-
-    // Hanger folding denotes dry cleaning
-    if (fold.contains('hanger')) {
-      return true;
-    }
-
-    // Common garment types traditionally dry-cleaned
-    if (name.contains('suit') ||
-        name.contains('tuxedo') ||
-        name.contains('blazer') ||
-        name.contains('gown') ||
-        name.contains('native')) {
-      return true;
-    }
-
     return false;
   }
 
-  List<ScheduleItem> get laundryItems =>
-      _items.where((i) => !isDryCleaningItem(i)).toList();
+  List<ScheduleItem> get laundryItems => _items.where((i) {
+        final check = i.category.toLowerCase().contains('laundry');
+        debugPrint('Category12: $check');
+        debugPrint('Category122: ${i.category}');
+        return check;
+      }).toList();
 
-  List<ScheduleItem> get dryCleaningItems =>
-      _items.where((i) => isDryCleaningItem(i)).toList();
+  List<ScheduleItem> get dryCleaningItems => _items
+      .where((i) => i.category.toLowerCase().contains('dry cleaning'))
+      .toList();
 
   /// Starting (lowest) price for Laundry items taking the current turnaround multiplier into account
   int get lowestLaundryStartingPrice {
@@ -535,6 +517,7 @@ class SchedulePickupProvider extends ChangeNotifier {
     try {
       final catalog =
           await CustomerScheduleService.fetchStoreCatalog(targetStoreId);
+
       if (catalog.isNotEmpty) {
         // Preserve any quantities user already selected
         final existingQuantities = {

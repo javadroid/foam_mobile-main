@@ -21,6 +21,8 @@ class FoamPaymentSheet extends StatefulWidget {
   final String? pickupTime;
   final DateTime? deliveryDate;
   final String? deliveryTime;
+  final Future<PaymentProcessResult> Function(FoamPaymentMethod method)?
+      onProcessPayment;
 
   const FoamPaymentSheet({
     super.key,
@@ -39,6 +41,7 @@ class FoamPaymentSheet extends StatefulWidget {
     this.pickupTime,
     this.deliveryDate,
     this.deliveryTime,
+    this.onProcessPayment,
   });
 
   static Future<PaymentProcessResult?> show({
@@ -58,6 +61,8 @@ class FoamPaymentSheet extends StatefulWidget {
     String? pickupTime,
     DateTime? deliveryDate,
     String? deliveryTime,
+    Future<PaymentProcessResult> Function(FoamPaymentMethod method)?
+        onProcessPayment,
   }) {
     return showModalBottomSheet<PaymentProcessResult>(
       context: context,
@@ -79,6 +84,7 @@ class FoamPaymentSheet extends StatefulWidget {
         pickupTime: pickupTime,
         deliveryDate: deliveryDate,
         deliveryTime: deliveryTime,
+        onProcessPayment: onProcessPayment,
       ),
     );
   }
@@ -120,7 +126,9 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
     PaymentProcessResult result;
 
     try {
-      if (widget.purpose == FoamPaymentPurpose.subscription) {
+      if (widget.onProcessPayment != null) {
+        result = await widget.onProcessPayment!(_selectedMethod);
+      } else if (widget.purpose == FoamPaymentPurpose.subscription) {
         result = await FoamPaymentService.processSubscription(
           context: context,
           plan: widget.plan,
@@ -205,15 +213,17 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                         color: Color(0xFF0F172A),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      widget.itemTitle,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Color(0xFF0098A6),
+                    if (widget.itemTitle.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        widget.itemTitle,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: Color(0xFF0098A6),
+                        ),
                       ),
-                    ),
+                    ],
                     if (widget.itemSubtitle != null) ...[
                       const SizedBox(height: 2),
                       Text(
@@ -333,6 +343,20 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
             badgeColor: const Color(0xFF0369A1),
             badgeBgColor: const Color(0xFFE0F2FE),
           ),
+
+          // 4. Foam Wallet (for orders and subscriptions)
+          if (widget.purpose != FoamPaymentPurpose.walletDeposit)
+            _buildPaymentOptionTile(
+              method: FoamPaymentMethod.wallet,
+              title: 'Foam Wallet',
+              subtitle: 'Instant deduction from your in-app wallet balance',
+              icon: Icons.account_balance_wallet_rounded,
+              iconColor: const Color(0xFF16A34A),
+              iconBgColor: const Color(0xFFDCFCE7),
+              badgeText: 'Instant',
+              badgeColor: const Color(0xFF15803D),
+              badgeBgColor: const Color(0xFFDCFCE7),
+            ),
 
           const SizedBox(height: 22),
 

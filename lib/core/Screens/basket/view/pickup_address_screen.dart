@@ -85,7 +85,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
       _addressController.text = authProvider.addressStreet;
     }
 
-    final today = DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
+    final today =
+        DateTime(DateTime.now().year, DateTime.now().month, DateTime.now().day);
     if (savedPickupDate != null) {
       final parsed = DateTime.tryParse(savedPickupDate);
       if (parsed != null && !parsed.isBefore(today)) {
@@ -118,7 +119,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     try {
       final parts = str.split(':');
       if (parts.length >= 2) {
-        return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+        return TimeOfDay(
+            hour: int.parse(parts[0]), minute: int.parse(parts[1]));
       }
     } catch (_) {}
     return null;
@@ -131,7 +133,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     HiveClass.saveDeliveryDetails(
       address: effectiveAddr,
       pickupDate: selectedDate.toIso8601String(),
-      fromTime: fromTime != null ? '${fromTime!.hour}:${fromTime!.minute}' : null,
+      fromTime:
+          fromTime != null ? '${fromTime!.hour}:${fromTime!.minute}' : null,
       toTime: toTime != null ? '${toTime!.hour}:${toTime!.minute}' : null,
       deliveryDate: deliveryDate?.toIso8601String(),
     );
@@ -266,9 +269,10 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
   }
 
   Future<void> _selectDeliveryDate(BuildContext context) async {
-    final initial = deliveryDate != null && !deliveryDate!.isBefore(selectedDate)
-        ? deliveryDate!
-        : selectedDate.add(const Duration(days: 2));
+    final initial =
+        deliveryDate != null && !deliveryDate!.isBefore(selectedDate)
+            ? deliveryDate!
+            : selectedDate.add(const Duration(days: 2));
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initial,
@@ -332,7 +336,10 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
     final currencyFormatter = NumberFormat('#,###');
     final int effectiveAmount = widget.totalAmount > 0
         ? widget.totalAmount
-        : basketProvider.totalPrice;
+        : (widget.isSchedulePickup
+            ? Provider.of<SchedulePickupProvider>(context, listen: false)
+                .grandTotal
+            : basketProvider.totalPrice);
 
     return ScaffoldMessenger(
       key: scaffoldKey,
@@ -361,7 +368,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
         ),
         body: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -380,15 +388,18 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                 if (authProvider.addressStreet.isNotEmpty) ...[
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: const Color(0xFFF9FAFB),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                      border: Border.all(
+                          color: const Color(0xFFE4E4E4), width: 0.8),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.home_outlined, color: Color(0xFF00AABC), size: 20),
+                        const Icon(Icons.home_outlined,
+                            color: Color(0xFF00AABC), size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Column(
@@ -420,7 +431,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                           onPressed: () {
                             setState(() {
                               selectedAddress = authProvider.addressStreet;
-                              _addressController.text = authProvider.addressStreet;
+                              _addressController.text =
+                                  authProvider.addressStreet;
                               _addressSuggestions = [];
                             });
                             _saveCurrentDetails();
@@ -446,7 +458,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   borderRadius: BorderRadius.circular(8),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                    padding: const EdgeInsets.symmetric(
+                        vertical: 11, horizontal: 14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5F7F8),
                       borderRadius: BorderRadius.circular(8),
@@ -511,7 +524,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     ),
                     suffixIcon: _addressController.text.isNotEmpty
                         ? IconButton(
-                            icon: const Icon(Icons.clear, size: 18, color: Color(0xFF757575)),
+                            icon: const Icon(Icons.clear,
+                                size: 18, color: Color(0xFF757575)),
                             onPressed: () {
                               setState(() {
                                 _addressController.clear();
@@ -524,18 +538,22 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                         : null,
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE4E4E4), width: 0.8),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFE4E4E4), width: 0.8),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFFE4E4E4), width: 0.8),
+                      borderSide: const BorderSide(
+                          color: Color(0xFFE4E4E4), width: 0.8),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(10),
-                      borderSide: const BorderSide(color: Color(0xFF00AABC), width: 1.2),
+                      borderSide: const BorderSide(
+                          color: Color(0xFF00AABC), width: 1.2),
                     ),
                   ),
                 ),
@@ -546,7 +564,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     child: LinearProgressIndicator(
                       minHeight: 2,
                       backgroundColor: Colors.grey[200],
-                      valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                          Color(0xFF00AABC)),
                     ),
                   ),
                 ],
@@ -557,7 +576,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                      border: Border.all(
+                          color: const Color(0xFFE4E4E4), width: 0.8),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.06),
@@ -570,7 +590,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12.0, vertical: 8.0),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -588,7 +609,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                                     _addressSuggestions = <AddressSuggestion>[];
                                   });
                                 },
-                                child: const Icon(Icons.close, size: 16, color: Color(0xFF757575)),
+                                child: const Icon(Icons.close,
+                                    size: 16, color: Color(0xFF757575)),
                               ),
                             ],
                           ),
@@ -598,12 +620,14 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           itemCount: _addressSuggestions.length,
-                          separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE4E4E4)),
+                          separatorBuilder: (_, __) => const Divider(
+                              height: 1, color: Color(0xFFE4E4E4)),
                           itemBuilder: (context, index) {
                             final suggestion = _addressSuggestions[index];
                             return ListTile(
                               dense: true,
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 2.0),
+                              contentPadding: const EdgeInsets.symmetric(
+                                  horizontal: 12.0, vertical: 2.0),
                               leading: Container(
                                 padding: const EdgeInsets.all(5),
                                 decoration: const BoxDecoration(
@@ -661,11 +685,13 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                      border: Border.all(
+                          color: const Color(0xFFE4E4E4), width: 0.8),
                     ),
                     child: Row(
                       children: [
@@ -687,7 +713,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                DateFormat('EEEE, MMMM d, yyyy').format(selectedDate),
+                                DateFormat('EEEE, MMMM d, yyyy')
+                                    .format(selectedDate),
                                 style: GoogleFonts.dmSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
@@ -704,7 +731,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF9E9E9E)),
+                        const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 13, color: Color(0xFF9E9E9E)),
                       ],
                     ),
                   ),
@@ -729,23 +757,30 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                         onTap: () => _selectTime(context, true),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 11),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                            border: Border.all(
+                                color: const Color(0xFFE4E4E4), width: 0.8),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.access_time_rounded, size: 16, color: Color(0xFF00AABC)),
+                              const Icon(Icons.access_time_rounded,
+                                  size: 16, color: Color(0xFF00AABC)),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  fromTime != null ? fromTime!.format(context) : 'Start Time',
+                                  fromTime != null
+                                      ? fromTime!.format(context)
+                                      : 'Start Time',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: fromTime != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                    color: fromTime != null
+                                        ? const Color(0xFF212828)
+                                        : const Color(0xFF9E9E9E),
                                   ),
                                 ),
                               ),
@@ -760,23 +795,30 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                         onTap: () => _selectTime(context, false),
                         borderRadius: BorderRadius.circular(10),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 11),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                            border: Border.all(
+                                color: const Color(0xFFE4E4E4), width: 0.8),
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.access_time_filled_rounded, size: 16, color: Color(0xFF00AABC)),
+                              const Icon(Icons.access_time_filled_rounded,
+                                  size: 16, color: Color(0xFF00AABC)),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  toTime != null ? toTime!.format(context) : 'End Time',
+                                  toTime != null
+                                      ? toTime!.format(context)
+                                      : 'End Time',
                                   style: GoogleFonts.dmSans(
                                     fontSize: 13,
                                     fontWeight: FontWeight.w600,
-                                    color: toTime != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                    color: toTime != null
+                                        ? const Color(0xFF212828)
+                                        : const Color(0xFF9E9E9E),
                                   ),
                                 ),
                               ),
@@ -805,11 +847,13 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   borderRadius: BorderRadius.circular(10),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                      border: Border.all(
+                          color: const Color(0xFFE4E4E4), width: 0.8),
                     ),
                     child: Row(
                       children: [
@@ -832,16 +876,21 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                             children: [
                               Text(
                                 deliveryDate != null
-                                    ? DateFormat('EEEE, MMMM d, yyyy').format(deliveryDate!)
+                                    ? DateFormat('EEEE, MMMM d, yyyy')
+                                        .format(deliveryDate!)
                                     : 'Select estimated delivery date',
                                 style: GoogleFonts.dmSans(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w600,
-                                  color: deliveryDate != null ? const Color(0xFF212828) : const Color(0xFF9E9E9E),
+                                  color: deliveryDate != null
+                                      ? const Color(0xFF212828)
+                                      : const Color(0xFF9E9E9E),
                                 ),
                               ),
                               Text(
-                                deliveryDate != null ? 'Tap to change delivery date' : 'Optional standard 2-day return',
+                                deliveryDate != null
+                                    ? 'Tap to change delivery date'
+                                    : 'Optional standard 2-day return',
                                 style: GoogleFonts.dmSans(
                                   fontSize: 11.5,
                                   color: const Color(0xFF757575),
@@ -850,7 +899,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                             ],
                           ),
                         ),
-                        const Icon(Icons.arrow_forward_ios_rounded, size: 13, color: Color(0xFF9E9E9E)),
+                        const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 13, color: Color(0xFF9E9E9E)),
                       ],
                     ),
                   ),
@@ -865,7 +915,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+                    border:
+                        Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -883,7 +934,9 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            widget.noFolding ? 'No Folding' : 'Standard Care Included',
+                            widget.noFolding
+                                ? 'No Folding'
+                                : 'Standard Care Included',
                             style: GoogleFonts.dmSans(
                               fontSize: 11.5,
                               color: const Color(0xFF9E9E9E),
@@ -969,75 +1022,108 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
 
     _saveCurrentDetails();
 
-    setState(() {
-      isLoading = true;
-    });
-
     final String? formattedPickupTime = fromTime != null && toTime != null
         ? '${fromTime!.format(context)} - ${toTime!.format(context)}'
         : fromTime?.format(context);
 
-    if (widget.isSchedulePickup) {
-      final sched = Provider.of<SchedulePickupProvider>(context, listen: false);
-      sched.setPickupAddress(effectiveAddress);
-      final slot = '${DateFormat('MMM d').format(selectedDate)}, ${formattedPickupTime ?? "3:00 – 4:00 PM"}';
-      sched.setPickupSlot(slot);
-
-      try {
-        final success = await sched.processPaystackOrder(
-          paystackRef: 'fm_pay_${DateTime.now().millisecondsSinceEpoch}',
-        );
-        if (success) {
-          if (mounted) {
-            Navigator.pushReplacementNamed(context, ScheduleOrderPlacedScreen.id);
-          }
-        } else {
-          if (mounted) {
-            MyMessageHandler.showSnackBar(
-              scaffoldKey,
-              'Could not complete Paystack order. Please try again.',
-            );
-          }
-        }
-      } catch (e) {
-        debugPrint('Schedule pickup order error: $e');
-        if (mounted) {
-          MyMessageHandler.showSnackBar(scaffoldKey, 'Error placing order: $e');
-        }
-      } finally {
-        if (mounted) setState(() => isLoading = false);
-      }
-      return;
-    }
-
-    // Regular basket order flow:
     final BasketProvider basketProvider =
         Provider.of<BasketProvider>(context, listen: false);
     final nav = Navigator.of(context);
-    try {
-      final double orderAmount = widget.totalAmount > 0
+
+    if (widget.isSchedulePickup) {
+      final sched = Provider.of<SchedulePickupProvider>(context, listen: false);
+      sched.setPickupAddress(effectiveAddress);
+      final slot =
+          '${DateFormat('MMM d').format(selectedDate)}, ${formattedPickupTime ?? "3:00 – 4:00 PM"}';
+      sched.setPickupSlot(slot);
+
+      final double schedAmount = widget.totalAmount > 0
           ? widget.totalAmount.toDouble()
-          : basketProvider.totalPrice.toDouble();
+          : (sched.grandTotal > 0 ? sched.grandTotal.toDouble() : 0.0);
 
       final result = await FoamPaymentSheet.show(
         context: context,
-        title: 'Complete Order Payment',
-        itemTitle: '${basketProvider.totalItems} Laundry Items',
+        title: 'Schedule Pickup Payment',
+        itemTitle: sched.currentStore.name.isNotEmpty
+            ? sched.currentStore.name
+            : 'Schedule Pickup',
         itemSubtitle: widget.noFolding
             ? 'No Folding Service'
-            : 'Standard Folding Included',
-        amount: orderAmount,
+            : 'Standard Care Included',
+        amount: schedAmount,
         purpose: FoamPaymentPurpose.order,
         noFolding: widget.noFolding,
+        storeId: sched.currentStore.id,
         pickupAddress: effectiveAddress,
         deliveryAddress: effectiveAddress,
         pickupDate: selectedDate,
         pickupTime: formattedPickupTime,
         deliveryDate: deliveryDate,
+        onProcessPayment: (method) async {
+          final ref =
+              'fm_${method.name}_${DateTime.now().millisecondsSinceEpoch}';
+          final success = await sched.processPaystackOrder(paystackRef: ref);
+          if (success) {
+            return PaymentProcessResult(
+              success: true,
+              message: 'Schedule order placed successfully! 🎉',
+              reference: ref,
+            );
+          } else {
+            return PaymentProcessResult(
+              success: false,
+              message: 'Could not complete order. Please try again.',
+            );
+          }
+        },
       );
 
       if (result != null) {
         if (result.success) {
+          if (mounted) {
+            Navigator.pushReplacementNamed(
+                context, ScheduleOrderPlacedScreen.id);
+          }
+        } else {
+          if (mounted) {
+            MyMessageHandler.showSnackBar(
+              scaffoldKey,
+              result.message.isNotEmpty
+                  ? result.message
+                  : 'Payment could not be completed. Please try again.',
+            );
+          }
+        }
+      }
+      return;
+    }
+
+    // Regular basket order flow:
+    final double orderAmount = widget.totalAmount > 0
+        ? widget.totalAmount.toDouble()
+        : basketProvider.totalPrice.toDouble();
+
+    final result = await FoamPaymentSheet.show(
+      context: context,
+      title: 'Complete Order Payment',
+      itemTitle: '',
+      itemSubtitle: widget.noFolding
+          ? 'No Folding Service'
+          : 'Standard Care Included',
+      amount: orderAmount,
+      purpose: FoamPaymentPurpose.order,
+      noFolding: widget.noFolding,
+      pickupAddress: effectiveAddress,
+      deliveryAddress: effectiveAddress,
+      pickupDate: selectedDate,
+      pickupTime: formattedPickupTime,
+      deliveryDate: deliveryDate,
+    );
+
+    if (result != null) {
+      if (result.success) {
+        setState(() => isLoading = true);
+        try {
           final previousTotalItems = basketProvider.totalItems;
           await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
 
@@ -1049,54 +1135,59 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                       ? orderData['reference'].toString()
                       : ''));
 
-          await nav.push(
-            MaterialPageRoute(
-              builder: (_) => PaymentSuccessScreen(
-                title: 'Order Placed Successfully! 🎉',
-                subtitle: 'Your laundry order was placed and confirmed.',
-                itemTitle: '$previousTotalItems Laundry Items',
-                amount: orderAmount,
-                paymentMethod: orderData != null && orderData.containsKey('paymentMethod')
-                    ? orderData['paymentMethod'].toString()
-                    : (orderData != null && orderData.containsKey('paymentType')
-                        ? orderData['paymentType'].toString()
-                        : 'Online Payment'),
-                reference: orderRef.isNotEmpty ? orderRef : null,
-                details: [
-                  MapEntry('Pickup Address', effectiveAddress),
-                  MapEntry('Pickup Date',
-                      DateFormat('dd MMM yyyy').format(selectedDate)),
-                  if (formattedPickupTime != null)
-                    MapEntry('Pickup Time', formattedPickupTime),
-                  if (deliveryDate != null)
+          if (mounted) {
+            await nav.push(
+              MaterialPageRoute(
+                builder: (_) => PaymentSuccessScreen(
+                  title: 'Order Placed Successfully! 🎉',
+                  subtitle: 'Your laundry order was placed and confirmed.',
+                  itemTitle: '$previousTotalItems Laundry Items',
+                  amount: orderAmount,
+                  paymentMethod: orderData != null &&
+                          orderData.containsKey('paymentMethod')
+                      ? orderData['paymentMethod'].toString()
+                      : (orderData != null &&
+                              orderData.containsKey('paymentType')
+                          ? orderData['paymentType'].toString()
+                          : 'Online Payment'),
+                  reference: orderRef.isNotEmpty ? orderRef : null,
+                  details: [
+                    MapEntry('Pickup Address', effectiveAddress),
+                    MapEntry('Pickup Date',
+                        DateFormat('dd MMM yyyy').format(selectedDate)),
+                    if (formattedPickupTime != null)
+                      MapEntry('Pickup Time', formattedPickupTime),
+                    if (deliveryDate != null)
+                      MapEntry('Delivery Date',
+                          DateFormat('dd MMM yyyy').format(deliveryDate!)),
                     MapEntry(
-                        'Delivery Date',
-                        DateFormat('dd MMM yyyy')
-                            .format(deliveryDate!)),
-                  MapEntry('Folding Service',
-                      widget.noFolding ? 'No Folding' : 'Standard Folding Included'),
-                ],
-                primaryButtonLabel: 'View Order in History',
-                onPrimaryPressed: () {
-                  nav.pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder: (_) => const MainScreen(initialIndex: 1),
-                    ),
-                    (route) => false,
-                  );
-                },
+                        'Folding Service',
+                        widget.noFolding
+                            ? 'No Folding'
+                            : 'Standard Care Included'),
+                  ],
+                  primaryButtonLabel: 'View Order in History',
+                  onPrimaryPressed: () {
+                    nav.pushAndRemoveUntil(
+                      MaterialPageRoute(
+                        builder: (_) => const MainScreen(initialIndex: 1),
+                      ),
+                      (route) => false,
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        } else {
-          MyMessageHandler.showSnackBar(scaffoldKey, result.message);
+            );
+          }
+        } finally {
+          if (mounted) {
+            setState(() {
+              isLoading = false;
+            });
+          }
         }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          isLoading = false;
-        });
+      } else {
+        MyMessageHandler.showSnackBar(scaffoldKey, result.message);
       }
     }
   }
