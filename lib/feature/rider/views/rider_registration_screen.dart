@@ -1,7 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/core/services/upload_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/rider/controller/rider_provider.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -34,6 +37,16 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
   final List<String> _vehicleTypes = ['Motorcycle', 'Bicycle', 'Car', 'Van'];
   bool _isLoggedIn = false;
 
+  File? _profileImageFile;
+  String? _profileImageUrl;
+  bool _isUploadingProfileImage = false;
+
+  File? _driverLicenseFile;
+  String? _driverLicenseUrl;
+  bool _isUploadingDriverLicense = false;
+
+  final ImagePicker _picker = ImagePicker();
+
   @override
   void initState() {
     super.initState();
@@ -55,6 +68,12 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       if (auth.email.isNotEmpty) {
         _emailController.text = auth.email;
       }
+      if (_profileImageUrl == null && HiveClass.pictureExists()) {
+        final pic = HiveClass.getPic();
+        if (pic.isNotEmpty) {
+          _profileImageUrl = pic;
+        }
+      }
       setState(() {});
     }
   }
@@ -71,8 +90,126 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
     super.dispose();
   }
 
+  Future<void> _pickAndUploadImage({
+    required bool isProfileImage,
+    required ImageSource source,
+  }) async {
+    try {
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      if (picked == null) return;
+
+      final file = File(picked.path);
+      setState(() {
+        if (isProfileImage) {
+          _profileImageFile = file;
+          _isUploadingProfileImage = true;
+        } else {
+          _driverLicenseFile = file;
+          _isUploadingDriverLicense = true;
+        }
+      });
+
+      final uploadedUrl = await UploadService.uploadImage(file);
+
+      if (!mounted) return;
+      setState(() {
+        if (isProfileImage) {
+          _isUploadingProfileImage = false;
+          if (uploadedUrl != null) {
+            _profileImageUrl = uploadedUrl;
+          }
+        } else {
+          _isUploadingDriverLicense = false;
+          if (uploadedUrl != null) {
+            _driverLicenseUrl = uploadedUrl;
+          }
+        }
+      });
+
+      if (uploadedUrl == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to upload image. Please try again.'),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        if (isProfileImage) {
+          _isUploadingProfileImage = false;
+        } else {
+          _isUploadingDriverLicense = false;
+        }
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error selecting image: $e'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
+  void _showImageSourceActionSheet({required bool isProfileImage}) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined, color: Color(0xFF00AABC)),
+              title: Text('Take Photo', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadImage(isProfileImage: isProfileImage, source: ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined, color: Color(0xFF00AABC)),
+              title: Text('Choose from Gallery', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+              onTap: () {
+                Navigator.pop(ctx);
+                _pickAndUploadImage(isProfileImage: isProfileImage, source: ImageSource.gallery);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _submitRegistration() async {
     if (!_formKey.currentState!.validate()) return;
+
+    if (_profileImageUrl == null || _profileImageUrl!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please upload an image of yourself (Profile Photo)'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    if (_driverLicenseUrl == null || _driverLicenseUrl!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please upload a photo of your Driver's License"),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
 
     final provider = Provider.of<RiderProvider>(context, listen: false);
 
@@ -85,6 +222,8 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
       password: _isLoggedIn
           ? (_passwordController.text.trim().isNotEmpty ? _passwordController.text.trim() : null)
           : _passwordController.text.trim(),
+      profileImageUrl: _profileImageUrl,
+      driverLicenseUrl: _driverLicenseUrl,
       vehicleType: _selectedVehicleType.toUpperCase(),
       vehiclePlate: _plateController.text.trim(),
       licenseNumber: _licenseController.text.trim().isNotEmpty
@@ -380,6 +519,10 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
                   ),
                 ),
 
+                const SizedBox(height: 24),
+                // Identity & Verification Documents
+                _buildDocumentUploadSection(),
+
                 const SizedBox(height: 32),
                 // Submit Button
                 SizedBox(
@@ -410,6 +553,251 @@ class _RiderRegistrationScreenState extends State<RiderRegistrationScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDocumentUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('Identity & Verification Documents'),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.black12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '1. Profile Photo (Image of You)',
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'A clear, well-lit photo of yourself for customer and vendor delivery identification.',
+                style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 14),
+              Center(
+                child: Stack(
+                  alignment: Alignment.bottomRight,
+                  children: [
+                    Container(
+                      width: 96,
+                      height: 96,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF0F9FA),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: _profileImageUrl != null ? const Color(0xFF00AABC) : Colors.black12,
+                          width: 2.5,
+                        ),
+                      ),
+                      child: ClipOval(
+                        child: _isUploadingProfileImage
+                            ? const Center(
+                                child: SizedBox(
+                                  width: 26,
+                                  height: 26,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Color(0xFF00AABC),
+                                  ),
+                                ),
+                              )
+                            : _profileImageFile != null
+                                ? Image.file(_profileImageFile!, fit: BoxFit.cover)
+                                : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                                    ? Image.network(
+                                        _profileImageUrl!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => const Icon(
+                                          Icons.person,
+                                          size: 48,
+                                          color: Color(0xFF00AABC),
+                                        ),
+                                      )
+                                    : const Icon(
+                                        Icons.person_outline,
+                                        size: 48,
+                                        color: Color(0xFF00AABC),
+                                      ),
+                      ),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: InkWell(
+                        onTap: _isUploadingProfileImage
+                            ? null
+                            : () => _showImageSourceActionSheet(isProfileImage: true),
+                        child: Container(
+                          padding: const EdgeInsets.all(7),
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF00AABC),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.camera_alt, size: 16, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Center(
+                child: TextButton.icon(
+                  onPressed: _isUploadingProfileImage
+                      ? null
+                      : () => _showImageSourceActionSheet(isProfileImage: true),
+                  icon: Icon(
+                    _profileImageUrl != null ? Icons.check_circle : Icons.upload_file,
+                    size: 16,
+                    color: _profileImageUrl != null ? const Color(0xFF059669) : const Color(0xFF00AABC),
+                  ),
+                  label: Text(
+                    _isUploadingProfileImage
+                        ? 'Uploading photo...'
+                        : (_profileImageUrl != null && _profileImageUrl!.isNotEmpty)
+                            ? 'Change Profile Photo'
+                            : 'Upload Profile Photo',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: _profileImageUrl != null ? const Color(0xFF059669) : const Color(0xFF00AABC),
+                    ),
+                  ),
+                ),
+              ),
+              const Divider(height: 28),
+              Text(
+                "2. Driver's License",
+                style: GoogleFonts.dmSans(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                "A clear photo or scan of your valid driver's license for compliance approval.",
+                style: GoogleFonts.dmSans(fontSize: 12, color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              InkWell(
+                onTap: _isUploadingDriverLicense
+                    ? null
+                    : () => _showImageSourceActionSheet(isProfileImage: false),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: _driverLicenseUrl != null
+                        ? const Color(0xFFECFDF5)
+                        : const Color(0xFFF9FAFB),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _driverLicenseUrl != null
+                          ? const Color(0xFF10B981)
+                          : Colors.black12,
+                      width: 1.2,
+                    ),
+                  ),
+                  child: _isUploadingDriverLicense
+                      ? const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Color(0xFF00AABC),
+                                  ),
+                                ),
+                                SizedBox(width: 12),
+                                Text('Uploading driver license...'),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Row(
+                          children: [
+                            Container(
+                              width: 50,
+                              height: 50,
+                              decoration: BoxDecoration(
+                                color: _driverLicenseUrl != null
+                                    ? const Color(0xFFD1FAE5)
+                                    : const Color(0xFFE5F7F8),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: _driverLicenseFile != null
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(_driverLicenseFile!, fit: BoxFit.cover),
+                                    )
+                                  : Icon(
+                                      _driverLicenseUrl != null
+                                          ? Icons.assignment_turned_in_outlined
+                                          : Icons.badge_outlined,
+                                      color: _driverLicenseUrl != null
+                                          ? const Color(0xFF059669)
+                                          : const Color(0xFF00AABC),
+                                      size: 26,
+                                    ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _driverLicenseUrl != null
+                                        ? "Driver's License Uploaded ✓"
+                                        : "Upload Driver's License",
+                                    style: GoogleFonts.dmSans(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                      color: _driverLicenseUrl != null
+                                          ? const Color(0xFF065F46)
+                                          : const Color(0xFF212828),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    _driverLicenseUrl != null
+                                        ? 'Tap to replace photo or document'
+                                        : 'Take a photo or choose from gallery',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12,
+                                      color: _driverLicenseUrl != null
+                                          ? const Color(0xFF047857)
+                                          : Colors.black45,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Icon(
+                              _driverLicenseUrl != null
+                                  ? Icons.check_circle_rounded
+                                  : Icons.file_upload_outlined,
+                              color: _driverLicenseUrl != null
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFF00AABC),
+                            ),
+                          ],
+                        ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

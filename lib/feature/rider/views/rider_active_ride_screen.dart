@@ -298,26 +298,26 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     VoidCallback onAction = () {};
 
     if (stage == 'EN_ROUTE_TO_STORE') {
-      title = 'Head to Laundry Store';
-      subtitle = 'Arrive at ${ride.storeName} to collect packaged laundry.';
-      buttonText = 'Arrived at Store & Enter Pickup PIN';
-      buttonIcon = Icons.storefront;
+      title = 'Head to Pickup Location';
+      subtitle = 'Arrive at ${ride.pickupAddress.isNotEmpty ? ride.pickupAddress : ride.storeName} to collect laundry and input customer PIN.';
+      buttonText = 'Arrived at Pickup & Enter Customer PIN';
+      buttonIcon = Icons.pin;
       onAction = () {
         _promptPinModal(
-          title: 'Confirm Pickup from Store',
-          description: 'Ask store staff for the 4-digit pickup PIN.',
+          title: 'Confirm Pickup from Customer',
+          description: 'Ask customer for their 4-digit pickup PIN.',
           expectedPin: ride.pickupPin ?? '1234',
           onPinConfirmed: (pin) => _advanceStage('PICKED_UP', pin: pin),
         );
       };
     } else if (stage == 'PICKED_UP') {
       title = 'Items Picked Up Successfully';
-      subtitle = 'Packages secured in vehicle. Proceed towards customer delivery location.';
-      buttonText = 'Start Journey to Customer (Out for Delivery)';
+      subtitle = 'Packages secured in vehicle. Proceed towards destination (${ride.deliveryAddress.isNotEmpty ? ride.deliveryAddress : ride.storeAddress}).';
+      buttonText = 'Start Journey to Delivery / Store';
       buttonIcon = Icons.directions_bike;
       onAction = () => _advanceStage('OUT_FOR_DELIVERY');
     } else if (stage == 'OUT_FOR_DELIVERY') {
-      title = 'Delivering to Customer';
+      title = 'Delivering to Destination';
       subtitle = 'Deliver package to ${ride.customerName} at ${ride.deliveryAddress}.';
       buttonText = 'Confirm Handover & Enter Delivery PIN';
       buttonIcon = Icons.verified;
@@ -349,6 +349,33 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (ride.pickupTime != null || ride.scheduledPickupTime != null) ...[
+            Container(
+              margin: const EdgeInsets.only(bottom: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFFFE082)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.schedule_rounded, color: Color(0xFFF57F17), size: 18),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Scheduled Pickup: ${ride.pickupTime ?? "Scheduled"}',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFFE65100),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           Text(
             title,
             style: GoogleFonts.dmSans(
@@ -386,6 +413,87 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
                       ),
                     ),
             ),
+          ),
+          if (stage == 'EN_ROUTE_TO_STORE') ...[
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent, width: 1.2),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+                onPressed: provider.isLoading ? null : () => _confirmCancelRide(ride.orderId),
+                icon: const Icon(Icons.close_rounded, size: 18),
+                label: Text(
+                  'Cancel Ride (Release to Nearby Riders)',
+                  style: GoogleFonts.dmSans(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _confirmCancelRide(int orderId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 26),
+            const SizedBox(width: 8),
+            Text(
+              'Cancel This Ride?',
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.bold, fontSize: 18),
+            ),
+          ],
+        ),
+        content: Text(
+          'Are you sure you want to cancel this pickup? The ride will immediately be made available to other nearby riders.',
+          style: GoogleFonts.dmSans(fontSize: 14, color: const Color(0xFF5E5E5E)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text('Keep Ride', style: GoogleFonts.dmSans(color: Colors.black54, fontWeight: FontWeight.bold)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              Navigator.pop(ctx);
+              final provider = Provider.of<RiderProvider>(context, listen: false);
+              final ok = await provider.cancelRide(orderId);
+              if (!mounted) return;
+              if (ok) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Ride cancelled. Order released to nearby riders.'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+                Navigator.pop(context);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(provider.errorMessage ?? 'Failed to cancel ride'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
+              }
+            },
+            child: Text('Cancel Ride', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

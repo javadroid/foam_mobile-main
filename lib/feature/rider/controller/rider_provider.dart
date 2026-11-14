@@ -245,6 +245,8 @@ class RiderProvider extends ChangeNotifier {
     required String phone,
     String? email,
     String? password,
+    String? profileImageUrl,
+    String? driverLicenseUrl,
     required String vehicleType,
     required String vehiclePlate,
     String? licenseNumber,
@@ -268,6 +270,8 @@ class RiderProvider extends ChangeNotifier {
               'phone': phone.trim(),
               'email': email?.trim(),
               if (password != null && password.isNotEmpty) 'password': password,
+              if (profileImageUrl != null && profileImageUrl.isNotEmpty) 'profileImageUrl': profileImageUrl.trim(),
+              if (driverLicenseUrl != null && driverLicenseUrl.isNotEmpty) 'driverLicenseUrl': driverLicenseUrl.trim(),
               'vehicleType': vehicleType.toUpperCase(),
               'vehiclePlate': vehiclePlate.trim(),
               'licenseNumber': licenseNumber?.trim(),
@@ -285,6 +289,9 @@ class RiderProvider extends ChangeNotifier {
         if (data['rider'] != null) {
           _currentRider = RiderProfile.fromJson(data['rider']);
           _token = data['token'];
+          if (HiveClass.getToken().isEmpty && data['userToken'] != null) {
+            HiveClass.insertToken(data['userToken'].toString());
+          }
         }
         _isLoading = false;
         notifyListeners();
@@ -302,6 +309,8 @@ class RiderProvider extends ChangeNotifier {
         name: name,
         phone: phone,
         email: email,
+        profileImageUrl: profileImageUrl,
+        driverLicenseUrl: driverLicenseUrl,
         vehicleType: vehicleType,
         vehiclePlate: vehiclePlate,
         licenseNumber: licenseNumber,
@@ -583,7 +592,16 @@ class RiderProvider extends ChangeNotifier {
           .timeout(const Duration(seconds: 8));
 
       if (response.statusCode == 200) {
-        _currentActiveRide = ActiveRide.fromAvailable(ride);
+        final data = jsonDecode(response.body);
+        if (data['order'] != null) {
+          _currentActiveRide = ActiveRide.fromJson({
+            ...data,
+            'pin': data['order']?['pickupPin'] ?? ride.pin,
+            'scheduledPickupTime': data['scheduledPickupTime'] ?? ride.scheduledPickupTime,
+          });
+        } else {
+          _currentActiveRide = ActiveRide.fromAvailable(ride);
+        }
         _availableRides.removeWhere((r) => r.id == ride.id);
         _isLoading = false;
         notifyListeners();
@@ -605,6 +623,47 @@ class RiderProvider extends ChangeNotifier {
       // Local fallback for offline demo
       _currentActiveRide = ActiveRide.fromAvailable(ride);
       _availableRides.removeWhere((r) => r.id == ride.id);
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+  }
+
+  /// Cancel an accepted ride before customer PIN entry
+  /// Releases ride back to pool and makes it available to other nearby riders
+  Future<bool> cancelRide(int orderId, {String? reason}) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final response = await http
+          .post(
+            Uri.parse('$_baseUrl/api/rider/rides/$orderId/cancel'),
+            headers: _authHeaders,
+            body: jsonEncode({
+              if (reason != null && reason.isNotEmpty) 'reason': reason,
+            }),
+          )
+          .timeout(const Duration(seconds: 8));
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200 && data['status'] == true) {
+        _currentActiveRide = null;
+        await fetchAvailableRides();
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      } else {
+        _errorMessage = data['error'] ?? data['message'] ?? 'Failed to cancel ride';
+        _isLoading = false;
+        notifyListeners();
+        return false;
+      }
+    } catch (e) {
+      // Local fallback for offline mode
+      _currentActiveRide = null;
       _isLoading = false;
       notifyListeners();
       return true;

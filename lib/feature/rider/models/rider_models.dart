@@ -3,6 +3,8 @@ class RiderProfile {
   final String name;
   final String phone;
   final String? email;
+  final String? profileImageUrl;
+  final String? driverLicenseUrl;
   final String vehicleType;
   final String? vehiclePlate;
   final String? licenseNumber;
@@ -21,6 +23,8 @@ class RiderProfile {
     required this.name,
     required this.phone,
     this.email,
+    this.profileImageUrl,
+    this.driverLicenseUrl,
     this.vehicleType = 'MOTORCYCLE',
     this.vehiclePlate,
     this.licenseNumber,
@@ -43,6 +47,8 @@ class RiderProfile {
       name: json['name']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
       email: json['email']?.toString(),
+      profileImageUrl: json['profileImageUrl']?.toString() ?? json['avatarUrl']?.toString(),
+      driverLicenseUrl: json['driverLicenseUrl']?.toString(),
       vehicleType: json['vehicleType']?.toString() ?? 'MOTORCYCLE',
       vehiclePlate: json['vehiclePlate']?.toString(),
       licenseNumber: json['licenseNumber']?.toString(),
@@ -86,6 +92,10 @@ class AvailableRide {
   final double earnings;
   final double deliveryFee;
   final double distanceKm;
+  final String? scheduledPickupTime;
+  final String? pickupTime;
+  final String? pickupDate;
+  final String? pin;
   final DateTime createdAt;
 
   AvailableRide({
@@ -101,6 +111,10 @@ class AvailableRide {
     required this.earnings,
     required this.deliveryFee,
     this.distanceKm = 4.2,
+    this.scheduledPickupTime,
+    this.pickupTime,
+    this.pickupDate,
+    this.pin,
     required this.createdAt,
   });
 
@@ -128,6 +142,10 @@ class AvailableRide {
       distanceKm: json['distanceKm'] != null
           ? (double.tryParse(json['distanceKm'].toString()) ?? 4.2)
           : 4.2,
+      scheduledPickupTime: json['scheduledPickupTime']?.toString(),
+      pickupTime: json['pickupTime']?.toString(),
+      pickupDate: json['pickupDate']?.toString(),
+      pin: json['pin']?.toString(),
       createdAt: json['createdAt'] != null
           ? (DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now())
           : DateTime.now(),
@@ -148,6 +166,11 @@ class ActiveRide {
   final String? pickupPin;
   final String? deliveryPin;
   final double earnings;
+  final String? scheduledPickupTime;
+  final String? pickupTime;
+  final String? pickupDate;
+
+  int get id => orderId;
 
   ActiveRide({
     required this.orderId,
@@ -162,6 +185,9 @@ class ActiveRide {
     this.pickupPin,
     this.deliveryPin,
     required this.earnings,
+    this.scheduledPickupTime,
+    this.pickupTime,
+    this.pickupDate,
   });
 
   factory ActiveRide.fromAvailable(AvailableRide ride) {
@@ -175,9 +201,42 @@ class ActiveRide {
       customerName: ride.customerName,
       customerPhone: ride.customerPhone,
       stage: 'EN_ROUTE_TO_STORE',
-      pickupPin: '1234',
+      pickupPin: ride.pin ?? '1234',
       deliveryPin: '5678',
       earnings: ride.earnings,
+      scheduledPickupTime: ride.scheduledPickupTime,
+      pickupTime: ride.pickupTime,
+      pickupDate: ride.pickupDate,
+    );
+  }
+
+  factory ActiveRide.fromJson(Map<String, dynamic> json) {
+    final order = json['order'] is Map ? json['order'] as Map<String, dynamic> : json;
+    final store = order['store'] is Map ? order['store'] as Map<String, dynamic> : null;
+    final user = order['user'] is Map ? order['user'] as Map<String, dynamic> : null;
+
+    final customerFirst = user?['firstName']?.toString() ?? '';
+    final customerLast = user?['lastName']?.toString() ?? '';
+    final custName = '$customerFirst $customerLast'.trim();
+
+    return ActiveRide(
+      orderId: order['id'] is int ? order['id'] : (int.tryParse(order['id']?.toString() ?? '') ?? 0),
+      orderNumber: order['orderNumber']?.toString() ?? 'FOAM-${order['id'] ?? 0}',
+      storeName: store?['name']?.toString() ?? order['storeName']?.toString() ?? 'Foam Laundry Hub',
+      storeAddress: store?['address']?.toString() ?? order['storeAddress']?.toString() ?? '',
+      pickupAddress: order['pickupAddress']?.toString() ?? '',
+      deliveryAddress: order['deliveryAddress']?.toString() ?? '',
+      customerName: custName.isNotEmpty ? custName : (order['customerName']?.toString() ?? 'Customer'),
+      customerPhone: user?['phone']?.toString() ?? order['customerPhone']?.toString() ?? '',
+      stage: order['vendorStatus']?.toString() ?? json['stage']?.toString() ?? 'EN_ROUTE_TO_STORE',
+      pickupPin: order['pickupPin']?.toString() ?? json['pin']?.toString(),
+      deliveryPin: order['deliveryPin']?.toString(),
+      earnings: (json['earnings'] != null)
+          ? (double.tryParse(json['earnings'].toString()) ?? 1500.0)
+          : (order['deliveryFee'] != null ? (double.tryParse(order['deliveryFee'].toString()) ?? 1500.0) : 1500.0),
+      scheduledPickupTime: json['scheduledPickupTime']?.toString() ?? order['scheduledPickupTime']?.toString(),
+      pickupTime: order['pickupTime']?.toString(),
+      pickupDate: order['pickupDate']?.toString(),
     );
   }
 }

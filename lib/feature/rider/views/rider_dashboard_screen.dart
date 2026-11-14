@@ -507,6 +507,32 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
               ),
             ],
           ),
+          if (ride.pickupTime != null && ride.pickupTime!.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(color: const Color(0xFFFFECB3)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.schedule_rounded, size: 14, color: Color(0xFFF57F17)),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Pickup Schedule: ${ride.pickupTime}',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFFE65100),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
