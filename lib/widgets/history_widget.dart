@@ -9,6 +9,7 @@ class HistoryWidget extends StatelessWidget {
   final String? date;
   final String? details;
   final VoidCallback onTap;
+  final VoidCallback? onTrack;
 
   const HistoryWidget({
     super.key,
@@ -16,6 +17,7 @@ class HistoryWidget extends StatelessWidget {
     this.date,
     this.details,
     required this.onTap,
+    this.onTrack,
   });
 
   @override
@@ -227,7 +229,7 @@ class HistoryWidget extends StatelessWidget {
                 const Divider(height: 1, color: Color(0xFFF1F5F9)),
                 const SizedBox(height: 12),
 
-                // Bottom row: Total amount & View receipt button
+                // Bottom row: Total amount & Track / View details button
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -254,19 +256,59 @@ class HistoryWidget extends StatelessWidget {
                     ),
                     Row(
                       children: [
-                        Text(
-                          'View Details',
-                          style: GoogleFonts.dmSans(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.primaryAccentColor,
+                        if (!isCancelled && onTrack != null) ...[
+                          InkWell(
+                            borderRadius: BorderRadius.circular(8),
+                            onTap: onTrack,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: AppColors.primaryAccentColor.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(
+                                  color: AppColors.primaryAccentColor.withValues(alpha: 0.3),
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.near_me_outlined,
+                                    size: 14,
+                                    color: AppColors.primaryAccentColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'Track',
+                                    style: GoogleFonts.dmSans(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.primaryAccentColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 13,
-                          color: AppColors.primaryAccentColor,
+                          const SizedBox(width: 10),
+                        ],
+                        Row(
+                          children: [
+                            Text(
+                              'View Details',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.arrow_forward_ios_rounded,
+                              size: 13,
+                              color: Color(0xFF64748B),
+                            ),
+                          ],
                         ),
                       ],
                     ),

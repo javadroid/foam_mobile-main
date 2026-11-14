@@ -9,6 +9,8 @@ import 'package:pay/pay.dart';
 import 'package:provider/provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
+import 'package:foam_mobile/feature/schedule_pickup/controller/customer_schedule_service.dart';
+import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/wallet/controller/wallet_provider.dart';
 import 'package:foam_mobile/utils/values.dart';
 
@@ -720,6 +722,232 @@ class FoamPaymentService {
         }
         return PaymentProcessResult(
             success: false, message: '$providerName error: $e');
+      }
+    }
+
+    return PaymentProcessResult(
+        success: false, message: 'Invalid payment method');
+  }
+
+  /// -------------------------------------------------------------
+  /// 2b. VENDOR SCHEDULE PICKUP ORDERS END-TO-END
+  /// -------------------------------------------------------------
+
+  /// Pay for and place a vendor schedule order using the chosen payment method
+  /// ONLY succeeds and confirms order when payment is fully verified.
+  static Future<PaymentProcessResult> processScheduleOrderPayment({
+    required BuildContext context,
+    required SchedulePickupProvider provider,
+    required FoamPaymentMethod method,
+    required double amount,
+    required String pickupAddress,
+    DateTime? pickupDate,
+    String? pickupTime,
+    String? deliveryAddress,
+    DateTime? deliveryDate,
+    String? deliveryTime,
+  }) async {
+    final storeName = provider.currentStore.name.isNotEmpty
+        ? provider.currentStore.name
+        : 'Foam Laundry Store';
+    final int amountInt = amount.round();
+
+    // A. PAYSTACK
+    if (method == FoamPaymentMethod.paystack) {
+      try {
+        final initRes = await CustomerScheduleService.initializeSchedulePayment(
+          storeId: provider.currentStore.id,
+          tier: provider.selectedTierId,
+          items: provider.items,
+          pickupAddress: pickupAddress,
+          pickupTime: pickupTime ?? provider.pickupSlot,
+          deliveryAddress: deliveryAddress ?? pickupAddress,
+          totalPrice: amountInt,
+        );
+
+        if (initRes['status'] != true || initRes['reference'] == null) {
+          final err = initRes['error'] ??
+              initRes['message'] ??
+              'Failed to initialize Paystack order payment';
+          return PaymentProcessResult(success: false, message: err);
+        }
+
+        final String reference = initRes['reference'];
+        final String? authUrl = initRes['authorization_url'];
+
+        if (authUrl == null || authUrl.isEmpty) {
+          return PaymentProcessResult(
+            success: false,
+            message: 'Paystack authorization URL was not received from server.',
+          );
+        }
+
+        if (!context.mounted) {
+          return PaymentProcessResult(
+              success: false, message: 'Payment cancelled');
+        }
+
+        final completed = await _showPaystackCheckoutModal(
+          context: context,
+          title: 'Paystack Checkout',
+          planName: 'Order at $storeName',
+          amount: amount,
+          authUrl: authUrl,
+          reference: reference,
+        );
+
+        if (!completed) {
+          return PaymentProcessResult(
+            success: false,
+            message: 'Paystack payment was cancelled or closed.',
+          );
+        }
+
+        // Verify and create order with backend
+        final success =
+            await provider.processPaystackOrder(paystackRef: reference);
+        if (success && provider.lastCreatedOrder != null) {
+          return PaymentProcessResult(
+            success: true,
+            message: 'Order paid and confirmed via Paystack! 🧺',
+            reference: reference,
+            data: provider.lastCreatedOrder,
+          );
+        } else {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Payment verification failed with Paystack. Order was not placed.',
+          );
+        }
+      } catch (e) {
+        return PaymentProcessResult(
+          success: false,
+          message: 'Paystack payment error: $e',
+        );
+      }
+    }
+
+    // B. APPLE PAY (Native iOS - NOT Paystack)
+    // "the apple payment work on it dont paysatck for it use apple it self of it"
+    if (method == FoamPaymentMethod.applePay) {
+      try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(PayProvider.apple_pay);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Apple Pay is not configured on this device or has no supported cards. Please add a card to Apple Wallet or pay via Paystack.',
+          );
+        }
+
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
+          PayProvider.apple_pay,
+          [
+            PaymentItem(
+              label: storeName,
+              amount: amount.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
+        final reference =
+            'ord_sched_apay_${DateTime.now().millisecondsSinceEpoch}';
+
+        final success = await provider.processApplePayOrder(
+          token: jsonEncode(paymentResult),
+          reference: reference,
+        );
+
+        if (success && provider.lastCreatedOrder != null) {
+          return PaymentProcessResult(
+            success: true,
+            message: 'Order confirmed with Apple Pay! 🧺',
+            reference: reference,
+            data: provider.lastCreatedOrder,
+          );
+        } else {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Apple Pay transaction failed on server. Order was not placed.',
+          );
+        }
+      } catch (e) {
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') ||
+            errStr.contains('canceled') ||
+            errStr.contains('USER_CANCELLED')) {
+          return PaymentProcessResult(
+              success: false, message: 'Apple Pay was cancelled by user.');
+        }
+        return PaymentProcessResult(
+            success: false, message: 'Apple Pay error: $e');
+      }
+    }
+
+    // C. GOOGLE PAY (Native Android)
+    if (method == FoamPaymentMethod.googlePay) {
+      try {
+        final payClient = await _getPayClient();
+        final canPay = await payClient.userCanPay(PayProvider.google_pay);
+
+        if (!canPay) {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Google Pay is not set up on this device or has no active payment methods. Please configure Google Wallet or pay with Debit Card via Paystack.',
+          );
+        }
+
+        final paymentResult = await _showPlatformPaymentSelector(
+          payClient,
+          PayProvider.google_pay,
+          [
+            PaymentItem(
+              label: storeName,
+              amount: amount.toStringAsFixed(2),
+              status: PaymentItemStatus.final_price,
+            ),
+          ],
+        );
+
+        final reference =
+            'ord_sched_gpay_${DateTime.now().millisecondsSinceEpoch}';
+
+        final success = await provider.processGooglePayOrder(
+          token: jsonEncode(paymentResult),
+          reference: reference,
+        );
+
+        if (success && provider.lastCreatedOrder != null) {
+          return PaymentProcessResult(
+            success: true,
+            message: 'Order confirmed with Google Pay! 🧺',
+            reference: reference,
+            data: provider.lastCreatedOrder,
+          );
+        } else {
+          return PaymentProcessResult(
+            success: false,
+            message:
+                'Google Pay transaction failed on server. Order was not placed.',
+          );
+        }
+      } catch (e) {
+        final errStr = e.toString();
+        if (errStr.contains('Canceled') ||
+            errStr.contains('canceled') ||
+            errStr.contains('USER_CANCELLED')) {
+          return PaymentProcessResult(
+              success: false, message: 'Google Pay was cancelled by user.');
+        }
+        return PaymentProcessResult(
+            success: false, message: 'Google Pay error: $e');
       }
     }
 

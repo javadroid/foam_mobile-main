@@ -681,8 +681,8 @@ class SchedulePickupProvider extends ChangeNotifier {
     }
   }
 
-  /// Create order via Paystack only
-  Future<bool> processPaystackOrder({String? paystackRef}) async {
+  /// Create order via verified Paystack payment
+  Future<bool> processPaystackOrder({required String paystackRef}) async {
     _isLoading = true;
     notifyListeners();
 
@@ -699,12 +699,13 @@ class SchedulePickupProvider extends ChangeNotifier {
               ))
           .toList();
 
-      final res = await CustomerScheduleService.createScheduleOrderPaystack(
+      final res = await CustomerScheduleService.createScheduleOrder(
         storeId: currentStore.id,
         tier: _selectedTierId,
         items: orderItems,
         pickupAddress: _pickupAddress,
         pickupTime: _pickupSlot,
+        paymentMethod: 'PAYSTACK',
         paystackRef: paystackRef,
         totalPrice: grandTotal,
       );
@@ -719,19 +720,108 @@ class SchedulePickupProvider extends ChangeNotifier {
       debugPrint('Error placing Paystack schedule order: $e');
     }
 
-    // Default fallback order for smooth offline/test UX
-    _lastCreatedOrder = {
-      'id': 2038,
-      'orderNumber': 'FM-2038',
-      'storeName': currentStore.name,
-      'pickupPin': '3921',
-      'deliveryPin': '6604',
-      'totalPrice': grandTotal,
-      'pickupTime': _pickupSlot,
-    };
+    _lastCreatedOrder = null;
     _isLoading = false;
     notifyListeners();
-    return true;
+    return false;
+  }
+
+  /// Create order via native Apple Pay (NOT Paystack)
+  Future<bool> processApplePayOrder({
+    required String token,
+    String? reference,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final orderItems = _items
+          .map((i) => ScheduleItem(
+                id: i.id,
+                name: i.name,
+                price: getItemPrice(i),
+                quantity: i.quantity,
+                category: i.category,
+                foldType: i.foldType,
+                imageUrl: i.imageUrl,
+              ))
+          .toList();
+
+      final res = await CustomerScheduleService.createScheduleOrder(
+        storeId: currentStore.id,
+        tier: _selectedTierId,
+        items: orderItems,
+        pickupAddress: _pickupAddress,
+        pickupTime: _pickupSlot,
+        paymentMethod: 'APPLE_PAY',
+        token: token,
+        reference: reference,
+        totalPrice: grandTotal,
+      );
+
+      if (res['status'] == true && res['order'] != null) {
+        _lastCreatedOrder = res['order'] as Map<String, dynamic>;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error placing Apple Pay schedule order: $e');
+    }
+
+    _lastCreatedOrder = null;
+    _isLoading = false;
+    notifyListeners();
+    return false;
+  }
+
+  /// Create order via native Google Pay
+  Future<bool> processGooglePayOrder({
+    required String token,
+    String? reference,
+  }) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      final orderItems = _items
+          .map((i) => ScheduleItem(
+                id: i.id,
+                name: i.name,
+                price: getItemPrice(i),
+                quantity: i.quantity,
+                category: i.category,
+                foldType: i.foldType,
+                imageUrl: i.imageUrl,
+              ))
+          .toList();
+
+      final res = await CustomerScheduleService.createScheduleOrder(
+        storeId: currentStore.id,
+        tier: _selectedTierId,
+        items: orderItems,
+        pickupAddress: _pickupAddress,
+        pickupTime: _pickupSlot,
+        paymentMethod: 'GOOGLE_PAY',
+        token: token,
+        reference: reference,
+        totalPrice: grandTotal,
+      );
+
+      if (res['status'] == true && res['order'] != null) {
+        _lastCreatedOrder = res['order'] as Map<String, dynamic>;
+        _isLoading = false;
+        notifyListeners();
+        return true;
+      }
+    } catch (e) {
+      debugPrint('Error placing Google Pay schedule order: $e');
+    }
+
+    _lastCreatedOrder = null;
+    _isLoading = false;
+    notifyListeners();
+    return false;
   }
 
   @visibleForTesting

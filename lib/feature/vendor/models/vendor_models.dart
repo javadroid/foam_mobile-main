@@ -221,8 +221,8 @@ class VendorOrder {
       vendorEarnings: vendorEarnings,
       status: json['vendorStatus']?.toString() ??
           (json['status'] == 'ACCEPTED'
-              ? 'NEW'
-              : (json['status']?.toString() ?? 'NEW')),
+              ? 'ACCEPTED'
+              : (json['status']?.toString() ?? 'ACCEPTED')),
       pickupPin: json['pickupPin']?.toString(),
       deliveryPin: json['deliveryPin']?.toString(),
       items: items,

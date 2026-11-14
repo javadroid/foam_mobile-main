@@ -4,6 +4,7 @@ import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/Screens/home/services_screen/controllers/remote_services.dart';
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
 import 'package:foam_mobile/core/Screens/history/order_details_screen.dart';
+import 'package:foam_mobile/feature/schedule_pickup/views/08_pickup_leg_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
 import 'package:foam_mobile/widgets/history_widget.dart';
@@ -212,6 +213,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                 builder: (context) => OrderDetailsScreen(order: order),
                               ),
                             ).then((_) => fetchOrders());
+                          },
+                          onTrack: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ScheduleTrackingScreen(orderId: order.id),
+                              ),
+                            );
                           },
                         );
                       }).toList(),

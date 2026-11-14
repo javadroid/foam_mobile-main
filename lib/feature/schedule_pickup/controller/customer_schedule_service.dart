@@ -110,7 +110,123 @@ class CustomerScheduleService {
     return const [];
   }
 
-  /// Create order with Paystack only
+  /// Initialize Paystack payment for schedule order
+  static Future<Map<String, dynamic>> initializeSchedulePayment({
+    required String storeId,
+    required String tier,
+    required List<ScheduleItem> items,
+    required String pickupAddress,
+    required String pickupTime,
+    required int totalPrice,
+    String? deliveryAddress,
+  }) async {
+    try {
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/orders/initialize-payment');
+      final body = jsonEncode({
+        'storeId': storeId,
+        'tier': tier,
+        'totalPrice': totalPrice,
+        'items': items
+            .where((i) => i.quantity > 0)
+            .map((i) => {
+                  'name': i.name,
+                  'price': i.price,
+                  'quantity': i.quantity,
+                })
+            .toList(),
+        'pickupAddress': pickupAddress,
+        'pickupTime': pickupTime,
+        if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
+      });
+
+      final res = await http
+          .post(uri, headers: await _getHeaders(), body: body)
+          .timeout(const Duration(seconds: 8));
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      } else {
+        final err = jsonDecode(res.body);
+        return {
+          'status': false,
+          'message': err['error'] ??
+              err['message'] ??
+              'Failed to initialize schedule order payment',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error initializing schedule payment: $e');
+      return {
+        'status': false,
+        'message': 'Unable to connect to server: $e',
+      };
+    }
+  }
+
+  /// Create order with verified payment (Paystack or Apple Pay / Google Pay)
+  static Future<Map<String, dynamic>> createScheduleOrder({
+    required String storeId,
+    required String tier,
+    required List<ScheduleItem> items,
+    required String pickupAddress,
+    required String pickupTime,
+    String paymentMethod = 'PAYSTACK',
+    String? paystackRef,
+    String? reference,
+    String? token,
+    int? totalPrice,
+    String? deliveryAddress,
+  }) async {
+    try {
+      final uri =
+          Uri.parse('${Constants.url}/api/customer/orders/create');
+      final body = jsonEncode({
+        'storeId': storeId,
+        'tier': tier,
+        if (totalPrice != null) 'totalPrice': totalPrice,
+        'items': items
+            .where((i) => i.quantity > 0)
+            .map((i) => {
+                  'name': i.name,
+                  'price': i.price,
+                  'quantity': i.quantity,
+                })
+            .toList(),
+        'pickupAddress': pickupAddress,
+        'pickupTime': pickupTime,
+        if (deliveryAddress != null) 'deliveryAddress': deliveryAddress,
+        'paymentMethod': paymentMethod,
+        if (paystackRef != null) 'paystackReference': paystackRef,
+        if (reference != null) 'reference': reference,
+        if (token != null) 'token': token,
+      });
+
+      final res = await http
+          .post(uri, headers: await _getHeaders(), body: body)
+          .timeout(const Duration(seconds: 10));
+
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        return jsonDecode(res.body) as Map<String, dynamic>;
+      } else {
+        final err = jsonDecode(res.body);
+        return {
+          'status': false,
+          'message': err['error'] ??
+              err['message'] ??
+              'Payment verification or order creation failed',
+        };
+      }
+    } catch (e) {
+      debugPrint('Error creating order with API: $e.');
+      return {
+        'status': false,
+        'message': 'Unable to connect to server: $e',
+      };
+    }
+  }
+
+  /// Backward-compatible alias for existing callers
   static Future<Map<String, dynamic>> createScheduleOrderPaystack({
     required String storeId,
     required String tier,
@@ -119,46 +235,24 @@ class CustomerScheduleService {
     required String pickupTime,
     String? paystackRef,
     int? totalPrice,
-  }) async {
-    try {
-      final uri =
-          Uri.parse('${Constants.url}/api/customer/orders/create-paystack');
-      final body = jsonEncode({
-        'storeId': storeId,
-        'tier': tier,
-        if (totalPrice != null) 'totalPrice': totalPrice,
-        'items': items
-            .where((i) => i.quantity > 0)
-            .map((i) => {
-                  'categoryId': i.id,
-                  'name': i.name,
-                  'price': i.price,
-                  'quantity': i.quantity,
-                })
-            .toList(),
-        'pickupAddress': pickupAddress,
-        'pickupTime': pickupTime,
-        'paystackReference': paystackRef,
-      });
-
-      final res = await http
-          .post(uri, headers: await _getHeaders(), body: body)
-          .timeout(
-            const Duration(seconds: 6),
-          );
-
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        return jsonDecode(res.body) as Map<String, dynamic>;
-      }
-    } catch (e) {
-      debugPrint('Error creating order with API: $e.');
-    }
-
-    return {
-      'status': false,
-      'message': 'Unable to connect to server. Please try again.',
-    };
-  }
+    String paymentMethod = 'PAYSTACK',
+    String? reference,
+    String? token,
+    String? deliveryAddress,
+  }) =>
+      createScheduleOrder(
+        storeId: storeId,
+        tier: tier,
+        items: items,
+        pickupAddress: pickupAddress,
+        pickupTime: pickupTime,
+        paymentMethod: paymentMethod,
+        paystackRef: paystackRef,
+        reference: reference,
+        token: token,
+        totalPrice: totalPrice,
+        deliveryAddress: deliveryAddress,
+      );
 
   /// Fetch live order tracking for Google Maps and progression
   static Future<OrderTrackingData?> fetchOrderTracking(int orderId) async {

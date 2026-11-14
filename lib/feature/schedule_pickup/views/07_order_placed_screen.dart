@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/history/history_screen.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/08_pickup_leg_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -185,6 +186,26 @@ class ScheduleOrderPlacedScreen extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                         color: const Color(0xFF00AABC),
                       ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+
+                // Return to Home button
+                TextButton(
+                  onPressed: () {
+                    Navigator.pushNamedAndRemoveUntil(
+                      context,
+                      MainScreen.id,
+                      (route) => false,
+                    );
+                  },
+                  child: Text(
+                    'Return to Home',
+                    style: GoogleFonts.dmSans(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xFF5E5E5E),
                     ),
                   ),
                 ),

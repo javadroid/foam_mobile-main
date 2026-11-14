@@ -8,8 +8,9 @@ import 'package:provider/provider.dart';
 
 class ScheduleTrackingScreen extends StatefulWidget {
   static const String id = '/schedule_pickup/tracking';
+  final int? orderId;
 
-  const ScheduleTrackingScreen({super.key});
+  const ScheduleTrackingScreen({super.key, this.orderId});
 
   @override
   State<ScheduleTrackingScreen> createState() => _ScheduleTrackingScreenState();
@@ -22,6 +23,18 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
   static const LatLng _fallbackRider = LatLng(6.4510, 3.4755);
   static const LatLng _fallbackStore = LatLng(6.4550, 3.4800);
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final p = Provider.of<SchedulePickupProvider>(context, listen: false);
+      final id = widget.orderId ?? (p.lastCreatedOrder?['id'] as int?);
+      if (id != null) {
+        p.loadTrackingInfo(id);
+      }
+    });
+  }
+
   LatLng _parseCoordinate(LocationCoordinate? coord, LatLng fallback) {
     if (coord == null || (coord.latitude == 0.0 && coord.longitude == 0.0)) {
       return fallback;
@@ -29,7 +42,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     return LatLng(coord.latitude, coord.longitude);
   }
 
-  void _onMapCreated(GoogleMapController controller, LatLng rider, LatLng customer) {
+  void _onMapCreated(
+      GoogleMapController controller, LatLng rider, LatLng customer) {
     _mapController = controller;
     _animateToBounds(rider, customer);
   }
@@ -49,9 +63,13 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     Future.delayed(const Duration(milliseconds: 300), () {
       if (mounted && _mapController != null) {
         if ((north - south).abs() < 0.001 && (east - west).abs() < 0.001) {
-          _mapController!.animateCamera(CameraUpdate.newLatLngZoom(p1, 15.0)).catchError((_) {});
+          _mapController!
+              .animateCamera(CameraUpdate.newLatLngZoom(p1, 15.0))
+              .catchError((_) {});
         } else {
-          _mapController!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 60)).catchError((_) {});
+          _mapController!
+              .animateCamera(CameraUpdate.newLatLngBounds(bounds, 60))
+              .catchError((_) {});
         }
       }
     });
@@ -68,6 +86,16 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final tracking = provider.trackingData;
+
+    if (provider.isLoading && tracking == null) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF9FAFB),
+        body: Center(
+          child: CircularProgressIndicator(color: Color(0xFF00AABC)),
+        ),
+      );
+    }
+
     final isUnlocked = tracking?.isTrackingUnlocked ?? false;
 
     return Scaffold(
@@ -91,7 +119,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
         (provider.lastCreatedOrder?['storeName'] as String? ??
             (provider.selectedStore?.name ?? 'Laundry Store'));
     final turnaroundOpt = provider.selectedTurnaroundOption;
-    final turnaroundName = turnaroundOpt?.name ?? provider.currentStore.turnaroundText;
+    final turnaroundName =
+        turnaroundOpt?.name ?? provider.currentStore.turnaroundText;
     final deliveryPin = tracking?.deliveryPin.isNotEmpty == true
         ? tracking!.deliveryPin
         : (provider.lastCreatedOrder?['deliveryPin'] as String? ?? '');
@@ -113,12 +142,14 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   backgroundColor: Colors.white,
                   radius: 20,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: Color(0xFF212828), size: 18),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -173,10 +204,12 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                           decoration: BoxDecoration(
                             color: const Color(0xFFF3F4F6),
                             shape: BoxShape.circle,
-                            border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                            border: Border.all(
+                                color: const Color(0xFFE5E7EB), width: 1.5),
                           ),
                           child: const Center(
-                            child: Icon(Icons.lock_outline_rounded, color: Color(0xFF4B5563), size: 28),
+                            child: Icon(Icons.lock_outline_rounded,
+                                color: Color(0xFF4B5563), size: 28),
                           ),
                         ),
                         const SizedBox(height: 14),
@@ -237,26 +270,32 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                           isDone: true,
                           isActive: false,
                         ),
-                        _buildStepperConnector(isDone: stage != 'EN_ROUTE_TO_STORE'),
+                        _buildStepperConnector(
+                            isDone: stage != 'EN_ROUTE_TO_STORE'),
                         _buildStepperStep(
                           title: 'Picked Up',
                           subtitle: stage == 'EN_ROUTE_TO_STORE'
                               ? 'Rider heading to pick up laundry'
                               : 'Laundry collected from address',
                           isDone: stage != 'EN_ROUTE_TO_STORE',
-                          isActive: stage == 'EN_ROUTE_TO_STORE' || stage == 'PICKED_UP',
+                          isActive: stage == 'EN_ROUTE_TO_STORE' ||
+                              stage == 'PICKED_UP',
                         ),
                         _buildStepperConnector(
-                          isDone: stage == 'AT_STORE' || stage == 'OUT_FOR_DELIVERY' || stage == 'DELIVERED',
+                          isDone: stage == 'AT_STORE' ||
+                              stage == 'OUT_FOR_DELIVERY' ||
+                              stage == 'DELIVERED',
                         ),
                         _buildStepperStep(
                           title: 'At Store / Washing',
                           subtitle: stage == 'AT_STORE'
                               ? 'Washing & processing at $storeName'
-                              : (stage == 'OUT_FOR_DELIVERY' || stage == 'DELIVERED'
+                              : (stage == 'OUT_FOR_DELIVERY' ||
+                                      stage == 'DELIVERED'
                                   ? 'Cleaned and packed'
                                   : 'Waiting to arrive at store'),
-                          isDone: stage == 'OUT_FOR_DELIVERY' || stage == 'DELIVERED',
+                          isDone: stage == 'OUT_FOR_DELIVERY' ||
+                              stage == 'DELIVERED',
                           isActive: stage == 'AT_STORE',
                         ),
                         _buildStepperConnector(isDone: stage == 'DELIVERED'),
@@ -267,7 +306,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                               : 'Live GPS tracking will unlock here',
                           isDone: stage == 'DELIVERED',
                           isActive: stage == 'OUT_FOR_DELIVERY',
-                          isGatedLock: stage != 'OUT_FOR_DELIVERY' && stage != 'DELIVERED',
+                          isGatedLock: stage != 'OUT_FOR_DELIVERY' &&
+                              stage != 'DELIVERED',
                         ),
                       ],
                     ),
@@ -300,7 +340,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                                 color: const Color(0xFFE5F7F8),
                                 borderRadius: BorderRadius.circular(10),
                               ),
-                              child: const Icon(Icons.storefront_rounded, color: Color(0xFF00AABC), size: 22),
+                              child: const Icon(Icons.storefront_rounded,
+                                  color: Color(0xFF00AABC), size: 22),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
@@ -309,7 +350,9 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                                 children: [
                                   Text(
                                     'Laundry Partner Store',
-                                    style: GoogleFonts.dmSans(fontSize: 12, color: const Color(0xFF6B7280)),
+                                    style: GoogleFonts.dmSans(
+                                        fontSize: 12,
+                                        color: const Color(0xFF6B7280)),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
@@ -327,7 +370,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                         ),
                         const SizedBox(height: 14),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF9FAFB),
                             borderRadius: BorderRadius.circular(10),
@@ -338,11 +382,14 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                             children: [
                               Row(
                                 children: [
-                                  const Icon(Icons.timer_outlined, size: 16, color: Color(0xFF00AABC)),
+                                  const Icon(Icons.timer_outlined,
+                                      size: 16, color: Color(0xFF00AABC)),
                                   const SizedBox(width: 6),
                                   Text(
                                     'Turnaround Speed:',
-                                    style: GoogleFonts.dmSans(fontSize: 12.5, color: const Color(0xFF4B5563)),
+                                    style: GoogleFonts.dmSans(
+                                        fontSize: 12.5,
+                                        color: const Color(0xFF4B5563)),
                                   ),
                                 ],
                               ),
@@ -438,13 +485,15 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                       backgroundColor: const Color(0xFF00AABC),
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
                       elevation: 0,
                     ),
                     icon: const Icon(Icons.refresh_rounded, size: 20),
                     label: Text(
                       'Refresh Status',
-                      style: GoogleFonts.dmSans(fontSize: 15, fontWeight: FontWeight.w700),
+                      style: GoogleFonts.dmSans(
+                          fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                   ),
 
@@ -454,7 +503,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                     onPressed: () {
                       Navigator.pushNamed(context, CustomerAtStoreScreen.id);
                     },
-                    icon: const Icon(Icons.local_laundry_service_outlined, color: Color(0xFF00AABC), size: 18),
+                    icon: const Icon(Icons.local_laundry_service_outlined,
+                        color: Color(0xFF00AABC), size: 18),
                     label: Text(
                       'View Store Washing Details',
                       style: GoogleFonts.dmSans(
@@ -511,7 +561,9 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
           decoration: BoxDecoration(
             color: iconBg,
             shape: BoxShape.circle,
-            border: isActive ? Border.all(color: const Color(0xFF00AABC), width: 2) : null,
+            border: isActive
+                ? Border.all(color: const Color(0xFF00AABC), width: 2)
+                : null,
           ),
           child: Center(
             child: Icon(icon, color: iconColor, size: 18),
@@ -526,8 +578,11 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                 title,
                 style: GoogleFonts.dmSans(
                   fontSize: 14,
-                  fontWeight: (isDone || isActive) ? FontWeight.w700 : FontWeight.w500,
-                  color: (isDone || isActive) ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                  fontWeight:
+                      (isDone || isActive) ? FontWeight.w700 : FontWeight.w500,
+                  color: (isDone || isActive)
+                      ? const Color(0xFF1F2937)
+                      : const Color(0xFF9CA3AF),
                 ),
               ),
               const SizedBox(height: 2),
@@ -562,7 +617,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     SchedulePickupProvider provider,
     OrderTrackingData? tracking,
   ) {
-    final customerPos = _parseCoordinate(tracking?.customerLocation, _fallbackCustomer);
+    final customerPos =
+        _parseCoordinate(tracking?.customerLocation, _fallbackCustomer);
     final riderPos = _parseCoordinate(tracking?.riderLocation, _fallbackRider);
     final storePos = _parseCoordinate(tracking?.storeLocation, _fallbackStore);
 
@@ -584,7 +640,9 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
         markerId: const MarkerId('rider'),
         position: riderPos,
         infoWindow: InfoWindow(
-          title: rider?.name != null ? 'Rider: ${rider!.name}' : 'Rider: Out for Delivery',
+          title: rider?.name != null
+              ? 'Rider: ${rider!.name}'
+              : 'Rider: Out for Delivery',
           snippet: rider?.vehicle,
         ),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueCyan),
@@ -592,7 +650,9 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
       Marker(
         markerId: const MarkerId('customer'),
         position: customerPos,
-        infoWindow: InfoWindow(title: 'Your Location', snippet: tracking?.customerLocation?.address),
+        infoWindow: InfoWindow(
+            title: 'Your Location',
+            snippet: tracking?.customerLocation?.address),
         icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueAzure),
       ),
     };
@@ -623,7 +683,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
               zoomControlsEnabled: false,
               myLocationButtonEnabled: false,
               compassEnabled: false,
-              onMapCreated: (controller) => _onMapCreated(controller, riderPos, customerPos),
+              onMapCreated: (controller) =>
+                  _onMapCreated(controller, riderPos, customerPos),
             ),
           ),
 
@@ -639,12 +700,14 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   backgroundColor: Colors.white,
                   radius: 20,
                   child: IconButton(
-                    icon: const Icon(Icons.arrow_back_ios_new, color: Color(0xFF212828), size: 18),
+                    icon: const Icon(Icons.arrow_back_ios_new,
+                        color: Color(0xFF212828), size: 18),
                     onPressed: () => Navigator.pop(context),
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
@@ -778,7 +841,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                         height: 48,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF777777), width: 0.8),
+                          border: Border.all(
+                              color: const Color(0xFF777777), width: 0.8),
                         ),
                         child: Center(
                           child: Text(
@@ -799,7 +863,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   // Delivery PIN Card
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
                     decoration: BoxDecoration(
                       color: const Color(0xFFE5F7F8),
                       borderRadius: BorderRadius.circular(12),
@@ -833,11 +898,14 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   // 3-Segment Progress Bar
                   Row(
                     children: [
-                      _buildStepSegment(label: 'Pickup', isActive: false, isDone: true),
+                      _buildStepSegment(
+                          label: 'Pickup', isActive: false, isDone: true),
                       const SizedBox(width: 8),
-                      _buildStepSegment(label: 'At store', isActive: false, isDone: true),
+                      _buildStepSegment(
+                          label: 'At store', isActive: false, isDone: true),
                       const SizedBox(width: 8),
-                      _buildStepSegment(label: 'Delivery', isActive: true, isDone: false),
+                      _buildStepSegment(
+                          label: 'Delivery', isActive: true, isDone: false),
                     ],
                   ),
 
@@ -850,7 +918,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                       onPressed: () {
                         Navigator.pushNamed(context, CustomerAtStoreScreen.id);
                       },
-                      icon: const Icon(Icons.arrow_forward_rounded, color: Color(0xFF00AABC), size: 16),
+                      icon: const Icon(Icons.arrow_forward_rounded,
+                          color: Color(0xFF00AABC), size: 16),
                       label: Text(
                         'View Store Washing Status',
                         style: GoogleFonts.dmSans(
@@ -882,7 +951,9 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
           Container(
             height: 4,
             decoration: BoxDecoration(
-              color: (isActive || isDone) ? const Color(0xFF00AABC) : const Color(0xFFE4E4E4),
+              color: (isActive || isDone)
+                  ? const Color(0xFF00AABC)
+                  : const Color(0xFFE4E4E4),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -891,8 +962,11 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
             label,
             style: GoogleFonts.dmSans(
               fontSize: 12,
-              fontWeight: (isActive || isDone) ? FontWeight.w700 : FontWeight.w400,
-              color: (isActive || isDone) ? const Color(0xFF212828) : const Color(0xFF5E5E5E),
+              fontWeight:
+                  (isActive || isDone) ? FontWeight.w700 : FontWeight.w400,
+              color: (isActive || isDone)
+                  ? const Color(0xFF212828)
+                  : const Color(0xFF5E5E5E),
             ),
           ),
         ],

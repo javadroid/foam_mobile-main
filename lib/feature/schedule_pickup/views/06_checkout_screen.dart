@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:foam_mobile/core/Screens/basket/view/pickup_address_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
-import 'package:foam_mobile/feature/schedule_pickup/views/07_order_placed_screen.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -17,54 +16,6 @@ class ScheduleCheckoutScreen extends StatefulWidget {
 }
 
 class _ScheduleCheckoutScreenState extends State<ScheduleCheckoutScreen> {
-  bool _isProcessingPayment = false;
-
-  Future<void> _handlePaystackPayment(SchedulePickupProvider provider) async {
-    setState(() => _isProcessingPayment = true);
-
-    try {
-      final ref = 'fm_pay_${DateTime.now().millisecondsSinceEpoch}';
-
-      // 1. Process Paystack Order with backend
-      final success = await provider.processPaystackOrder(paystackRef: ref);
-
-      if (success) {
-        if (mounted) {
-          Navigator.pushReplacementNamed(context, ScheduleOrderPlacedScreen.id);
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Could not complete Paystack order. Please try again.',
-                style: GoogleFonts.dmSans(),
-              ),
-              backgroundColor: const Color(0xFFEF4444),
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('Paystack checkout error: $e');
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'Paystack transaction error: $e',
-              style: GoogleFonts.dmSans(),
-            ),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isProcessingPayment = false);
-      }
-    }
-  }
-
   void _showPickupSlotPicker(
       BuildContext context, SchedulePickupProvider provider) {
     showModalBottomSheet(

@@ -1,9 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:intl/intl.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
-import 'package:foam_mobile/utils/values.dart';
 
 class FoamPaymentSheet extends StatefulWidget {
   final String title;
@@ -119,18 +117,23 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
     }
   }
 
-  Future<void> _handlePayment() async {
-    setState(() => _isProcessing = true);
+  Future<void> _handlePaymentFor(FoamPaymentMethod method) async {
+    if (_isProcessing) return;
+    setState(() {
+      _selectedMethod = method;
+      _isProcessing = true;
+    });
+
     PaymentProcessResult result;
 
     try {
       if (widget.onProcessPayment != null) {
-        result = await widget.onProcessPayment!(_selectedMethod);
+        result = await widget.onProcessPayment!(method);
       } else if (widget.purpose == FoamPaymentPurpose.subscription) {
         result = await FoamPaymentService.processSubscription(
           context: context,
           plan: widget.plan,
-          method: _selectedMethod,
+          method: method,
         );
       } else if (widget.purpose == FoamPaymentPurpose.order) {
         result = await FoamPaymentService.processOrderPayment(
@@ -138,7 +141,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
           noFolding: widget.noFolding,
           totalPrice: widget.amount,
           storeId: widget.storeId,
-          method: _selectedMethod,
+          method: method,
           pickupAddress: widget.pickupAddress,
           deliveryAddress: widget.deliveryAddress,
           pickupDate: widget.pickupDate,
@@ -150,7 +153,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
         result = await FoamPaymentService.processWalletDeposit(
           context: context,
           amount: widget.amount,
-          method: _selectedMethod,
+          method: method,
         );
       }
     } catch (e) {
@@ -333,7 +336,7 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
               icon: Icons.apple,
               iconColor: Colors.black,
               iconBgColor: Colors.grey.shade200,
-              badgeText: 'Pay',
+              badgeText: null,
               badgeColor: Colors.black87,
               badgeBgColor: Colors.grey.shade200,
             ),
@@ -351,190 +354,39 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
               badgeBgColor: const Color(0xFFE0F2FE),
             ),
 
-            // 4. Foam Wallet (for orders and subscriptions)
-            // if (widget.purpose != FoamPaymentPurpose.walletDeposit)
-            //   _buildPaymentOptionTile(
-            //     method: FoamPaymentMethod.wallet,
-            //     title: 'Foam Wallet',
-            //     subtitle: 'Instant deduction from your in-app wallet balance',
-            //     icon: Icons.account_balance_wallet_rounded,
-            //     iconColor: const Color(0xFF16A34A),
-            //     iconBgColor: const Color(0xFFDCFCE7),
-            //     badgeText: 'Instant',
-            //     badgeColor: const Color(0xFF15803D),
-            //     badgeBgColor: const Color(0xFFDCFCE7),
-            //   ),
+            const SizedBox(height: 14),
 
-            const SizedBox(height: 22),
-
-            // Dynamic CTA Action Button matching selected provider
-            _buildCtaButton(),
+            if (_isProcessing)
+              Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        'Connecting to ${_getMethodName(_selectedMethod)}...',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.grey.shade700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildCtaButton() {
-    final formattedAmount = NumberFormat('#,###').format(widget.amount);
-
-    if (_selectedMethod == FoamPaymentMethod.googlePay) {
-      // Official Google Pay pill button strictly complying with Google Pay Brand Guidelines
-      return SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: const StadiumBorder(),
-          ),
-          onPressed: _isProcessing ? null : _handlePayment,
-          child: _isProcessing
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Pay with ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    SvgPicture.asset(
-                      'assets/images/google.svg',
-                      width: 19,
-                      height: 19,
-                    ),
-                    const SizedBox(width: 4),
-                    const Text(
-                      'Pay',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.1,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      );
-    }
-
-    if (_selectedMethod == FoamPaymentMethod.applePay) {
-      // Official Apple Pay pill button
-      return SizedBox(
-        width: double.infinity,
-        height: 52,
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.black,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: const StadiumBorder(),
-          ),
-          onPressed: _isProcessing ? null : _handlePayment,
-          child: _isProcessing
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'Pay with ',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    Icon(Icons.apple, color: Colors.white, size: 20),
-                    SizedBox(width: 2),
-                    Text(
-                      'Pay',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.5,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-        ),
-      );
-    }
-
-    // Paystack / Wallet
-    final isWallet = _selectedMethod == FoamPaymentMethod.wallet;
-    return SizedBox(
-      width: double.infinity,
-      height: 52,
-      child: ElevatedButton(
-        style: ElevatedButton.styleFrom(
-          backgroundColor:
-              isWallet ? const Color(0xFF16A34A) : AppColors.navyBlueAccent,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-        ),
-        onPressed: _isProcessing ? null : _handlePayment,
-        child: _isProcessing
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isWallet
-                        ? Icons.account_balance_wallet_rounded
-                        : Icons.credit_card_rounded,
-                    color: Colors.white,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Flexible(
-                    child: Text(
-                      'Pay ₦$formattedAmount with ${_getMethodName(_selectedMethod)}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }
@@ -552,27 +404,35 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
     Color? badgeBgColor,
   }) {
     final isSelected = _selectedMethod == method;
+    final isCurrentProcessing = _isProcessing && isSelected;
     final isGooglePay = method == FoamPaymentMethod.googlePay;
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.only(bottom: 12),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: _isProcessing
-            ? null
-            : () => setState(() => _selectedMethod = method),
+        onTap: _isProcessing ? null : () => _handlePaymentFor(method),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 180),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFF0FDF4) : Colors.white,
+            color: isSelected && _isProcessing
+                ? const Color(0xFFF0FDF4)
+                : Colors.white,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: isSelected
+              color: isSelected && _isProcessing
                   ? const Color(0xFF16A34A)
                   : const Color(0xFFE2E8F0),
-              width: isSelected ? 1.8 : 1.0,
+              width: isSelected && _isProcessing ? 1.8 : 1.2,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Row(
             children: [
@@ -598,34 +458,32 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                         Flexible(
                           child: Text(
                             title,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: isSelected
-                                  ? FontWeight.w700
-                                  : FontWeight.w600,
-                              color: const Color(0xFF0F172A),
+                            style: const TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF0F172A),
                             ),
                           ),
                         ),
-                        if (badgeText != null) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2.5),
-                            decoration: BoxDecoration(
-                              color: badgeBgColor ?? const Color(0xFFE2E8F0),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              badgeText,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                color: badgeColor ?? const Color(0xFF334155),
-                              ),
-                            ),
-                          ),
-                        ],
+                        // if (badgeText != null) ...[
+                        //   const SizedBox(width: 8),
+                        //   Container(
+                        //     padding: const EdgeInsets.symmetric(
+                        //         horizontal: 8, vertical: 2.5),
+                        //     decoration: BoxDecoration(
+                        //       color: badgeBgColor ?? const Color(0xFFE2E8F0),
+                        //       borderRadius: BorderRadius.circular(6),
+                        //     ),
+                        //     child: Text(
+                        //       badgeText,
+                        //       style: TextStyle(
+                        //         fontSize: 10.5,
+                        //         fontWeight: FontWeight.w700,
+                        //         color: badgeColor ?? const Color(0xFF334155),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ],
                       ],
                     ),
                     // const SizedBox(height: 3),
@@ -639,25 +497,33 @@ class _FoamPaymentSheetState extends State<FoamPaymentSheet> {
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isSelected
-                        ? const Color(0xFF16A34A)
-                        : Colors.grey.shade300,
-                    width: 2,
+              const SizedBox(width: 10),
+              if (isCurrentProcessing)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.2,
+                    valueColor:
+                        AlwaysStoppedAnimation<Color>(Color(0xFF00AABC)),
                   ),
-                  color:
-                      isSelected ? const Color(0xFF16A34A) : Colors.transparent,
+                )
+              else
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      size: 12,
+                      color: Color(0xFF64748B),
+                    ),
+                  ),
                 ),
-                child: isSelected
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
-              ),
             ],
           ),
         ),

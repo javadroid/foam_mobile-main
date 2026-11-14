@@ -1060,21 +1060,17 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
         pickupTime: formattedPickupTime,
         deliveryDate: deliveryDate,
         onProcessPayment: (method) async {
-          final ref =
-              'fm_${method.name}_${DateTime.now().millisecondsSinceEpoch}';
-          final success = await sched.processPaystackOrder(paystackRef: ref);
-          if (success) {
-            return PaymentProcessResult(
-              success: true,
-              message: 'Schedule order placed successfully! 🎉',
-              reference: ref,
-            );
-          } else {
-            return PaymentProcessResult(
-              success: false,
-              message: 'Could not complete order. Please try again.',
-            );
-          }
+          return await FoamPaymentService.processScheduleOrderPayment(
+            context: context,
+            provider: sched,
+            method: method,
+            amount: schedAmount,
+            pickupAddress: effectiveAddress,
+            pickupDate: selectedDate,
+            pickupTime: formattedPickupTime,
+            deliveryAddress: effectiveAddress,
+            deliveryDate: deliveryDate,
+          );
         },
       );
 

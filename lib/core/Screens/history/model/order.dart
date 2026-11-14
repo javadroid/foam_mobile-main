@@ -127,48 +127,75 @@ class OrderItem {
   final int id;
   final int? basketId;
   final int orderId;
-  final int categoryId;
+  final int? categoryId;
   final int quantity;
   final int foldingSurcharge;
   final DateTime createdAt;
   final DateTime updatedAt;
   final OrderItemCategory category;
+  final String? name;
+  final double? price;
+  final String? imageUrl;
 
   OrderItem({
     required this.id,
     this.basketId,
     required this.orderId,
-    required this.categoryId,
+    this.categoryId,
     required this.quantity,
     this.foldingSurcharge = 0,
     required this.createdAt,
     required this.updatedAt,
     required this.category,
+    this.name,
+    this.price,
+    this.imageUrl,
   });
 
+  String get displayName => (name != null && name!.isNotEmpty)
+      ? name!
+      : (category.name.isNotEmpty ? category.name : 'Laundry Item');
+
+  double get displayPrice => price != null ? price! : category.price.toDouble();
+
+  String get displayImageUrl {
+    if (imageUrl != null && imageUrl!.isNotEmpty) return imageUrl!;
+    if (category.imageUrl != null && category.imageUrl!.isNotEmpty) {
+      return category.imageUrl!;
+    }
+    return 'assets/images/folding.png';
+  }
+
+  String get displayDescription => category.description;
+
   factory OrderItem.fromJson(Map<String, dynamic> json) {
+    final catObj = json['category'] != null
+        ? OrderItemCategory.fromJson(json['category'])
+        : OrderItemCategory(
+            id: 0,
+            name: json['name']?.toString() ?? '',
+            description: '',
+            price: (json['price'] as num?)?.toInt() ?? 0,
+            imageUrl: json['imageUrl']?.toString(),
+          );
+
     return OrderItem(
       id: json['id'] ?? 0,
       basketId: json['basketId'],
       orderId: json['orderId'] ?? 0,
-      categoryId: json['categoryId'] ?? 0,
-      quantity: (json['quantity'] as num?)?.toInt() ?? 0,
-      foldingSurcharge:
-          (json['foldingSurcharge'] as num?)?.toInt() ?? 0,
+      categoryId: json['categoryId'],
+      quantity: (json['quantity'] as num?)?.toInt() ?? 1,
+      foldingSurcharge: (json['foldingSurcharge'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
       updatedAt: json['updatedAt'] != null
           ? DateTime.tryParse(json['updatedAt']) ?? DateTime.now()
           : DateTime.now(),
-      category: json['category'] != null
-          ? OrderItemCategory.fromJson(json['category'])
-          : OrderItemCategory(
-              id: 0,
-              name: '',
-              description: '',
-              price: 0,
-            ),
+      category: catObj,
+      name: json['name']?.toString(),
+      price: (json['price'] as num?)?.toDouble() ?? (catObj.price.toDouble()),
+      imageUrl: json['imageUrl']?.toString() ?? catObj.imageUrl,
     );
   }
 
@@ -177,12 +204,15 @@ class OrderItem {
       'id': id,
       'basketId': basketId,
       'orderId': orderId,
-      'categoryId': categoryId,
+      if (categoryId != null) 'categoryId': categoryId,
       'quantity': quantity,
       'foldingSurcharge': foldingSurcharge,
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt.toIso8601String(),
       'category': category.toJson(),
+      if (name != null) 'name': name,
+      if (price != null) 'price': price,
+      if (imageUrl != null) 'imageUrl': imageUrl,
     };
   }
 }
@@ -211,8 +241,7 @@ class OrderItemCategory {
       name: json['name'] ?? '',
       description: json['description'] ?? '',
       price: (json['price'] as num?)?.toInt() ?? 0,
-      foldingSurchargeRate:
-          (json['foldingSurchargeRate'] as num?)?.toDouble(),
+      foldingSurchargeRate: (json['foldingSurchargeRate'] as num?)?.toDouble(),
     );
   }
 
