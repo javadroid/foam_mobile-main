@@ -266,7 +266,7 @@ class CustomerScheduleService {
       );
 
   /// Fetch live order tracking for Google Maps and progression
-  static Future<OrderTrackingData?> fetchOrderTracking(int orderId) async {
+  static Future<OrderTrackingData?> fetchOrderTracking(String orderId) async {
     try {
       final uri =
           Uri.parse('${Constants.url}/api/customer/orders/$orderId/track');
@@ -290,7 +290,7 @@ class CustomerScheduleService {
 
   /// Submit reviews for store and rider
   static Future<bool> submitReview({
-    required int orderId,
+    required String orderId,
     required int storeRating,
     required int riderRating,
     String? comments,

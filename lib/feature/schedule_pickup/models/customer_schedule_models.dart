@@ -548,7 +548,7 @@ class TimelineStep {
 /// Comprehensive order tracking data model
 @immutable
 class OrderTrackingData {
-  final int orderId;
+  final String orderId;
   final String orderNumber;
   final String currentStage;
   final bool isTrackingUnlocked;
@@ -606,7 +606,7 @@ class OrderTrackingData {
     }
 
     return OrderTrackingData(
-      orderId: (json['orderId'] as num?)?.toInt() ?? 0,
+      orderId: json['orderId']?.toString() ?? '',
       orderNumber: json['orderNumber'] as String? ?? '',
       currentStage: json['currentStage'] as String? ?? 'PICKUP',
       isTrackingUnlocked: json['isTrackingUnlocked'] as bool? ?? false,

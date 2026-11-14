@@ -1,5 +1,5 @@
 class RiderProfile {
-  final int id;
+  final String id;
   final String name;
   final String phone;
   final String? email;
@@ -41,9 +41,7 @@ class RiderProfile {
 
   factory RiderProfile.fromJson(Map<String, dynamic> json) {
     return RiderProfile(
-      id: json['id'] is int
-          ? json['id']
-          : int.tryParse(json['id'].toString()) ?? 0,
+      id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? '',
       phone: json['phone']?.toString() ?? '',
       email: json['email']?.toString(),
@@ -80,7 +78,7 @@ class RiderProfile {
 }
 
 class AvailableRide {
-  final int id;
+  final String id;
   final String orderNumber;
   final String storeName;
   final String storeAddress;
@@ -120,9 +118,7 @@ class AvailableRide {
 
   factory AvailableRide.fromJson(Map<String, dynamic> json) {
     return AvailableRide(
-      id: json['id'] is int
-          ? json['id']
-          : (int.tryParse(json['id'].toString()) ?? 0),
+      id: json['id']?.toString() ?? (json['orderId']?.toString() ?? ''),
       orderNumber: json['orderNumber']?.toString() ?? 'FOAM-0000',
       storeName: json['storeName']?.toString() ?? 'Foam Laundry Hub',
       storeAddress: json['storeAddress']?.toString() ?? '',
@@ -154,7 +150,7 @@ class AvailableRide {
 }
 
 class ActiveRide {
-  final int orderId;
+  final String orderId;
   final String orderNumber;
   final String storeName;
   final String storeAddress;
@@ -170,7 +166,7 @@ class ActiveRide {
   final String? pickupTime;
   final String? pickupDate;
 
-  int get id => orderId;
+  String get id => orderId;
 
   ActiveRide({
     required this.orderId,
@@ -220,8 +216,8 @@ class ActiveRide {
     final custName = '$customerFirst $customerLast'.trim();
 
     return ActiveRide(
-      orderId: order['id'] is int ? order['id'] : (int.tryParse(order['id']?.toString() ?? '') ?? 0),
-      orderNumber: order['orderNumber']?.toString() ?? 'FOAM-${order['id'] ?? 0}',
+      orderId: order['id']?.toString() ?? (order['orderId']?.toString() ?? ''),
+      orderNumber: order['orderNumber']?.toString() ?? 'FOAM-${order['id'] ?? ''}',
       storeName: store?['name']?.toString() ?? order['storeName']?.toString() ?? 'Foam Laundry Hub',
       storeAddress: store?['address']?.toString() ?? order['storeAddress']?.toString() ?? '',
       pickupAddress: order['pickupAddress']?.toString() ?? '',
@@ -242,7 +238,7 @@ class ActiveRide {
 }
 
 class RiderDeliveryHistoryItem {
-  final int orderId;
+  final String orderId;
   final String orderNumber;
   final String date;
   final String storeName;
@@ -266,9 +262,7 @@ class RiderDeliveryHistoryItem {
 
   factory RiderDeliveryHistoryItem.fromJson(Map<String, dynamic> json) {
     return RiderDeliveryHistoryItem(
-      orderId: json['orderId'] is int
-          ? json['orderId']
-          : (int.tryParse(json['orderId'].toString()) ?? 0),
+      orderId: json['orderId']?.toString() ?? (json['id']?.toString() ?? ''),
       orderNumber: json['orderNumber']?.toString() ?? 'FOAM-0000',
       date: json['date']?.toString() ?? '',
       storeName: json['storeName']?.toString() ?? 'Foam Hub',
@@ -288,7 +282,7 @@ class RiderDeliveryHistoryItem {
 }
 
 class RiderTransactionItem {
-  final int id;
+  final String id;
   final String type; // CREDIT or DEBIT
   final double amount;
   final String description;
@@ -306,9 +300,7 @@ class RiderTransactionItem {
 
   factory RiderTransactionItem.fromJson(Map<String, dynamic> json) {
     return RiderTransactionItem(
-      id: json['id'] is int
-          ? json['id']
-          : (int.tryParse(json['id'].toString()) ?? 0),
+      id: json['id']?.toString() ?? '',
       type: json['type']?.toString() ?? 'CREDIT',
       amount: json['amount'] != null
           ? (double.tryParse(json['amount'].toString()) ?? 0.0)

@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 
@@ -15,7 +14,8 @@ class HiveClass {
 
   // getting the token
   static String getToken() {
-    return foamBox.get('token');
+    final token = foamBox.get('token');
+    return (token is String) ? token : '';
   }
 
   // deleting the token
@@ -25,7 +25,8 @@ class HiveClass {
 
   // check if token exist
   static bool tokenExist() {
-    return foamBox.get('token') != null;
+    final token = foamBox.get('token');
+    return token is String && token.trim().isNotEmpty;
   }
 
   /////////////////PROFILE PIC///////////////////
@@ -38,7 +39,8 @@ class HiveClass {
 
   // getting the token
   static String getPic() {
-    return foamBox.get('picture') ?? '';
+    final pic = foamBox.get('picture');
+    return (pic is String) ? pic : '';
   }
 
   // deleting the token
@@ -48,7 +50,8 @@ class HiveClass {
 
   // check if token exist
   static bool pictureExists() {
-    return foamBox.get('picture') != null;
+    final pic = foamBox.get('picture');
+    return pic is String && pic.trim().isNotEmpty;
   }
 
   /////////////////ADDRESS///////////////////

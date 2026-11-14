@@ -17,7 +17,7 @@ class OrderResponse {
 }
 
 class Order {
-  final int id;
+  final String id;
   final String userId;
   final String status;
   final DateTime? pickupDate;
@@ -28,8 +28,8 @@ class Order {
   final String paymentId;
   final String paymentStatus;
   final DateTime createdAt;
-  final int? orderHistoryId;
-  final int? riderId;
+  final String? orderHistoryId;
+  final String? riderId;
   final String? pickupAddress;
   final String? deliveryAddress;
   final String? pickupTime;
@@ -71,7 +71,7 @@ class Order {
         itemsList.map((i) => OrderItem.fromJson(i)).toList();
 
     return Order(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? '',
       userId: json['userId']?.toString() ?? '',
       status: json['status'] ?? '',
       pickupDate: json['pickupDate'] != null
@@ -88,8 +88,8 @@ class Order {
       createdAt: json['createdAt'] != null
           ? DateTime.tryParse(json['createdAt']) ?? DateTime.now()
           : DateTime.now(),
-      orderHistoryId: json['orderHistoryId'],
-      riderId: json['riderId'],
+      orderHistoryId: json['orderHistoryId']?.toString(),
+      riderId: json['riderId']?.toString(),
       pickupAddress: json['pickupAddress'],
       deliveryAddress: json['deliveryAddress'],
       pickupTime: json['pickupTime'],
@@ -124,10 +124,10 @@ class Order {
 }
 
 class OrderItem {
-  final int id;
-  final int? basketId;
-  final int orderId;
-  final int? categoryId;
+  final String id;
+  final String? basketId;
+  final String orderId;
+  final String? categoryId;
   final int quantity;
   final int foldingSurcharge;
   final DateTime createdAt;
@@ -172,7 +172,7 @@ class OrderItem {
     final catObj = json['category'] != null
         ? OrderItemCategory.fromJson(json['category'])
         : OrderItemCategory(
-            id: 0,
+            id: '',
             name: json['name']?.toString() ?? '',
             description: '',
             price: (json['price'] as num?)?.toInt() ?? 0,
@@ -180,10 +180,10 @@ class OrderItem {
           );
 
     return OrderItem(
-      id: json['id'] ?? 0,
-      basketId: json['basketId'],
-      orderId: json['orderId'] ?? 0,
-      categoryId: json['categoryId'],
+      id: json['id']?.toString() ?? '',
+      basketId: json['basketId']?.toString(),
+      orderId: json['orderId']?.toString() ?? '',
+      categoryId: json['categoryId']?.toString(),
       quantity: (json['quantity'] as num?)?.toInt() ?? 1,
       foldingSurcharge: (json['foldingSurcharge'] as num?)?.toInt() ?? 0,
       createdAt: json['createdAt'] != null
@@ -218,7 +218,7 @@ class OrderItem {
 }
 
 class OrderItemCategory {
-  final int id;
+  final String id;
   final String? imageUrl;
   final String name;
   final String description;
@@ -236,7 +236,7 @@ class OrderItemCategory {
 
   factory OrderItemCategory.fromJson(Map<String, dynamic> json) {
     return OrderItemCategory(
-      id: json['id'] ?? 0,
+      id: json['id']?.toString() ?? '',
       imageUrl: json['imageUrl'],
       name: json['name'] ?? '',
       description: json['description'] ?? '',

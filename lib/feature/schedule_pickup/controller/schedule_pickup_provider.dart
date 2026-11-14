@@ -860,7 +860,7 @@ class SchedulePickupProvider extends ChangeNotifier {
     _lastCreatedOrder = order;
   }
 
-  Future<void> loadTrackingInfo(int orderId) async {
+  Future<void> loadTrackingInfo(String orderId) async {
     _isLoading = true;
     notifyListeners();
 
@@ -876,7 +876,7 @@ class SchedulePickupProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> submitReview(int orderId, {String? comments}) async {
+  Future<bool> submitReview(String orderId, {String? comments}) async {
     _isLoading = true;
     notifyListeners();
     try {

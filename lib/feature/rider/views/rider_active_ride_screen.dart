@@ -442,7 +442,7 @@ class _RiderActiveRideScreenState extends State<RiderActiveRideScreen> {
     );
   }
 
-  void _confirmCancelRide(int orderId) {
+  void _confirmCancelRide(String orderId) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(

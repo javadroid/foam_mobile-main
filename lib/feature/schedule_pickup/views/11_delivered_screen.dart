@@ -187,8 +187,11 @@ class CustomerDeliveredScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () async {
-                      final orderId = tracking?.orderId ?? 2038;
-                      await provider.submitReview(orderId);
+                      final orderId = tracking?.orderId ??
+                          (provider.lastCreatedOrder?['id']?.toString() ?? '');
+                      if (orderId.isNotEmpty) {
+                        await provider.submitReview(orderId);
+                      }
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

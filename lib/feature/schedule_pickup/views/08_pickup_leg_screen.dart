@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class ScheduleTrackingScreen extends StatefulWidget {
   static const String id = '/schedule_pickup/tracking';
-  final int? orderId;
+  final String? orderId;
 
   const ScheduleTrackingScreen({super.key, this.orderId});
 
@@ -29,8 +29,8 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final p = Provider.of<SchedulePickupProvider>(context, listen: false);
-      final id = widget.orderId ?? (p.lastCreatedOrder?['id'] as int?);
-      if (id != null) {
+      final id = widget.orderId ?? (p.lastCreatedOrder?['id']?.toString());
+      if (id != null && id.isNotEmpty) {
         p.loadTrackingInfo(id);
       }
     });
@@ -488,8 +488,10 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                     key: const Key('refresh_status_button'),
                     onPressed: () async {
                       final orderId = tracking?.orderId ??
-                          (provider.lastCreatedOrder?['id'] as int? ?? 2038);
-                      await provider.loadTrackingInfo(orderId);
+                          (provider.lastCreatedOrder?['id']?.toString() ?? '');
+                      if (orderId.isNotEmpty) {
+                        await provider.loadTrackingInfo(orderId);
+                      }
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(

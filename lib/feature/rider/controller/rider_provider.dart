@@ -305,7 +305,7 @@ class RiderProvider extends ChangeNotifier {
     } catch (e) {
       // Local fallback for offline mode
       _currentRider = RiderProfile(
-        id: 101,
+        id: '101',
         name: name,
         phone: phone,
         email: email,
@@ -545,7 +545,7 @@ class RiderProvider extends ChangeNotifier {
   void _setMockAvailableRides() {
     _availableRides = [
       AvailableRide(
-        id: 201,
+        id: 'demo-201',
         orderNumber: 'FOAM-8491',
         storeName: 'Royal Cleaners - Eneka Junction',
         storeAddress: 'Eneka Roundabout, Port Harcourt',
@@ -560,7 +560,7 @@ class RiderProvider extends ChangeNotifier {
         createdAt: DateTime.now(),
       ),
       AvailableRide(
-        id: 202,
+        id: 'demo-202',
         orderNumber: 'FOAM-8492',
         storeName: 'Sparkle Fresh Wash',
         storeAddress: '12 Aba Road, Port Harcourt',
@@ -631,7 +631,7 @@ class RiderProvider extends ChangeNotifier {
 
   /// Cancel an accepted ride before customer PIN entry
   /// Releases ride back to pool and makes it available to other nearby riders
-  Future<bool> cancelRide(int orderId, {String? reason}) async {
+  Future<bool> cancelRide(String orderId, {String? reason}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -795,7 +795,7 @@ class RiderProvider extends ChangeNotifier {
     if (_history.isEmpty) {
       _history = [
         RiderDeliveryHistoryItem(
-          orderId: 101,
+          orderId: '101',
           orderNumber: 'FOAM-8412',
           date: DateTime.now().subtract(const Duration(hours: 3)).toIso8601String(),
           storeName: 'Royal Cleaners - Eneka',
@@ -806,7 +806,7 @@ class RiderProvider extends ChangeNotifier {
           totalPrice: 3200,
         ),
         RiderDeliveryHistoryItem(
-          orderId: 102,
+          orderId: '102',
           orderNumber: 'FOAM-8399',
           date: DateTime.now().subtract(const Duration(days: 1)).toIso8601String(),
           storeName: 'Sparkle Fresh Wash',
@@ -862,7 +862,7 @@ class RiderProvider extends ChangeNotifier {
     if (_transactions.isEmpty) {
       _transactions = [
         RiderTransactionItem(
-          id: 1,
+          id: '1',
           type: 'CREDIT',
           amount: 1850,
           description: 'Earnings for Order #FOAM-8412',
@@ -870,7 +870,7 @@ class RiderProvider extends ChangeNotifier {
           createdAt: DateTime.now().subtract(const Duration(hours: 3)),
         ),
         RiderTransactionItem(
-          id: 2,
+          id: '2',
           type: 'CREDIT',
           amount: 2100,
           description: 'Earnings for Order #FOAM-8399',
@@ -878,7 +878,7 @@ class RiderProvider extends ChangeNotifier {
           createdAt: DateTime.now().subtract(const Duration(days: 1)),
         ),
         RiderTransactionItem(
-          id: 3,
+          id: '3',
           type: 'DEBIT',
           amount: 5000,
           description: 'Withdrawal to Access Bank (0123456789)',
@@ -931,7 +931,7 @@ class RiderProvider extends ChangeNotifier {
         _transactions.insert(
           0,
           RiderTransactionItem(
-            id: DateTime.now().millisecondsSinceEpoch,
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
             type: 'DEBIT',
             amount: amount,
             description: 'Withdrawal to $bankName ($accountNumber)',
@@ -956,7 +956,7 @@ class RiderProvider extends ChangeNotifier {
       _transactions.insert(
         0,
         RiderTransactionItem(
-          id: DateTime.now().millisecondsSinceEpoch,
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
           type: 'DEBIT',
           amount: amount,
           description: 'Withdrawal to $bankName ($accountNumber)',

@@ -14,7 +14,10 @@ class UploadService {
       final uri = Uri.parse('${Constants.url}/api/upload');
       final request = http.MultipartRequest('POST', uri);
 
-      final authToken = token ?? HiveClass.getToken();
+      String authToken = token ?? '';
+      if (authToken.isEmpty && HiveClass.tokenExist()) {
+        authToken = HiveClass.getToken();
+      }
       if (authToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $authToken';
       }
@@ -53,7 +56,10 @@ class UploadService {
       final uri = Uri.parse('${Constants.url}/api/upload/multiple');
       final request = http.MultipartRequest('POST', uri);
 
-      final authToken = token ?? HiveClass.getToken();
+      String authToken = token ?? '';
+      if (authToken.isEmpty && HiveClass.tokenExist()) {
+        authToken = HiveClass.getToken();
+      }
       if (authToken.isNotEmpty) {
         request.headers['Authorization'] = 'Bearer $authToken';
       }

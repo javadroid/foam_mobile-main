@@ -144,8 +144,10 @@ class ScheduleOrderPlacedScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () {
-                      final orderId = (order['id'] as num?)?.toInt() ?? 2038;
-                      provider.loadTrackingInfo(orderId);
+                      final orderId = order['id']?.toString() ?? '';
+                      if (orderId.isNotEmpty) {
+                        provider.loadTrackingInfo(orderId);
+                      }
                       Navigator.pushNamed(context, ScheduleTrackingScreen.id);
                     },
                     child: Text(
