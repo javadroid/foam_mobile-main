@@ -227,6 +227,7 @@ class SchedulePickupProvider extends ChangeNotifier {
       );
 
       _tierMetadata = CustomerScheduleService.latestTierMetadata;
+      _maxRadiusKm = CustomerScheduleService.latestMaxRadiusKm;
       if (CustomerScheduleService.latestPricingConfig != null) {
         _pricingConfig = CustomerScheduleService.latestPricingConfig!;
       }
@@ -235,8 +236,15 @@ class SchedulePickupProvider extends ChangeNotifier {
       }
       if (fetchedStores.isNotEmpty) {
         _nearbyStores = fetchedStores;
-        if (_selectedStore == null ||
-            !_nearbyStores.any((s) => s.id == _selectedStore?.id)) {
+        final validStores =
+            _nearbyStores.where((s) => s.distanceKm <= _maxRadiusKm);
+        if (validStores.isNotEmpty) {
+          if (_selectedStore == null ||
+              !validStores.any((s) => s.id == _selectedStore?.id)) {
+            _selectedStore = validStores.first;
+            _selectedTurnaroundDays = _selectedStore!.turnaroundDays;
+          }
+        } else {
           _selectedStore = _nearbyStores.first;
           _selectedTurnaroundDays = _selectedStore!.turnaroundDays;
         }
@@ -611,12 +619,31 @@ class SchedulePickupProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Admin max search radius (default 21 km)
+  double _maxRadiusKm = 21.0;
+  double get maxRadiusKm => _maxRadiusKm;
+
+  /// Returns true if at least one store is within admin max radius (default 21km)
+  bool get hasStoresWithinMaxRadius =>
+      _nearbyStores.any((s) => s.distanceKm <= _maxRadiusKm);
+
+  /// Stores strictly within the admin max radius
+  List<NearbyStore> get storesWithinMaxRadius =>
+      _nearbyStores.where((s) => s.distanceKm <= _maxRadiusKm).toList();
+
+  /// Stores that are outside the admin max radius (far stores)
+  List<NearbyStore> get storesOutsideMaxRadius =>
+      _nearbyStores.where((s) => s.distanceKm > _maxRadiusKm).toList();
+
+  /// Check whether a specific store is beyond the max allowed radius
+  bool isStoreFar(NearbyStore store) => store.distanceKm > _maxRadiusKm;
+
   // Tier metadata from dynamic backend calculation
   TierMetadata? _tierMetadata;
   TierMetadata? get tierMetadata => _tierMetadata;
   String get tierSubtitle =>
       _tierMetadata?.computedSubtitle ??
-      'Based on 9 live stores within 5 km. Prices are for a shirt, washed and folded.';
+      'Based on live stores within ${_maxRadiusKm.toInt()} km. Prices are for a shirt, washed and folded.';
 
   // Load Initial Tiers & Stores
   Future<void> initFlowData(
@@ -643,11 +670,15 @@ class SchedulePickupProvider extends ChangeNotifier {
       );
 
       _tierMetadata = CustomerScheduleService.latestTierMetadata;
+      _maxRadiusKm = CustomerScheduleService.latestMaxRadiusKm;
       _tiers = fetchedTiers;
       _hasTiersLoaded = true;
       _nearbyStores = fetchedStores;
       if (_nearbyStores.isNotEmpty) {
-        _selectedStore = _nearbyStores.first;
+        final validStores =
+            _nearbyStores.where((s) => s.distanceKm <= _maxRadiusKm);
+        _selectedStore =
+            validStores.isNotEmpty ? validStores.first : _nearbyStores.first;
         _selectedTurnaroundDays = _selectedStore!.turnaroundDays;
         try {
           final catalog = await CustomerScheduleService.fetchStoreCatalog(

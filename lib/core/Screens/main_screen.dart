@@ -104,13 +104,23 @@ class _MainScreenState extends State<MainScreen> {
       HomePage(
         toProfile: profile,
       ),
-      const HistoryScreen(),
-      const BasketScreen(),
+      HistoryScreen(toHome: home),
+      BasketScreen(toHome: home),
       ProfileScreen(toHome: home),
     ];
-    return ScaffoldMessenger(
-      key: scaffoldKey,
-      child: Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (currentIndex != 0) {
+          setState(() {
+            currentIndex = 0;
+          });
+        }
+      },
+      child: ScaffoldMessenger(
+        key: scaffoldKey,
+        child: Scaffold(
         body: IndexedStack(
           index: currentIndex,
           children: screens,
@@ -230,6 +240,7 @@ class _MainScreenState extends State<MainScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 }

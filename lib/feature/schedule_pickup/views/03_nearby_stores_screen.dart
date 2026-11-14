@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/Screens/profile/customer_address_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/04_store_page_screen.dart';
+import 'package:foam_mobile/widgets/store_out_of_range_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -17,8 +19,7 @@ class NearbyStoresScreen extends StatelessWidget {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final stores = provider.nearbyStores;
     final currentFilter = provider.storeFilter;
-    final isOutsideReach = provider.tierMetadata?.isFallback == true ||
-        (stores.isNotEmpty && stores.first.distanceKm > 20.0);
+    final isOutsideReach = !provider.hasStoresWithinMaxRadius;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -89,7 +90,7 @@ class NearbyStoresScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'Showing nearest available stores outside standard 5 km reach.',
+                          'Showing all stores. Partner stores beyond ${provider.maxRadiusKm.toInt()} km will prompt options to explore all services.',
                           style: GoogleFonts.dmSans(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -173,11 +174,11 @@ class NearbyStoresScreen extends StatelessWidget {
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: () {
-                Navigator.pushNamed(context, CustomerAddressScreen.id);
+                Navigator.pushNamed(context, ServicesScreen.id);
               },
-              icon: const Icon(Icons.location_on_outlined, size: 18),
+              icon: const Icon(Icons.cleaning_services_rounded, size: 18),
               label: Text(
-                'Change Pickup Location',
+                'Explore All Services',
                 style: GoogleFonts.dmSans(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -187,11 +188,34 @@ class NearbyStoresScreen extends StatelessWidget {
                 backgroundColor: const Color(0xFF00AABC),
                 foregroundColor: Colors.white,
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 13),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, CustomerAddressScreen.id);
+              },
+              icon: const Icon(Icons.location_on_outlined, size: 18),
+              label: Text(
+                'Change Pickup Location',
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF475569),
+                ),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
           ],
@@ -236,9 +260,18 @@ class NearbyStoresScreen extends StatelessWidget {
     SchedulePickupProvider provider,
   ) {
     final currencyFormatter = NumberFormat('#,###');
+    final isFar = store.distanceKm > provider.maxRadiusKm;
 
     return InkWell(
       onTap: () {
+        if (isFar) {
+          StoreOutOfRangeDialog.showStoreTooFar(
+            context,
+            store: store,
+            maxRadiusKm: provider.maxRadiusKm,
+          );
+          return;
+        }
         provider.selectStore(store);
         Navigator.pushNamed(context, CustomerStorePageScreen.id);
       },
@@ -249,7 +282,10 @@ class NearbyStoresScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE4E4E4), width: 0.8),
+          border: Border.all(
+            color: isFar ? const Color(0xFFFCA5A5) : const Color(0xFFE4E4E4),
+            width: isFar ? 1.0 : 0.8,
+          ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -332,8 +368,10 @@ class NearbyStoresScreen extends StatelessWidget {
                         '${store.distanceKm.toStringAsFixed(1)} km',
                         style: GoogleFonts.dmSans(
                           fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF00AABC),
+                          fontWeight: FontWeight.w700,
+                          color: isFar
+                              ? const Color(0xFFDC2626)
+                              : const Color(0xFF00AABC),
                         ),
                       ),
                       Text(
@@ -346,6 +384,35 @@ class NearbyStoresScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (isFar) ...[
+                    const SizedBox(height: 5),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEF2F2),
+                        borderRadius: BorderRadius.circular(5),
+                        border: Border.all(
+                            color: const Color(0xFFFECACA), width: 0.8),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.warning_amber_rounded,
+                              size: 12, color: Color(0xFFDC2626)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Very far (> ${provider.maxRadiusKm.toInt()} km)',
+                            style: GoogleFonts.dmSans(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: const Color(0xFFDC2626),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   Row(
                     children: [
                       Text(

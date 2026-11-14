@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/core/hive/hive.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
@@ -485,19 +486,35 @@ class _CustomerAddressScreenState extends State<CustomerAddressScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(
-            Icons.arrow_back_ios_new_rounded,
-            color: Color(0xFF0F172A),
-            size: 20,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(
+              Icons.arrow_back_ios_new_rounded,
+              color: Color(0xFF0F172A),
+              size: 20,
+            ),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(context, MainScreen.id);
+              }
+            },
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text(
           'Pickup Address',
           style: GoogleFonts.dmSans(
@@ -948,6 +965,7 @@ class _CustomerAddressScreenState extends State<CustomerAddressScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

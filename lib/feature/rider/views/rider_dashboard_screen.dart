@@ -63,7 +63,15 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
     final isApproved = provider.isApproved;
     final isOnline = provider.isOnline;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        }
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF8FAFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -217,7 +225,8 @@ class _RiderDashboardScreenState extends State<RiderDashboardScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildPendingApprovalBanner() {

@@ -69,6 +69,7 @@ class MatchedTierStore {
 class TierMetadata {
   final int storeCount;
   final double radiusKm;
+  final double maxRadiusKm;
   final bool isFallback;
   final String? nearestStoreName;
   final double? nearestDistanceKm;
@@ -76,7 +77,8 @@ class TierMetadata {
 
   const TierMetadata({
     this.storeCount = 9,
-    this.radiusKm = 5.0,
+    this.radiusKm = 21.0,
+    this.maxRadiusKm = 21.0,
     this.isFallback = false,
     this.nearestStoreName,
     this.nearestDistanceKm,
@@ -90,15 +92,21 @@ class TierMetadata {
     if (isFallback && nearestStoreName != null && nearestDistanceKm != null) {
       return 'Based on nearest store $nearestStoreName (${nearestDistanceKm!.toStringAsFixed(1)} km away). Prices are for a shirt, washed and folded.';
     }
-    return 'Based on $storeCount live stores within ${radiusKm.toInt()} km. Prices are for a shirt, washed and folded.';
+    return 'Based on $storeCount live store${storeCount == 1 ? '' : 's'} within ${maxRadiusKm.toInt()} km. Prices are for a shirt, washed and folded.';
   }
 
   factory TierMetadata.fromJson(Map<String, dynamic> json) {
+    final maxR = (json['maxRadiusKm'] is num)
+        ? (json['maxRadiusKm'] as num).toDouble()
+        : ((json['radiusKm'] is num)
+            ? (json['radiusKm'] as num).toDouble()
+            : 21.0);
     return TierMetadata(
       storeCount: (json['storeCount'] ?? json['liveStoreCount'] ?? 9) as int,
       radiusKm: (json['radiusKm'] is num)
           ? (json['radiusKm'] as num).toDouble()
-          : 5.0,
+          : maxR,
+      maxRadiusKm: maxR,
       isFallback:
           (json['isFallback'] ?? json['isOutsideGeoReach'] ?? false) as bool,
       nearestStoreName: json['nearestStoreName'] as String?,
@@ -112,6 +120,7 @@ class TierMetadata {
   Map<String, dynamic> toJson() => {
         'storeCount': storeCount,
         'radiusKm': radiusKm,
+        'maxRadiusKm': maxRadiusKm,
         'isFallback': isFallback,
         'nearestStoreName': nearestStoreName,
         'nearestDistanceKm': nearestDistanceKm,

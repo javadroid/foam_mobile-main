@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 class CustomerScheduleService {
   static TierMetadata? latestTierMetadata;
   static PricingConfig? latestPricingConfig;
+  static double latestMaxRadiusKm = 21.0;
 
   static Future<Map<String, String>> _getHeaders() async {
     final token = HiveClass.getToken();
@@ -33,6 +34,9 @@ class CustomerScheduleService {
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         if (data is Map<String, dynamic>) {
+          if (data['maxRadiusKm'] is num) {
+            latestMaxRadiusKm = (data['maxRadiusKm'] as num).toDouble();
+          }
           if (data['pricing'] is Map<String, dynamic>) {
             latestPricingConfig =
                 PricingConfig.fromJson(data['pricing'] as Map<String, dynamic>);
@@ -40,6 +44,10 @@ class CustomerScheduleService {
           if (data['metadata'] is Map<String, dynamic>) {
             latestTierMetadata =
                 TierMetadata.fromJson(data['metadata'] as Map<String, dynamic>);
+            if (data['metadata']['maxRadiusKm'] is num) {
+              latestMaxRadiusKm =
+                  (data['metadata']['maxRadiusKm'] as num).toDouble();
+            }
           } else {
             latestTierMetadata = TierMetadata.fromJson(data);
           }
@@ -73,6 +81,9 @@ class CustomerScheduleService {
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
+        if (data is Map<String, dynamic> && data['maxRadiusKm'] is num) {
+          latestMaxRadiusKm = (data['maxRadiusKm'] as num).toDouble();
+        }
         if (data['stores'] is List) {
           return (data['stores'] as List)
               .map((s) => NearbyStore.fromJson(s as Map<String, dynamic>))

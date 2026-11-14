@@ -11,7 +11,9 @@ import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class BasketScreen extends StatefulWidget {
-  const BasketScreen({super.key});
+  final VoidCallback? toHome;
+
+  const BasketScreen({super.key, this.toHome});
 
   static const String id = '/basket_screen';
 
@@ -73,27 +75,41 @@ class _BasketScreenState extends State<BasketScreen> {
         }
       });
     }
-    return ScaffoldMessenger(
-      key: scaffoldKey,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF0F172A),
-              size: 20,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else if (widget.toHome != null) {
+          widget.toHome!();
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: ScaffoldMessenger(
+        key: scaffoldKey,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Color(0xFF0F172A),
+                size: 20,
+              ),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else if (widget.toHome != null) {
+                  widget.toHome!();
+                } else {
+                  Navigator.pushReplacementNamed(context, MainScreen.id);
+                }
+              },
             ),
-            onPressed: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                Navigator.pushNamed(context, MainScreen.id);
-              }
-            },
-          ),
           title: Text(
             'Basket',
             overflow: TextOverflow.ellipsis,
@@ -922,6 +938,7 @@ class _BasketScreenState extends State<BasketScreen> {
                     ),
                   ),
       ),
-    );
+    ),
+  );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/09_at_store_screen.dart';
@@ -98,11 +99,22 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
 
     final isUnlocked = tracking?.isTrackingUnlocked ?? false;
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: isUnlocked
-          ? _buildLiveMapView(context, provider, tracking)
-          : _buildGatedLockedView(context, provider, tracking),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF9FAFB),
+        body: isUnlocked
+            ? _buildLiveMapView(context, provider, tracking)
+            : _buildGatedLockedView(context, provider, tracking),
+      ),
     );
   }
 
@@ -144,7 +156,13 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new,
                         color: Color(0xFF212828), size: 18),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacementNamed(context, MainScreen.id);
+                      }
+                    },
                   ),
                 ),
                 Container(
@@ -702,7 +720,13 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   child: IconButton(
                     icon: const Icon(Icons.arrow_back_ios_new,
                         color: Color(0xFF212828), size: 18),
-                    onPressed: () => Navigator.pop(context),
+                    onPressed: () {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        Navigator.pushReplacementNamed(context, MainScreen.id);
+                      }
+                    },
                   ),
                 ),
                 Container(

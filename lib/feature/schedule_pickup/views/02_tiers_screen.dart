@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/models/customer_schedule_models.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/04_store_page_screen.dart';
 import 'package:foam_mobile/widgets/app_skeleton_loader.dart';
+import 'package:foam_mobile/widgets/store_out_of_range_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -93,6 +95,35 @@ class _ScheduleTiersScreenState extends State<ScheduleTiersScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              if (!isInitialLoading && !provider.hasStoresWithinMaxRadius) ...[
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFEF2F2),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFFECACA)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.location_off_rounded,
+                          color: Color(0xFFDC2626), size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'No partner stores found within ${provider.maxRadiusKm.toInt()} km of your location.',
+                          style: GoogleFonts.dmSans(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: const Color(0xFF991B1B),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               // Dynamic tier subtitle based on backend data
               if (isInitialLoading)
                 Padding(
@@ -177,6 +208,15 @@ class _ScheduleTiersScreenState extends State<ScheduleTiersScreen> {
                     ),
                   ),
                   onPressed: () {
+                    if (!provider.hasStoresWithinMaxRadius) {
+                      StoreOutOfRangeDialog.showNoStoresNearby(
+                        context,
+                        maxRadiusKm: provider.maxRadiusKm,
+                        address: provider.pickupAddress,
+                      );
+                      return;
+                    }
+
                     final matched = selectedTier.matchedStore;
                     if (matched != null) {
                       final matchedStore = provider.nearbyStores.firstWhere(
@@ -215,6 +255,34 @@ class _ScheduleTiersScreenState extends State<ScheduleTiersScreen> {
                   ),
                 ),
               ),
+              if (!provider.hasStoresWithinMaxRadius) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF00AABC)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, ServicesScreen.id);
+                    },
+                    icon: const Icon(Icons.cleaning_services_rounded,
+                        color: Color(0xFF00AABC), size: 18),
+                    label: Text(
+                      'Explore All Services',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF00AABC),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
             ],
           ),

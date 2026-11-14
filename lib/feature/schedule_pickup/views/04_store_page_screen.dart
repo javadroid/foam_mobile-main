@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/05_items_screen.dart';
+import 'package:foam_mobile/widgets/store_out_of_range_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -170,6 +171,14 @@ class _CustomerStorePageScreenState extends State<CustomerStorePageScreen> {
                         ),
                       ),
                       onPressed: () {
+                        if (store.distanceKm > provider.maxRadiusKm) {
+                          StoreOutOfRangeDialog.showStoreTooFar(
+                            context,
+                            store: store,
+                            maxRadiusKm: provider.maxRadiusKm,
+                          );
+                          return;
+                        }
                         provider.selectService('Laundry');
                         Navigator.pushNamed(context, ScheduleItemsScreen.id);
                       },

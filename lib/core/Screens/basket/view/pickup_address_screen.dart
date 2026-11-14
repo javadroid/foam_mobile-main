@@ -341,21 +341,37 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
                 .grandTotal
             : basketProvider.totalPrice);
 
-    return ScaffoldMessenger(
-      key: scaffoldKey,
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        appBar: AppBar(
-          elevation: 0.5,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: ScaffoldMessenger(
+        key: scaffoldKey,
+        child: Scaffold(
           backgroundColor: Colors.white,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new,
-              color: Color(0xFF212828),
-              size: 20,
+          appBar: AppBar(
+            elevation: 0.5,
+            backgroundColor: Colors.white,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new,
+                color: Color(0xFF212828),
+                size: 20,
+              ),
+              onPressed: () {
+                if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacementNamed(context, MainScreen.id);
+                }
+              },
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
           title: Text(
             'Pickup & Delivery Details',
             style: GoogleFonts.dmSans(
@@ -1004,7 +1020,8 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Future<void> _handlePayment() async {

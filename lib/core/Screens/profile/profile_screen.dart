@@ -765,27 +765,41 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldMessenger(
-      key: scaffoldKey,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
-        appBar: AppBar(
-          backgroundColor: Colors.white,
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
-              color: Color(0xFF0F172A),
-              size: 20,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (widget.toHome != null) {
+          widget.toHome!();
+        } else if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: ScaffoldMessenger(
+        key: scaffoldKey,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFF8FAFC),
+          appBar: AppBar(
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: Color(0xFF0F172A),
+                size: 20,
+              ),
+              onPressed: () {
+                if (widget.toHome != null) {
+                  widget.toHome!();
+                } else if (Navigator.canPop(context)) {
+                  Navigator.pop(context);
+                } else {
+                  Navigator.pushReplacementNamed(context, MainScreen.id);
+                }
+              },
             ),
-            onPressed: () {
-              if (widget.toHome != null) {
-                widget.toHome!();
-              } else {
-                Navigator.pushReplacementNamed(context, MainScreen.id);
-              }
-            },
-          ),
           title: Text(
             'Profile & Settings',
             style: GoogleFonts.dmSans(
@@ -1318,7 +1332,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           },
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildSectionHeader(String title) {

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:foam_mobile/core/Screens/home/services_screen/views/services_screen.dart';
 import 'package:foam_mobile/core/services/location_service.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/controller/schedule_pickup_provider.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/02_tiers_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/03_nearby_stores_screen.dart';
+import 'package:foam_mobile/widgets/store_out_of_range_dialog.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
@@ -277,6 +279,17 @@ class _HowToChooseScreenState extends State<HowToChooseScreen> {
                   ),
                   onPressed: () {
                     if (isFoamChoose) {
+                      if (provider.hasTiersLoaded &&
+                          !provider.hasStoresWithinMaxRadius) {
+                        StoreOutOfRangeDialog.showNoStoresNearby(
+                          context,
+                          maxRadiusKm: provider.maxRadiusKm,
+                          address: provider.pickupAddress,
+                          onChangeAddress: () =>
+                              _showLocationPickerModal(context, provider),
+                        );
+                        return;
+                      }
                       Navigator.pushNamed(context, ScheduleTiersScreen.id);
                     } else {
                       Navigator.pushNamed(context, NearbyStoresScreen.id);
@@ -293,6 +306,35 @@ class _HowToChooseScreenState extends State<HowToChooseScreen> {
                   ),
                 ),
               ),
+              if (provider.hasTiersLoaded &&
+                  !provider.hasStoresWithinMaxRadius) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: OutlinedButton.icon(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFF00AABC)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.pushNamed(context, ServicesScreen.id);
+                    },
+                    icon: const Icon(Icons.cleaning_services_rounded,
+                        color: Color(0xFF00AABC), size: 18),
+                    label: Text(
+                      'Explore All Services',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF00AABC),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
             ],
           ),

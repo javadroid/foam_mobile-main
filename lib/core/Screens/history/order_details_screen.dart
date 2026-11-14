@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
+import 'package:foam_mobile/core/Screens/main_screen.dart';
 import 'package:foam_mobile/feature/schedule_pickup/views/08_pickup_leg_screen.dart';
 import 'package:foam_mobile/utils/values.dart';
 import 'package:intl/intl.dart';
@@ -88,18 +89,34 @@ class OrderDetailsScreen extends StatelessWidget {
         ? '$stagesLeft stage${stagesLeft > 1 ? 's' : ''} left'
         : 'Order completed!';
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        elevation: 0,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: Scaffold(
         backgroundColor: Colors.white,
-        leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: AppColors.blackAccentColor,
+        appBar: AppBar(
+          elevation: 0,
+          backgroundColor: Colors.white,
+          leading: IconButton(
+            icon: Icon(
+              Icons.arrow_back_ios_new,
+              color: AppColors.blackAccentColor,
+            ),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                Navigator.pushReplacementNamed(context, MainScreen.id);
+              }
+            },
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
         title: Text(
           'Order #FM-${order.id}',
           overflow: TextOverflow.ellipsis,
@@ -610,6 +627,7 @@ class OrderDetailsScreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

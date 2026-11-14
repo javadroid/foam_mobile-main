@@ -11,17 +11,17 @@ import 'package:foam_mobile/widgets/history_widget.dart';
 
 class HistoryScreen extends StatefulWidget {
   static const String id = '/history_page';
+  final VoidCallback? toHome;
 
-  const HistoryScreen({super.key});
+  const HistoryScreen({super.key, this.toHome});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  String selectedHistory = "Pending";
+  String selectedHistory = "Ongoing";
   final List<String> differentHistory = [
-    "Pending",
     "Ongoing",
     "Completed",
     "Cancelled",
@@ -96,32 +96,51 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Widget build(BuildContext context) {
     final filteredOrders = getFilteredOrders();
 
-    return ScaffoldMessenger(
-      key: scaffoldKey,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFFAFAFC),
-        appBar: AppBar(
-          elevation: 0,
-          backgroundColor: Colors.white,
-          leading: IconButton(
-            icon: Icon(
-              Icons.arrow_back_ios_new,
-              color: AppColors.blackAccentColor,
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        } else if (widget.toHome != null) {
+          widget.toHome!();
+        } else {
+          Navigator.pushReplacementNamed(context, MainScreen.id);
+        }
+      },
+      child: ScaffoldMessenger(
+        key: scaffoldKey,
+        child: Scaffold(
+          backgroundColor: const Color(0xFFFAFAFC),
+          appBar: AppBar(
+            elevation: 0,
+            backgroundColor: Colors.white,
+            leading: IconButton(
+              icon: Icon(
+                Icons.arrow_back_ios_new,
+                color: AppColors.blackAccentColor,
+              ),
+              onPressed: () {
+                if (Navigator.of(context).canPop()) {
+                  Navigator.of(context).pop();
+                } else if (widget.toHome != null) {
+                  widget.toHome!();
+                } else {
+                  Navigator.pushReplacementNamed(context, MainScreen.id);
+                }
+              },
             ),
-            onPressed: () =>
-                Navigator.pushReplacementNamed(context, MainScreen.id),
-          ),
-          title: Text(
-            'Order History',
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.dmSans(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: const Color(0xFF0F172A),
+            title: Text(
+              'Order History',
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.dmSans(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: const Color(0xFF0F172A),
+              ),
             ),
+            centerTitle: true,
           ),
-          centerTitle: true,
-        ),
         body: SafeArea(
           child: RefreshIndicator(
             color: AppColors.primaryAccentColor,
@@ -163,7 +182,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                     boxShadow: history == selectedHistory
                                         ? [
                                             BoxShadow(
-                                              color: Colors.black.withValues(alpha: 0.05),
+                                              color: Colors.black
+                                                  .withValues(alpha: 0.05),
                                               blurRadius: 4,
                                               offset: const Offset(0, 2),
                                             )
@@ -210,7 +230,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => OrderDetailsScreen(order: order),
+                                builder: (context) =>
+                                    OrderDetailsScreen(order: order),
                               ),
                             ).then((_) => fetchOrders());
                           },
@@ -218,7 +239,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ScheduleTrackingScreen(orderId: order.id),
+                                builder: (context) =>
+                                    ScheduleTrackingScreen(orderId: order.id),
                               ),
                             );
                           },
@@ -232,7 +254,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -242,11 +265,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     if (selectedHistory == 'Ongoing') {
       message = 'No active orders';
-      submessage = 'When you place an order, track its live pickup and laundry progress here.';
+      submessage =
+          'When you place an order, track its live pickup and laundry progress here.';
       icon = Icons.local_laundry_service_outlined;
     } else if (selectedHistory == 'Completed') {
       message = 'No completed orders yet';
-      submessage = 'Your finished laundry orders and receipts will show up here.';
+      submessage =
+          'Your finished laundry orders and receipts will show up here.';
       icon = Icons.check_circle_outline_rounded;
     } else {
       message = 'No cancelled orders';
@@ -300,7 +325,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primaryAccentColor,
                 elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),

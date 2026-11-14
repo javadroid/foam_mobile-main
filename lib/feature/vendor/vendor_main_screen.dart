@@ -37,12 +37,20 @@ class _VendorMainScreenState extends State<VendorMainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
-      bottomNavigationBar: Container(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (_currentIndex != 0) {
+          setState(() => _currentIndex = 0);
+        }
+      },
+      child: Scaffold(
+        body: IndexedStack(
+          index: _currentIndex,
+          children: _screens,
+        ),
+        bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: Colors.white,
           border: Border(top: BorderSide(color: VendorColors.border, width: 1.0)),
@@ -92,6 +100,7 @@ class _VendorMainScreenState extends State<VendorMainScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
