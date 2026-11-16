@@ -16,8 +16,8 @@ class Constants {
   /// Call once in main() after dotenv.load().
   static void init() {
     final env = dotenv.get('ENV', fallback: 'prod');
-    url = (env == 'local') ? _localUrl : _prodUrl;
-    debugPrint('[Constants] ENV=$env → url=$url');
+    url = (kReleaseMode || env != 'local') ? _prodUrl : _localUrl;
+    debugPrint('[Constants] ENV=$env, kReleaseMode=$kReleaseMode → url=$url');
   }
 
   // PayStack public key

@@ -76,8 +76,6 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             debuggable false
             jniDebuggable false
-            renderscriptDebuggable false
-            zipAlignEnabled true
             ndk {
                 debugSymbolLevel 'SYMBOL_TABLE'
             }
