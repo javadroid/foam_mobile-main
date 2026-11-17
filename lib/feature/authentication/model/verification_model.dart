@@ -53,59 +53,86 @@ class VerifyClass {
     }
   }
 
-  static Future<void> verifyForgotPassword(String code, BuildContext context,
-      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+  static Future<bool> verifyForgotPassword(
+    String code,
+    BuildContext context,
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    String? email,
+  }) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final targetEmail = (email != null && email.isNotEmpty) ? email : authProvider.email;
+
     try {
-      http.Response res = await http.post(
-        Uri.parse("${Constants.url}/api/verify/email"),
+      final res = await http.post(
+        Uri.parse("${Constants.url}/api/auth/validateOtp"),
         headers: {
           "Accept": "application/json",
           'Content-Type': 'application/json'
         },
         body: jsonEncode(
           {
-            "otp_code": code,
+            "email": targetEmail.trim().toLowerCase(),
+            "otp": code.trim(),
           },
         ),
       );
-      var response = json.decode(res.body);
-      if (response["status"]) {
-        debugPrint(response);
-        Navigator.pushNamed(context, CreateNewPassword.id);
+      final response = json.decode(res.body);
+      if (res.statusCode == 200 || response["status"] == true) {
+        if (!context.mounted) return false;
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => CreateNewPassword(
+              email: targetEmail.trim().toLowerCase(),
+              otp: code.trim(),
+            ),
+          ),
+        );
+        return true;
       } else {
-        MyMessageHandler.showSnackBar(scaffoldKey, "Wrong code");
+        MyMessageHandler.showSnackBar(
+          scaffoldKey,
+          response["error"] ?? response["message"] ?? "Invalid or expired verification code",
+        );
+        return false;
       }
     } catch (e) {
-      MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
+      debugPrint("verifyForgotPassword error: $e");
+      MyMessageHandler.showSnackBar(scaffoldKey, "Check your network connection");
+      return false;
     }
   }
 
   static Future<void> resend(
     BuildContext context,
-    GlobalKey<ScaffoldMessengerState> scaffoldKey,
-  ) async {
-    var authProvider = Provider.of<AuthProvider>(context, listen: false);
+    GlobalKey<ScaffoldMessengerState> scaffoldKey, {
+    bool isForgotPassword = false,
+    String? email,
+  }) async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final targetEmail = (email != null && email.isNotEmpty) ? email : authProvider.email;
+
     try {
-      http.Response res = await http.post(
-        Uri.parse("${Constants.url}/api/resend/email"),
+      final endpoint = isForgotPassword
+          ? "${Constants.url}/api/auth/forgotPassword"
+          : "${Constants.url}/api/auth/resend/email";
+
+      final res = await http.post(
+        Uri.parse(endpoint),
         headers: {
           "Accept": "application/json",
           'Content-Type': 'application/json'
         },
         body: jsonEncode(
           {
-            "email": authProvider.email,
+            "email": targetEmail.trim().toLowerCase(),
           },
         ),
       );
-      var response = json.decode(res.body);
-      if (response["status"]) {
-        MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
-      } else {
-        MyMessageHandler.showSnackBar(scaffoldKey, response["message"]);
-      }
+      final response = json.decode(res.body);
+      final msg = response["message"] ?? (res.statusCode == 200 ? "Code resent successfully" : response["error"]);
+      MyMessageHandler.showSnackBar(scaffoldKey, msg ?? "Code sent");
     } catch (e) {
-      MyMessageHandler.showSnackBar(scaffoldKey, "Check your network");
+      MyMessageHandler.showSnackBar(scaffoldKey, "Check your network connection");
     }
   }
 }

@@ -22,7 +22,7 @@ class ServicesList {
     required this.description,
   });
 
-  int id;
+  String id;
   String name;
   String imageUrl;
   String description;

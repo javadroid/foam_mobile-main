@@ -220,6 +220,16 @@ class AppRouter {
 
       case CreateNewPassword
             .id: // Create New Password screen route (with optional parameter)
+        if (settings.arguments is Map<String, dynamic>) {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (_) => CreateNewPassword(
+              email: args['email'] ?? '',
+              otp: args['otp'] ?? '',
+            ),
+            settings: settings,
+          );
+        }
         return MaterialPageRoute(
           builder: (_) => const CreateNewPassword(),
           settings: settings,
@@ -227,6 +237,16 @@ class AppRouter {
 
       case VerificationScreen
             .id: // Verification screen route (with optional parameter)
+        if (settings.arguments is Map<String, dynamic>) {
+          final args = settings.arguments as Map<String, dynamic>;
+          return MaterialPageRoute(
+            builder: (_) => VerificationScreen(
+              isForgotPassword: args['isForgotPassword'] ?? false,
+              email: args['email'],
+            ),
+            settings: settings,
+          );
+        }
         return MaterialPageRoute(
           builder: (_) => const VerificationScreen(),
           settings: settings,

@@ -118,7 +118,7 @@ class OrderDetailsScreen extends StatelessWidget {
             },
           ),
         title: Text(
-          'Order #FM-${order.id}',
+          'Order #${order.displayOrderNumber}',
           overflow: TextOverflow.ellipsis,
           style: GoogleFonts.dmSans(
             fontSize: 18,

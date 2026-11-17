@@ -17,8 +17,11 @@ class BasketProvider extends ChangeNotifier {
   bool get isNoFolding => _isNoFolding;
   BasketQuote? get currentQuote => _currentQuote;
 
-  int get totalItems => _basketItems.fold(0, (sum, item) => sum + item.quantity);
-  int get totalAmount => _currentQuote?.subtotal ?? _basketItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
+  int get totalItems =>
+      _basketItems.fold(0, (sum, item) => sum + item.quantity);
+  int get totalAmount =>
+      _currentQuote?.subtotal ??
+      _basketItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
   int get foldingSurchargeTotal => _currentQuote?.foldingSurchargeTotal ?? 0;
   int get deliveryFee => _currentQuote?.deliveryFee ?? 3000;
   int get serviceFee => _currentQuote?.serviceFee ?? 300;
@@ -29,15 +32,21 @@ class BasketProvider extends ChangeNotifier {
           serviceFee +
           (_isNoFolding ? foldingSurchargeTotal : 0));
 
-  int getQuantity(int categoryId) {
+  int getQuantity(String categoryId) {
     final item = _basketItems.firstWhere(
       (element) => element.categoryId == categoryId,
-      orElse: () => BasketList(categoryId: categoryId, quantity: 0, name: '', price: 0, imageUrl: null),
+      orElse: () => BasketList(
+          categoryId: categoryId,
+          quantity: 0,
+          name: '',
+          price: 0,
+          imageUrl: null),
     );
     return item.quantity;
   }
 
-  Future<void> fetchQuote({bool? noFolding, GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
+  Future<void> fetchQuote(
+      {bool? noFolding, GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
     final flag = noFolding ?? _isNoFolding;
     _isQuoteLoading = true;
     notifyListeners();
@@ -50,13 +59,15 @@ class BasketProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setNoFolding(bool value, {GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
+  Future<void> setNoFolding(bool value,
+      {GlobalKey<ScaffoldMessengerState>? scaffoldKey}) async {
     _isNoFolding = value;
     notifyListeners();
     await fetchQuote(noFolding: value, scaffoldKey: scaffoldKey);
   }
 
-  Future<void> fetchBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey, {bool showLoading = true, bool refreshQuote = true}) async {
+  Future<void> fetchBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey,
+      {bool showLoading = true, bool refreshQuote = true}) async {
     if (showLoading) {
       _isLoading = true;
       notifyListeners();
@@ -86,7 +97,7 @@ class BasketProvider extends ChangeNotifier {
         _currentQuote = null;
       }
     }
-    
+
     if (showLoading) {
       _isLoading = false;
     }
@@ -95,8 +106,8 @@ class BasketProvider extends ChangeNotifier {
 
   Future<void> addToBasket(
     BuildContext context,
-    int serviceId,
-    int categoryId,
+    String serviceId,
+    String categoryId,
     int quantity,
     GlobalKey<ScaffoldMessengerState> scaffoldKey, {
     String? itemName,
@@ -105,7 +116,8 @@ class BasketProvider extends ChangeNotifier {
     bool refreshQuote = false,
   }) async {
     // Optimistic local update for instant UI responsiveness
-    final index = _basketItems.indexWhere((item) => item.categoryId == categoryId);
+    final index =
+        _basketItems.indexWhere((item) => item.categoryId == categoryId);
     if (index != -1) {
       final current = _basketItems[index];
       _basketItems[index] = BasketList(
@@ -127,18 +139,21 @@ class BasketProvider extends ChangeNotifier {
       notifyListeners();
     }
 
-    await ServicesClass.addToBasket(context, serviceId, categoryId, quantity, scaffoldKey);
-    await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
+    await ServicesClass.addToBasket(
+        context, serviceId, categoryId, quantity, scaffoldKey);
+    await fetchBasket(scaffoldKey,
+        showLoading: false, refreshQuote: refreshQuote);
   }
 
   Future<void> updateQuantity(
-    int categoryId,
+    String categoryId,
     int quantity,
     GlobalKey<ScaffoldMessengerState> scaffoldKey, {
     bool refreshQuote = true,
   }) async {
     // Optimistic local update for instant UI responsiveness
-    final index = _basketItems.indexWhere((item) => item.categoryId == categoryId);
+    final index =
+        _basketItems.indexWhere((item) => item.categoryId == categoryId);
     if (index != -1) {
       if (quantity <= 0) {
         _basketItems.removeAt(index);
@@ -191,12 +206,13 @@ class BasketProvider extends ChangeNotifier {
       notifyListeners();
     } else {
       _isQuoteLoading = false;
-      await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
+      await fetchBasket(scaffoldKey,
+          showLoading: false, refreshQuote: refreshQuote);
     }
   }
 
   Future<void> removeFromBasket(
-    int categoryId,
+    String categoryId,
     GlobalKey<ScaffoldMessengerState> scaffoldKey, {
     bool refreshQuote = true,
   }) async {
@@ -239,11 +255,13 @@ class BasketProvider extends ChangeNotifier {
       notifyListeners();
     } else {
       _isQuoteLoading = false;
-      await fetchBasket(scaffoldKey, showLoading: false, refreshQuote: refreshQuote);
+      await fetchBasket(scaffoldKey,
+          showLoading: false, refreshQuote: refreshQuote);
     }
   }
 
-  Future<void> clearBasket(GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
+  Future<void> clearBasket(
+      GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
     await BasketClass.clearBasket(scaffoldKey);
     _basketItems = [];
     _currentQuote = BasketQuote.empty();

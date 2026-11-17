@@ -26,7 +26,7 @@ class _AddToBasketState extends State<AddToBasket> {
   ServicesList? service;
   bool isDryCleaning = false;
   bool isLaundry = false;
-  
+
   final List<Map<String, String>> filterOptions = [
     {"label": "Tops", "filter": "tops"},
     {"label": "Bottoms", "filter": "bottoms"},
@@ -45,9 +45,10 @@ class _AddToBasketState extends State<AddToBasket> {
 
   List<CategoryItem> allCategories = [];
   List<CategoryItem> filteredCategories = [];
-  final Set<int> _loadingItemIds = {};
+  final Set<String> _loadingItemIds = {};
 
-  Future<void> _handleBasketAction(int itemId, Future<void> Function() action) async {
+  Future<void> _handleBasketAction(
+      String itemId, Future<void> Function() action) async {
     setState(() => _loadingItemIds.add(itemId));
     try {
       await action();
@@ -76,16 +77,17 @@ class _AddToBasketState extends State<AddToBasket> {
   void _applyFilter() {
     setState(() {
       filteredCategories = allCategories
-          .where((item) => item.description.toLowerCase().contains(selectedFilter.toLowerCase()))
+          .where((item) => item.description
+              .toLowerCase()
+              .contains(selectedFilter.toLowerCase()))
           .where((item) {
-            if (isDryCleaning) {
-              return item.description.toLowerCase().contains('dc_');
-            } else if (isLaundry) {
-              return !item.description.toLowerCase().contains('dc_');
-            }
-            return true;
-          })
-          .toList();
+        if (isDryCleaning) {
+          return item.description.toLowerCase().contains('dc_');
+        } else if (isLaundry) {
+          return !item.description.toLowerCase().contains('dc_');
+        }
+        return true;
+      }).toList();
     });
   }
 
@@ -105,7 +107,7 @@ class _AddToBasketState extends State<AddToBasket> {
       isLaundry = serviceNameLower.contains('laundry');
       fetchCategories();
     }
-    final int serviceId = service!.id;
+    final String serviceId = service!.id;
     return ScaffoldMessenger(
       key: scaffoldKey,
       child: Scaffold(
@@ -174,311 +176,423 @@ class _AddToBasketState extends State<AddToBasket> {
                   ],
                 ),
               ),
-            
               Expanded(
                 child: Visibility(
-                  visible: allCategories.isNotEmpty,
-                  replacement: ShimmerEffect().addToBasketLoadingCard(),
-                  child: Consumer<BasketProvider>(
-                    builder: (context, basketProvider, child) {
-                      return ListView.builder(
-                        itemCount: filteredCategories.length,
-                        itemBuilder: ((context, index) {
-                          final item = filteredCategories[index];
-                          final currentQuantity = basketProvider.getQuantity(item.id);
-                          
-                          return Container(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                SizedBox(
-                                  width: MediaQuery.sizeOf(context).width,
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                    children: [
-                                       Expanded(
-                                         child: Row(
-  children: [
-     SizedBox(
-      width: 100,
-                                        child: Container(
-                                          height:
-                                              MediaQuery.sizeOf(context).height *
-                                                  0.12,
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(12),
-                                            color: AppColors.fadeBlueAccentColor,
-                                            image: item.imageUrl != null
-                                                ? DecorationImage(
-                                                    image: NetworkImage(item.imageUrl!),
-                                                    fit: BoxFit.contain,
-                                                  )
-                                                : null,
-                                          ),
-                                          child: item.imageUrl == null
-                                              ? const Icon(Icons.image_not_supported)
-                                              : null,
-                                        ),
-                                      ),
-                                      AppSpaces.horizontalSpace10,
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              item.name,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              style: Constants.subHeadingStyle,
-                                            ),
-                                            AppSpaces.verticalSpace20,
-                                            Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  '₦${Constants().currencyFormat(item.price)}',
-                                                  maxLines: 2,
-                                                  overflow: TextOverflow.ellipsis,
-                                                  style: Constants.subHeadingStyle
-                                                      .copyWith(
-                                                    fontWeight: FontWeight.w800,
-                                                    fontSize: 19,
-                                                    color: AppColors
-                                                        .primaryAccentColor,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 4),
-                                                Text(
-                                                  '₦${Constants().currencyFormat((item.price * 1.3).round())}',
-                                                  style: Constants.subHeadingStyle
-                                                      .copyWith(
-                                                    decoration:
-                                                        TextDecoration.lineThrough,
-                                                    color: Colors.grey,
-                                                    fontSize: 14,
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ],
-                                        ),
-                                      ),
-                                     
-  ],
-),
-                                       ),
-                                       const SizedBox(width: 8),
+                    visible: allCategories.isNotEmpty,
+                    replacement: ShimmerEffect().addToBasketLoadingCard(),
+                    child: Consumer<BasketProvider>(
+                      builder: (context, basketProvider, child) {
+                        return ListView.builder(
+                          itemCount: filteredCategories.length,
+                          itemBuilder: ((context, index) {
+                            final item = filteredCategories[index];
+                            final currentQuantity =
+                                basketProvider.getQuantity(item.id);
 
-                                      SizedBox(
-                                      
-                                        child: currentQuantity == 0
-                                            ? Row(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.end,
-                                                children: [
-                                                  InkWell(
-                                                    onTap: _loadingItemIds.contains(item.id)
-                                                        ? null
-                                                        : () => _handleBasketAction(
-                                                              item.id,
-                                                              () => basketProvider.addToBasket(
-                                                                  context,
-                                                                  serviceId,
-                                                                  item.id,
-                                                                  1,
-                                                                  scaffoldKey,
-                                                                  itemName: item.name,
-                                                                  itemPrice: item.price,
-                                                                  itemImageUrl: item.imageUrl,
-                                                                  refreshQuote: false),
-                                                            ),
-                                                    child: Container(
-                                                      padding: const EdgeInsets
-                                                          .symmetric(
-                                                          horizontal: 18,
-                                                          vertical: 8),
-                                                      decoration: BoxDecoration(
-                                                        color: AppColors
-                                                            .navyBlueAccent,
-                                                        borderRadius:
-                                                            BorderRadius.circular(
-                                                                8),
-                                                      ),
-                                                      child: _loadingItemIds.contains(item.id)
-                                                          ? const SizedBox(
-                                                              width: 16,
-                                                              height: 16,
-                                                              child: CircularProgressIndicator(
-                                                                strokeWidth: 2,
-                                                                color: Colors.white,
-                                                              ),
-                                                            )
-                                                          : const Text(
-                                                              'Add',
-                                                              style: TextStyle(
-                                                                color: Colors.white,
-                                                                fontWeight:
-                                                                    FontWeight.bold,
-                                                              ),
-                                                            ),
-                                                    ),
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  SizedBox(
+                                    width: MediaQuery.sizeOf(context).width,
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Expanded(
+                                          child: Row(
+                                            children: [
+                                              SizedBox(
+                                                width: 100,
+                                                child: Container(
+                                                  height:
+                                                      MediaQuery.sizeOf(context)
+                                                              .height *
+                                                          0.12,
+                                                  decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            12),
+                                                    color: AppColors
+                                                        .fadeBlueAccentColor,
+                                                    image: item.imageUrl != null
+                                                        ? DecorationImage(
+                                                            image: NetworkImage(
+                                                                item.imageUrl!),
+                                                            fit: BoxFit.contain,
+                                                          )
+                                                        : null,
                                                   ),
-                                                ],
-                                              )
-                                            : currentQuantity >= 6
-                                                ? Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.end,
-                                                    children: [
-                                                      Container(
-                                                        padding: const EdgeInsets.symmetric(
-                                                            horizontal: 8, vertical: 2),
-                                                        decoration: BoxDecoration(
-                                                          color: AppColors.fadeBlueAccentColor,
-                                                          borderRadius: BorderRadius.circular(8),
-                                                          border: Border.all(
-                                                            color: AppColors.navyBlueAccent.withValues(alpha: 0.5),
-                                                            width: 1.5,
+                                                  child: item.imageUrl == null
+                                                      ? const Icon(Icons
+                                                          .image_not_supported)
+                                                      : null,
+                                                ),
+                                              ),
+                                              AppSpaces.horizontalSpace10,
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      item.name,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: Constants
+                                                          .subHeadingStyle,
+                                                    ),
+                                                    AppSpaces.verticalSpace20,
+                                                    Column(
+                                                      crossAxisAlignment:
+                                                          CrossAxisAlignment
+                                                              .start,
+                                                      children: [
+                                                        Text(
+                                                          '₦${Constants().currencyFormat(item.price)}',
+                                                          maxLines: 2,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                          style: Constants
+                                                              .subHeadingStyle
+                                                              .copyWith(
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            fontSize: 19,
+                                                            color: AppColors
+                                                                .primaryAccentColor,
                                                           ),
                                                         ),
-                                                        child: _loadingItemIds.contains(item.id)
-                                                            ? Padding(
-                                                                padding: const EdgeInsets.all(6.0),
-                                                                child: SizedBox(
-                                                                  width: 16,
-                                                                  height: 16,
-                                                                  child: CircularProgressIndicator(
-                                                                    strokeWidth: 2,
-                                                                    color: AppColors.navyBlueAccent,
-                                                                  ),
-                                                                ),
-                                                              )
-                                                            : DropdownButtonHideUnderline(
-                                                          child: DropdownButton<int>(
-                                                            value: currentQuantity,
-                                                            icon: Icon(
-                                                              Icons.arrow_drop_down,
-                                                              color: AppColors.navyBlueAccent,
-                                                            ),
-                                                            style: TextStyle(
-                                                              fontSize: 16,
-                                                              fontWeight: FontWeight.w700,
-                                                              color: AppColors.navyBlueAccent,
-                                                            ),
-                                                            onChanged: (newValue) {
-                                                              if (newValue != null) {
-                                                                _handleBasketAction(
-                                                                  item.id,
-                                                                  () => basketProvider.updateQuantity(
+                                                        const SizedBox(
+                                                            height: 4),
+                                                        Text(
+                                                          '₦${Constants().currencyFormat((item.price * 1.3).round())}',
+                                                          style: Constants
+                                                              .subHeadingStyle
+                                                              .copyWith(
+                                                            decoration:
+                                                                TextDecoration
+                                                                    .lineThrough,
+                                                            color: Colors.grey,
+                                                            fontSize: 14,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        SizedBox(
+                                          child: currentQuantity == 0
+                                              ? Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.end,
+                                                  children: [
+                                                    InkWell(
+                                                      onTap: _loadingItemIds
+                                                              .contains(item.id)
+                                                          ? null
+                                                          : () =>
+                                                              _handleBasketAction(
+                                                                item.id,
+                                                                () => basketProvider.addToBasket(
+                                                                    context,
+                                                                    serviceId,
                                                                     item.id,
-                                                                    newValue,
+                                                                    1,
                                                                     scaffoldKey,
-                                                                    refreshQuote: false,
-                                                                  ),
-                                                                );
-                                                              }
-                                                            },
-                                                            items: List.generate(
-                                                              currentQuantity > 20 ? currentQuantity + 10 : 20,
-                                                              (index) => index + 1,
-                                                            ).map<DropdownMenuItem<int>>((int value) {
-                                                              return DropdownMenuItem<int>(
-                                                                value: value,
-                                                                child: Text(value.toString()),
-                                                              );
-                                                            }).toList(),
-                                                          ),
+                                                                    itemName: item
+                                                                        .name,
+                                                                    itemPrice: item
+                                                                        .price,
+                                                                    itemImageUrl:
+                                                                        item
+                                                                            .imageUrl,
+                                                                    refreshQuote:
+                                                                        false),
+                                                              ),
+                                                      child: Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 18,
+                                                                vertical: 8),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: AppColors
+                                                              .navyBlueAccent,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
                                                         ),
-                                                      ),
-                                                    ],
-                                                  )
-                                                : Row(
-                                                    mainAxisAlignment:
-                                                        MainAxisAlignment.end,
-                                                    children: [
-                                                      IconButton(
-                                                        padding: EdgeInsets.zero,
-                                                        constraints:
-                                                            const BoxConstraints(),
-                                                        onPressed: _loadingItemIds.contains(item.id)
-                                                            ? null
-                                                            : () => _handleBasketAction(
-                                                                  item.id,
-                                                                  () async {
-                                                                    if (currentQuantity == 1) {
-                                                                      await basketProvider.removeFromBasket(
-                                                                          item.id,
-                                                                          scaffoldKey, refreshQuote: false);
-                                                                    } else if (currentQuantity > 1) {
-                                                                      await basketProvider.updateQuantity(
-                                                                          item.id,
-                                                                          currentQuantity - 1,
-                                                                          scaffoldKey, refreshQuote: false);
-                                                                    }
-                                                                  },
-                                                                ),
-                                                        icon: Icon(
-                                                          Icons.remove_circle,
-                                                          color:
-                                                              AppColors.navyBlueAccent,
-                                                          size: 28,
-                                                        ),
-                                                      ),
-                                                      Padding(
-                                                        padding: const EdgeInsets.symmetric(horizontal: 6.0),
-                                                        child: _loadingItemIds.contains(item.id)
-                                                            ? SizedBox(
+                                                        child: _loadingItemIds
+                                                                .contains(
+                                                                    item.id)
+                                                            ? const SizedBox(
                                                                 width: 16,
                                                                 height: 16,
-                                                                child: CircularProgressIndicator(
-                                                                  strokeWidth: 2,
-                                                                  color: AppColors.navyBlueAccent,
+                                                                child:
+                                                                    CircularProgressIndicator(
+                                                                  strokeWidth:
+                                                                      2,
+                                                                  color: Colors
+                                                                      .white,
                                                                 ),
                                                               )
-                                                            : Text(
-                                                                currentQuantity.toString(),
-                                                                style: const TextStyle(
-                                                                  fontSize: 18,
-                                                                  fontWeight: FontWeight.w700,
+                                                            : const Text(
+                                                                'Add',
+                                                                style:
+                                                                    TextStyle(
+                                                                  color: Colors
+                                                                      .white,
+                                                                  fontWeight:
+                                                                      FontWeight
+                                                                          .bold,
                                                                 ),
                                                               ),
                                                       ),
-                                                      IconButton(
-                                                        padding: EdgeInsets.zero,
-                                                        constraints:
-                                                            const BoxConstraints(),
-                                                        onPressed: _loadingItemIds.contains(item.id)
-                                                            ? null
-                                                            : () => _handleBasketAction(
-                                                                  item.id,
-                                                                  () => basketProvider.updateQuantity(
-                                                                      item.id,
-                                                                      currentQuantity + 1,
-                                                                      scaffoldKey, refreshQuote: false),
+                                                    ),
+                                                  ],
+                                                )
+                                              : currentQuantity >= 6
+                                                  ? Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment.end,
+                                                      children: [
+                                                        Container(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal: 8,
+                                                                  vertical: 2),
+                                                          decoration:
+                                                              BoxDecoration(
+                                                            color: AppColors
+                                                                .fadeBlueAccentColor,
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        8),
+                                                            border: Border.all(
+                                                              color: AppColors
+                                                                  .navyBlueAccent
+                                                                  .withValues(
+                                                                      alpha:
+                                                                          0.5),
+                                                              width: 1.5,
+                                                            ),
+                                                          ),
+                                                          child: _loadingItemIds
+                                                                  .contains(
+                                                                      item.id)
+                                                              ? Padding(
+                                                                  padding:
+                                                                      const EdgeInsets
+                                                                          .all(
+                                                                          6.0),
+                                                                  child:
+                                                                      SizedBox(
+                                                                    width: 16,
+                                                                    height: 16,
+                                                                    child:
+                                                                        CircularProgressIndicator(
+                                                                      strokeWidth:
+                                                                          2,
+                                                                      color: AppColors
+                                                                          .navyBlueAccent,
+                                                                    ),
+                                                                  ),
+                                                                )
+                                                              : DropdownButtonHideUnderline(
+                                                                  child:
+                                                                      DropdownButton<
+                                                                          int>(
+                                                                    value:
+                                                                        currentQuantity,
+                                                                    icon: Icon(
+                                                                      Icons
+                                                                          .arrow_drop_down,
+                                                                      color: AppColors
+                                                                          .navyBlueAccent,
+                                                                    ),
+                                                                    style:
+                                                                        TextStyle(
+                                                                      fontSize:
+                                                                          16,
+                                                                      fontWeight:
+                                                                          FontWeight
+                                                                              .w700,
+                                                                      color: AppColors
+                                                                          .navyBlueAccent,
+                                                                    ),
+                                                                    onChanged:
+                                                                        (newValue) {
+                                                                      if (newValue !=
+                                                                          null) {
+                                                                        _handleBasketAction(
+                                                                          item.id,
+                                                                          () =>
+                                                                              basketProvider.updateQuantity(
+                                                                            item.id,
+                                                                            newValue,
+                                                                            scaffoldKey,
+                                                                            refreshQuote:
+                                                                                false,
+                                                                          ),
+                                                                        );
+                                                                      }
+                                                                    },
+                                                                    items: List
+                                                                        .generate(
+                                                                      currentQuantity >
+                                                                              20
+                                                                          ? currentQuantity +
+                                                                              10
+                                                                          : 20,
+                                                                      (index) =>
+                                                                          index +
+                                                                          1,
+                                                                    ).map<
+                                                                        DropdownMenuItem<
+                                                                            int>>((int
+                                                                        value) {
+                                                                      return DropdownMenuItem<
+                                                                          int>(
+                                                                        value:
+                                                                            value,
+                                                                        child: Text(
+                                                                            value.toString()),
+                                                                      );
+                                                                    }).toList(),
+                                                                  ),
                                                                 ),
-                                                        icon: Icon(
-                                                          Icons.add_circle,
-                                                          color:
-                                                              AppColors.navyBlueAccent,
-                                                          size: 28,
                                                         ),
-                                                      ),
-                                                    ],
-                                                  ),
-                                      ),
-                                    ],
+                                                      ],
+                                                    )
+                                                  : Row(
+                                                      mainAxisAlignment:
+                                                          MainAxisAlignment.end,
+                                                      children: [
+                                                        IconButton(
+                                                          padding:
+                                                              EdgeInsets.zero,
+                                                          constraints:
+                                                              const BoxConstraints(),
+                                                          onPressed: _loadingItemIds
+                                                                  .contains(
+                                                                      item.id)
+                                                              ? null
+                                                              : () =>
+                                                                  _handleBasketAction(
+                                                                    item.id,
+                                                                    () async {
+                                                                      if (currentQuantity ==
+                                                                          1) {
+                                                                        await basketProvider.removeFromBasket(
+                                                                            item
+                                                                                .id,
+                                                                            scaffoldKey,
+                                                                            refreshQuote:
+                                                                                false);
+                                                                      } else if (currentQuantity >
+                                                                          1) {
+                                                                        await basketProvider.updateQuantity(
+                                                                            item
+                                                                                .id,
+                                                                            currentQuantity -
+                                                                                1,
+                                                                            scaffoldKey,
+                                                                            refreshQuote:
+                                                                                false);
+                                                                      }
+                                                                    },
+                                                                  ),
+                                                          icon: Icon(
+                                                            Icons.remove_circle,
+                                                            color: AppColors
+                                                                .navyBlueAccent,
+                                                            size: 28,
+                                                          ),
+                                                        ),
+                                                        Padding(
+                                                          padding:
+                                                              const EdgeInsets
+                                                                  .symmetric(
+                                                                  horizontal:
+                                                                      6.0),
+                                                          child: _loadingItemIds
+                                                                  .contains(
+                                                                      item.id)
+                                                              ? SizedBox(
+                                                                  width: 16,
+                                                                  height: 16,
+                                                                  child:
+                                                                      CircularProgressIndicator(
+                                                                    strokeWidth:
+                                                                        2,
+                                                                    color: AppColors
+                                                                        .navyBlueAccent,
+                                                                  ),
+                                                                )
+                                                              : Text(
+                                                                  currentQuantity
+                                                                      .toString(),
+                                                                  style:
+                                                                      const TextStyle(
+                                                                    fontSize:
+                                                                        18,
+                                                                    fontWeight:
+                                                                        FontWeight
+                                                                            .w700,
+                                                                  ),
+                                                                ),
+                                                        ),
+                                                        IconButton(
+                                                          padding:
+                                                              EdgeInsets.zero,
+                                                          constraints:
+                                                              const BoxConstraints(),
+                                                          onPressed: _loadingItemIds
+                                                                  .contains(
+                                                                      item.id)
+                                                              ? null
+                                                              : () =>
+                                                                  _handleBasketAction(
+                                                                    item.id,
+                                                                    () => basketProvider.updateQuantity(
+                                                                        item.id,
+                                                                        currentQuantity +
+                                                                            1,
+                                                                        scaffoldKey,
+                                                                        refreshQuote:
+                                                                            false),
+                                                                  ),
+                                                          icon: Icon(
+                                                            Icons.add_circle,
+                                                            color: AppColors
+                                                                .navyBlueAccent,
+                                                            size: 28,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }),
-                      );
-                    },
-                  )
-                ),
+                                ],
+                              ),
+                            );
+                          }),
+                        );
+                      },
+                    )),
               ),
               Padding(
                 padding: const EdgeInsets.all(16.0),

@@ -15,7 +15,15 @@ class ScheduleOrderPlacedScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final provider = Provider.of<SchedulePickupProvider>(context);
     final order = provider.lastCreatedOrder ?? {};
-    final orderNumber = order['orderNumber'] as String? ?? (order['id'] != null ? 'FM-${order['id']}' : '');
+    String formattedNum = '';
+    if (order['orderNumber'] != null && order['orderNumber'].toString().isNotEmpty) {
+      formattedNum = order['orderNumber'].toString();
+    } else if (order['id'] != null) {
+      final clean = order['id'].toString().replaceAll('-', '').trim();
+      final short = clean.length > 8 ? clean.substring(0, 8).toUpperCase() : clean.toUpperCase();
+      formattedNum = 'FM-$short';
+    }
+    final orderNumber = formattedNum;
     final storeName = order['storeName'] as String? ?? (provider.hasSelectedStore ? provider.currentStore.name : 'Store');
     final pickupPin = order['pickupPin'] as String? ?? '';
     final pickupTime = order['pickupTime'] as String? ?? provider.pickupSlot;

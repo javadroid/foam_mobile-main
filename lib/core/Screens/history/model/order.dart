@@ -38,6 +38,7 @@ class Order {
   final String? riderName;
   final String? riderPhone;
   final String? vendorStatus;
+  final String? orderNumber;
   final List<OrderItem> items;
 
   Order({
@@ -62,8 +63,29 @@ class Order {
     this.riderName,
     this.riderPhone,
     this.vendorStatus,
+    this.orderNumber,
     required this.items,
   });
+
+  /// Extracts a clean, professional, concise 8-character uppercase identifier
+  String get shortId {
+    String val = (orderNumber != null && orderNumber!.trim().isNotEmpty)
+        ? orderNumber!
+        : id;
+    val = val.trim();
+    if (val.toUpperCase().startsWith('FOAM-')) {
+      val = val.substring(5);
+    } else if (val.toUpperCase().startsWith('FM-')) {
+      val = val.substring(3);
+    }
+    final clean = val.replaceAll('-', '').trim();
+    if (clean.isEmpty) return '0000';
+    if (clean.length <= 8) return clean.toUpperCase();
+    return clean.substring(0, 8).toUpperCase();
+  }
+
+  /// Consistent human-facing display code, e.g. "FM-90B180EB"
+  String get displayOrderNumber => 'FM-$shortId';
 
   factory Order.fromJson(Map<String, dynamic> json) {
     var itemsList = (json['items'] as List?) ?? [];
@@ -98,6 +120,7 @@ class Order {
       riderName: json['rider'] != null ? json['rider']['name'] : null,
       riderPhone: json['rider'] != null ? json['rider']['phone'] : null,
       vendorStatus: json['vendorStatus']?.toString(),
+      orderNumber: json['orderNumber']?.toString(),
       items: items,
     );
   }

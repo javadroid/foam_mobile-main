@@ -139,8 +139,8 @@ class ServicesClass {
 
   static Future<void> addToBasket(
       BuildContext context,
-      int serviceId,
-      int categoryId,
+      String serviceId,
+      String categoryId,
       int quantity,
       GlobalKey<ScaffoldMessengerState> scaffoldKey) async {
     try {

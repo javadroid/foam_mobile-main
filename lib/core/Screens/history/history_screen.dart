@@ -55,25 +55,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   List<Order> getFilteredOrders() {
     switch (selectedHistory) {
       case "Pending":
-        return orders.where((order) {
-          final s = order.status.toUpperCase();
-          final vs = (order.vendorStatus ?? '').toUpperCase();
-          return s == "PENDING" || vs == "NEW" || vs == "PENDING";
-        }).toList();
       case "Ongoing":
         return orders.where((order) {
           final s = order.status.toUpperCase();
           final vs = (order.vendorStatus ?? '').toUpperCase();
-          if (s == "PENDING" || vs == "NEW" || vs == "PENDING") return false;
-          return s == "ACCEPTED" ||
-              s == "IN_PROGRESS" ||
-              s == "ONGOING" ||
-              [
-                'ACCEPTED',
-                'WASHING',
-                'READY',
-                'OUT_FOR_DELIVERY',
-              ].contains(vs);
+          final isCompleted =
+              s == "COMPLETED" || s == "DELIVERED" || vs == "COMPLETED";
+          final isCancelled = s == "CANCELLED" || vs == "DECLINED";
+          // Include all active orders (including PENDING, NEW, ACCEPTED, IN_PROGRESS, ONGOING, etc.)
+          return !isCompleted && !isCancelled;
         }).toList();
       case "Completed":
         return orders.where((order) {

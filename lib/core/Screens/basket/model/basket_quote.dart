@@ -57,8 +57,8 @@ class BasketQuote {
 }
 
 class BasketQuoteItem {
-  final int? itemId;
-  final int? categoryId;
+  final String? itemId;
+  final String? categoryId;
   final String? name;
   final int quantity;
   final int unitPrice;

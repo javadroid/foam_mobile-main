@@ -96,7 +96,7 @@ class BasketClass {
   }
 
   static Future<Map<String, dynamic>?> updateQuantity(
-    int categoryId,
+    String categoryId,
     int quantity,
     GlobalKey<ScaffoldMessengerState> scaffoldKey, {
     bool noFolding = false,
@@ -138,7 +138,7 @@ class BasketClass {
   }
 
   static Future<Map<String, dynamic>?> removeItemByCategory(
-    int categoryId,
+    String categoryId,
     GlobalKey<ScaffoldMessengerState> scaffoldKey, {
     bool noFolding = false,
     BuildContext? context,

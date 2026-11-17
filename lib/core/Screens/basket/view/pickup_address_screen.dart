@@ -1141,9 +1141,15 @@ class _PickupAddressScreenState extends State<PickupAddressScreen> {
           await basketProvider.fetchBasket(scaffoldKey, showLoading: false);
 
           final orderData = result.data;
+          String shortDisplayRef = '';
+          if (orderData != null && orderData.containsKey('id')) {
+            final raw = orderData['id'].toString().replaceAll('-', '').trim();
+            final c = raw.length > 8 ? raw.substring(0, 8).toUpperCase() : raw.toUpperCase();
+            shortDisplayRef = '#FM-$c';
+          }
           final String orderRef = result.reference ??
-              (orderData != null && orderData.containsKey('id')
-                  ? '#FM-${orderData['id']}'
+              (shortDisplayRef.isNotEmpty
+                  ? shortDisplayRef
                   : (orderData != null && orderData.containsKey('reference')
                       ? orderData['reference'].toString()
                       : ''));

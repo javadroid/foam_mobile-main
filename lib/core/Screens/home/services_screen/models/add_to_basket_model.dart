@@ -16,7 +16,7 @@ class CategoryItem {
     this.quantity = 0,
   });
 
-  int id;
+  String id;
   String? imageUrl;
   String name;
   String description;

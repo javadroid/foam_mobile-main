@@ -33,7 +33,7 @@ class BasketList {
     required this.imageUrl,
   });
 
-  int categoryId;
+  String categoryId;
   int quantity;
   String name;
   int price;
