@@ -48,15 +48,15 @@ jobs:
           flutter --version
           java -version
 
+      - name: Prepare Production Environment
+        run: |
+          echo "ENV=prod" > .env
+
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Run Flutter Tests
         run: flutter test
-
-      - name: Prepare Production Environment
-        run: |
-          echo "ENV=prod" > .env
 
       - name: Set up Android Keystore & key.properties
         env:

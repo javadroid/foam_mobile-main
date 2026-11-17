@@ -34,15 +34,15 @@ jobs:
           xcodebuild -version
           pod --version
 
+      - name: Prepare Production Environment
+        run: |
+          echo "ENV=prod" > .env
+
       - name: Install Flutter Dependencies
         run: flutter pub get
 
       - name: Run Tests
         run: flutter test
-
-      - name: Prepare Production Environment
-        run: |
-          echo "ENV=prod" > .env
 
       - name: Install CocoaPods
         run: |

@@ -37,15 +37,15 @@ jobs:
           xcodebuild -version
           pod --version
 
+      - name: Prepare Production Environment
+        run: |
+          echo "ENV=prod" > .env
+
       - name: Install Dependencies
         run: flutter pub get
 
       - name: Run Tests
         run: flutter test
-
-      - name: Prepare Production Environment
-        run: |
-          echo "ENV=prod" > .env
 
       - name: Set up Apple Signing Certificate & Keychain
         env:
