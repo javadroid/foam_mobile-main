@@ -16,7 +16,7 @@ concurrency:
 jobs:
   build-ios-simulator:
     name: Build iOS for Appetize.io
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository

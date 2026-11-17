@@ -19,7 +19,7 @@ concurrency:
 jobs:
   deploy-signed-ios:
     name: Build & Sign iOS for App Store
-    runs-on: macos-14
+    runs-on: macos-latest
 
     steps:
       - name: Checkout Repository
