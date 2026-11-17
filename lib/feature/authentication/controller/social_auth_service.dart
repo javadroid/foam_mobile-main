@@ -317,6 +317,11 @@ class SocialAuthService {
         // User cancelled Apple sign in dialog
         return;
       }
+      if (e.code == AuthorizationErrorCode.unknown) {
+        _showError(scaffoldKey,
+            'Apple Sign-In requires an Apple ID signed in under iOS Settings (or a real device with provisioning).');
+        return;
+      }
       _showError(scaffoldKey,
           'Apple Sign-In could not be completed (${e.code.name}).');
     } catch (e) {
