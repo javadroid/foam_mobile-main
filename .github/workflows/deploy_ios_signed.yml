@@ -1,0 +1,159 @@
+name: Deploy Signed iOS to App Store / TestFlight
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      upload_to_testflight:
+        description: 'Upload directly to App Store Connect / TestFlight'
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: ios-signed-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-signed-ios:
+    name: Build & Sign iOS for App Store
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Environment
+        run: |
+          flutter --version
+          xcodebuild -version
+          pod --version
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Prepare Production Environment
+        run: |
+          echo "ENV=prod" > .env
+
+      - name: Set up Apple Signing Certificate & Keychain
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'foamTemporaryKeychainPass2026' }}
+        run: |
+          if [ -z "$BUILD_CERTIFICATE_BASE64" ]; then
+            echo "::error ::Secret IOS_DISTRIBUTION_CERTIFICATE_BASE64 is required to build a signed iOS IPA."
+            exit 1
+          fi
+
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          # Create temporary keychain
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Import certificate into temporary keychain
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          # Install provisioning profile if provided
+          if [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
+            PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
+            mkdir -p "$PROFILES_DIR"
+            PROFILE_PATH="$PROFILES_DIR/build_profile.mobileprovision"
+            echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
+            echo "Installed provisioning profile to $PROFILE_PATH"
+          fi
+
+      - name: Determine Version & Dynamic Build Number
+        id: versioning
+        run: |
+          BUILD_NUMBER=$((10 + GITHUB_RUN_NUMBER))
+          echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
+          echo "Building iOS with build number: $BUILD_NUMBER"
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Generate ExportOptions.plist
+        run: |
+          cat <<EOF > ios/ExportOptions.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>destination</key>
+              <string>export</string>
+              <key>signingStyle</key>
+              <string>automatic</string>
+              <key>stripSwiftSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Build Signed iOS IPA
+        run: |
+          flutter build ipa --release \
+            --build-number=${{ steps.versioning.outputs.build_number }} \
+            --export-options-plist=ios/ExportOptions.plist
+
+      - name: Upload IPA Artifact to GitHub
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-ipa-${{ steps.versioning.outputs.build_number }}
+          path: |
+            build/ios/ipa/*.ipa
+          retention-days: 30
+
+      - name: Upload to TestFlight / App Store Connect
+        if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight == 'true') && env.APP_STORE_CONNECT_PRIVATE_KEY != '' }}
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+        run: |
+          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
+          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_KEY_PATH"
+
+          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
+          echo "Uploading $IPA_PATH to App Store Connect..."
+
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+
+      - name: Clean up Temporary Keychain
+        if: always()
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          if [ -f "$KEYCHAIN_PATH" ]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi

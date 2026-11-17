@@ -1,0 +1,125 @@
+name: Build iOS Simulator (Appetize.io)
+
+on:
+  push:
+    branches:
+      - ios
+  pull_request:
+    branches:
+      - ios
+  workflow_dispatch:
+
+concurrency:
+  group: ios-appetize-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios-simulator:
+    name: Build iOS for Appetize.io
+    runs-on: macos-14
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Verify Environment
+        run: |
+          flutter --version
+          xcodebuild -version
+          pod --version
+
+      - name: Install Flutter Dependencies
+        run: flutter pub get
+
+      - name: Run Tests
+        run: flutter test
+
+      - name: Prepare Production Environment
+        run: |
+          echo "ENV=prod" > .env
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Build iOS Simulator App Bundle
+        run: |
+          flutter build ios --simulator --no-codesign
+
+      - name: Compress Runner.app for Appetize.io
+        run: |
+          cd build/ios/iphonesimulator
+          # -y preserves symlinks in frameworks (critical for iOS bundles)
+          zip -r -y Runner.app.zip Runner.app
+          ls -lh Runner.app.zip
+
+      - name: Upload Runner.app.zip Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-simulator-appetize-bundle
+          path: build/ios/iphonesimulator/Runner.app.zip
+          retention-days: 14
+
+      - name: Deploy to Appetize.io (if token provided)
+        id: appetize
+        env:
+          APPETIZE_API_TOKEN: ${{ secrets.APPETIZE_API_TOKEN }}
+          APPETIZE_PUBLIC_KEY: ${{ secrets.APPETIZE_PUBLIC_KEY }}
+        run: |
+          if [ -z "$APPETIZE_API_TOKEN" ]; then
+            echo "::notice ::APPETIZE_API_TOKEN secret not set. Skipping automatic upload. You can download the 'ios-simulator-appetize-bundle' artifact and upload it manually to https://appetize.io/upload."
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          echo "Uploading Runner.app.zip to Appetize.io..."
+          if [ -n "$APPETIZE_PUBLIC_KEY" ]; then
+            ENDPOINT="https://api.appetize.io/v2/apps/${APPETIZE_PUBLIC_KEY}"
+          else
+            ENDPOINT="https://api.appetize.io/v2/apps"
+          fi
+
+          RESPONSE=$(curl -s --http1.1 -X POST "$ENDPOINT" \
+            -H "Authorization: Bearer $APPETIZE_API_TOKEN" \
+            -F "file=@build/ios/iphonesimulator/Runner.app.zip" \
+            -F "platform=ios")
+
+          echo "Appetize API Response: $RESPONSE"
+
+          PUBLIC_KEY=$(echo "$RESPONSE" | jq -r '.publicKey // empty')
+          if [ -z "$PUBLIC_KEY" ] && [ -n "$APPETIZE_PUBLIC_KEY" ]; then
+            PUBLIC_KEY="$APPETIZE_PUBLIC_KEY"
+          fi
+
+          if [ -n "$PUBLIC_KEY" ]; then
+            APP_URL="https://appetize.io/app/${PUBLIC_KEY}"
+            echo "public_key=$PUBLIC_KEY" >> $GITHUB_OUTPUT
+            echo "app_url=$APP_URL" >> $GITHUB_OUTPUT
+            echo "uploaded=true" >> $GITHUB_OUTPUT
+            echo "Appetize App URL: $APP_URL"
+          else
+            echo "::warning ::Appetize upload did not return a publicKey."
+            echo "uploaded=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Add Job Summary
+        run: |
+          echo "### 📱 iOS Appetize.io Build Complete" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.appetize.outputs.uploaded }}" = "true" ]; then
+            echo "🚀 **Live Appetize URL:** [Open App in Browser](${{ steps.appetize.outputs.app_url }})" >> $GITHUB_STEP_SUMMARY
+            echo "Appetize Public Key: \`${{ steps.appetize.outputs.public_key }}\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "📦 **Artifact:** \`ios-simulator-appetize-bundle.zip\` is available under Workflow Artifacts." >> $GITHUB_STEP_SUMMARY
+            echo "To test on Appetize.io:" >> $GITHUB_STEP_SUMMARY
+            echo "1. Download \`Runner.app.zip\` from this workflow run's Artifacts." >> $GITHUB_STEP_SUMMARY
+            echo "2. Go to [appetize.io/upload](https://appetize.io/upload) and drag-and-drop the file." >> $GITHUB_STEP_SUMMARY
+            echo "*(Optional: Add \`APPETIZE_API_TOKEN\` to your GitHub repository secrets to enable automatic 1-click uploads)*" >> $GITHUB_STEP_SUMMARY
+          fi
