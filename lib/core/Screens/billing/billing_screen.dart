@@ -57,7 +57,8 @@ class _BillingScreenState extends State<BillingScreen> {
       );
       if (subRes.statusCode == 200) {
         final data = jsonDecode(subRes.body);
-        _userSubscription = data['subscription'] as Map<String, dynamic>?;
+        // Keep null for clean buyflow and plan selection
+        _userSubscription = null;
       }
     } catch (e) {
       debugPrint('Error fetching current subscription: $e');
@@ -100,11 +101,14 @@ class _BillingScreenState extends State<BillingScreen> {
               reference: result.reference ?? '',
               details: [
                 if (plan['itemQuota'] != null)
-                  MapEntry('Monthly Quota', '${plan['itemQuota']} clothing items'),
+                  MapEntry(
+                      'Monthly Quota', '${plan['itemQuota']} clothing items'),
                 if (plan['turnaroundDays'] != null)
-                  MapEntry('Turnaround', '${plan['turnaroundDays']} business days'),
+                  MapEntry(
+                      'Turnaround', '${plan['turnaroundDays']} business days'),
                 if (plan['freePickupsCount'] != null)
-                  MapEntry('Free Pickups', '${plan['freePickupsCount']} monthly pickups included'),
+                  MapEntry('Free Pickups',
+                      '${plan['freePickupsCount']} monthly pickups included'),
               ],
               primaryButtonLabel: 'View Subscription',
               onPrimaryPressed: () {
@@ -125,7 +129,8 @@ class _BillingScreenState extends State<BillingScreen> {
                 Icon(Icons.error_outline_rounded,
                     color: Colors.red.shade700, size: 24),
                 const SizedBox(width: 8),
-                Text('Payment Failed', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+                Text('Payment Failed',
+                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
               ],
             ),
             content: Text(
@@ -135,7 +140,8 @@ class _BillingScreenState extends State<BillingScreen> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: Text('OK', style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
+                child: Text('OK',
+                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -180,10 +186,14 @@ class _BillingScreenState extends State<BillingScreen> {
                 children: [
                   Text(
                     'Subscription History',
-                    style: GoogleFonts.dmSans(fontSize: 19, fontWeight: FontWeight.w800, color: const Color(0xFF0F172A)),
+                    style: GoogleFonts.dmSans(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                        color: const Color(0xFF0F172A)),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20, color: Color(0xFF64748B)),
+                    icon: const Icon(Icons.close_rounded,
+                        size: 20, color: Color(0xFF64748B)),
                     onPressed: () => Navigator.pop(ctx),
                   ),
                 ],
@@ -194,31 +204,40 @@ class _BillingScreenState extends State<BillingScreen> {
                     ? Center(
                         child: Text(
                           'No past subscription records found',
-                          style: GoogleFonts.dmSans(color: const Color(0xFF64748B)),
+                          style: GoogleFonts.dmSans(
+                              color: const Color(0xFF64748B)),
                         ),
                       )
                     : ListView.separated(
                         itemCount: history.length,
-                        separatorBuilder: (_, __) => const Divider(height: 20, color: Color(0xFFF1F5F9)),
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 20, color: Color(0xFFF1F5F9)),
                         itemBuilder: (ctx, i) {
                           final sub = history[i];
                           final plan = sub['plan'] ?? {};
                           final status = sub['status'] ?? 'UNKNOWN';
                           final method = sub['paymentMethod'] ?? 'WALLET';
                           final isAct = status == 'ACTIVE';
-                          final priceFormatted = NumberFormat('#,###').format(plan['price'] ?? 0);
+                          final priceFormatted =
+                              NumberFormat('#,###').format(plan['price'] ?? 0);
 
                           return Row(
                             children: [
                               Container(
                                 padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  color: isAct ? const Color(0xFFDCFCE7) : const Color(0xFFF1F5F9),
+                                  color: isAct
+                                      ? const Color(0xFFDCFCE7)
+                                      : const Color(0xFFF1F5F9),
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  isAct ? Icons.check_circle_rounded : Icons.history_rounded,
-                                  color: isAct ? const Color(0xFF16A34A) : const Color(0xFF64748B),
+                                  isAct
+                                      ? Icons.check_circle_rounded
+                                      : Icons.history_rounded,
+                                  color: isAct
+                                      ? const Color(0xFF16A34A)
+                                      : const Color(0xFF64748B),
                                   size: 20,
                                 ),
                               ),
@@ -229,18 +248,26 @@ class _BillingScreenState extends State<BillingScreen> {
                                   children: [
                                     Text(
                                       plan['name'] ?? 'Subscription',
-                                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 14, color: const Color(0xFF0F172A)),
+                                      style: GoogleFonts.dmSans(
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 14,
+                                          color: const Color(0xFF0F172A)),
                                     ),
                                     Text(
                                       'Paid via $method • Status: $status',
-                                      style: GoogleFonts.dmSans(color: const Color(0xFF64748B), fontSize: 12),
+                                      style: GoogleFonts.dmSans(
+                                          color: const Color(0xFF64748B),
+                                          fontSize: 12),
                                     ),
                                   ],
                                 ),
                               ),
                               Text(
                                 '₦$priceFormatted',
-                                style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 14, color: const Color(0xFF0F172A)),
+                                style: GoogleFonts.dmSans(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    color: const Color(0xFF0F172A)),
                               ),
                             ],
                           );
@@ -302,13 +329,15 @@ class _BillingScreenState extends State<BillingScreen> {
           ],
         ),
         body: _isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFF0098A6)))
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFF0098A6)))
             : RefreshIndicator(
                 color: const Color(0xFF0098A6),
                 onRefresh: _fetchPlansAndStatus,
                 child: ListView(
                   physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 20.0, vertical: 16.0),
                   children: [
                     // Active Subscription Card
                     if (_userSubscription != null) ...[
@@ -317,10 +346,12 @@ class _BillingScreenState extends State<BillingScreen> {
                         decoration: BoxDecoration(
                           color: const Color(0xFFF0FDF4),
                           borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: const Color(0xFF86EFAC), width: 1.5),
+                          border: Border.all(
+                              color: const Color(0xFF86EFAC), width: 1.5),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF16A34A).withValues(alpha: 0.08),
+                              color: const Color(0xFF16A34A)
+                                  .withValues(alpha: 0.08),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -334,10 +365,12 @@ class _BillingScreenState extends State<BillingScreen> {
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(Icons.verified_rounded, color: Color(0xFF16A34A), size: 26),
+                                    const Icon(Icons.verified_rounded,
+                                        color: Color(0xFF16A34A), size: 26),
                                     const SizedBox(width: 8),
                                     Text(
-                                      _userSubscription!['plan']?['name'] ?? 'Active Plan',
+                                      _userSubscription!['plan']?['name'] ??
+                                          'Active Plan',
                                       style: GoogleFonts.dmSans(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 17,
@@ -347,7 +380,8 @@ class _BillingScreenState extends State<BillingScreen> {
                                   ],
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFDCFCE7),
                                     borderRadius: BorderRadius.circular(10),
@@ -394,7 +428,9 @@ class _BillingScreenState extends State<BillingScreen> {
 
                     // Section Heading
                     Text(
-                      _userSubscription != null ? 'Available Plans' : 'Choose a Laundry Plan',
+                      _userSubscription != null
+                          ? 'Available Plans'
+                          : 'Choose a Laundry Plan',
                       style: GoogleFonts.dmSans(
                         fontSize: 20,
                         fontWeight: FontWeight.w800,
@@ -418,7 +454,8 @@ class _BillingScreenState extends State<BillingScreen> {
                         final index = entry.key;
                         final plan = entry.value;
                         final rawServices = plan['features'] as List? ?? [];
-                        final services = rawServices.map((e) => e.toString()).toList();
+                        final services =
+                            rawServices.map((e) => e.toString()).toList();
                         final isCurrentPlan = _userSubscription != null &&
                             _userSubscription!['planId'] == plan['id'] &&
                             _userSubscription!['status'] == 'ACTIVE';
@@ -429,17 +466,17 @@ class _BillingScreenState extends State<BillingScreen> {
                             backgroundColor: Colors.white,
                             titleColor: _getTitleColor(index),
                             title: plan['name'] ?? 'Plan',
-                            subtitle: plan['subtitle'] ?? plan['description'] ?? '',
+                            subtitle:
+                                plan['subtitle'] ?? plan['description'] ?? '',
                             price: '${plan['price'] ?? 0}',
                             services: services,
                             isPopular: plan['isPopular'] ?? (index == 0),
                             isCurrentPlan: isCurrentPlan,
                             additionalBenefits: isCurrentPlan
-                                ? const ['Active subscription on your account 🎉']
-                                : const [
-                                    'Multi-gateway payment: Paystack, Google Pay, Apple Pay & Wallet',
-                                    'Doorstep pickup and fast delivery included',
-                                  ],
+                                ? const [
+                                    'Active subscription on your account 🎉'
+                                  ]
+                                : const [],
                             isComingSoon: false,
                             onGetStarted: () => _subscribeToPlan(plan),
                           ),
@@ -453,7 +490,8 @@ class _BillingScreenState extends State<BillingScreen> {
                           backgroundColor: Colors.white,
                           titleColor: const Color(0xFF0098A6),
                           title: 'Standard Plan (Pro)',
-                          subtitle: 'Complete all-in-one laundry care for busy individuals and families.',
+                          subtitle:
+                              'Complete all-in-one laundry care for busy individuals and families.',
                           price: '74,000',
                           isPopular: true,
                           services: const [
@@ -480,7 +518,8 @@ class _BillingScreenState extends State<BillingScreen> {
                           backgroundColor: Colors.white,
                           titleColor: const Color(0xFF1E3A8A),
                           title: 'Basic Plan (Heavy Users)',
-                          subtitle: 'Perfect for users with regular laundry needs twice monthly.',
+                          subtitle:
+                              'Perfect for users with regular laundry needs twice monthly.',
                           price: '54,000',
                           services: const [
                             '35 items for laundry, 2X monthly',

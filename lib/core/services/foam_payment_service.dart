@@ -145,9 +145,7 @@ class FoamPaymentService {
       final completer = Completer<Map<String, dynamic>>();
       StreamSubscription? subscription;
 
-      subscription = _googlePayEventChannel
-          .receiveBroadcastStream()
-          .listen(
+      subscription = _googlePayEventChannel.receiveBroadcastStream().listen(
         (dynamic event) {
           subscription?.cancel();
           if (!completer.isCompleted) {
@@ -384,7 +382,7 @@ class FoamPaymentService {
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
           headers: _headers,
           body: jsonEncode({
-            "planId": planId,
+            "planId": planId.toString(),
             "provider": "GOOGLE_PAY",
             "token": jsonEncode(paymentResult),
             "reference": reference,
@@ -452,7 +450,7 @@ class FoamPaymentService {
           Uri.parse("${Constants.url}/api/subscriptions/mobile-pay"),
           headers: _headers,
           body: jsonEncode({
-            "planId": planId,
+            "planId": planId.toString(),
             "provider": "APPLE_PAY",
             "token": jsonEncode(paymentResult),
             "reference": reference,

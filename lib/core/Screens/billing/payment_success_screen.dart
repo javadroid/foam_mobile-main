@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:foam_mobile/core/Screens/main_screen.dart';
@@ -32,7 +33,8 @@ class PaymentSuccessScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final formattedAmount = NumberFormat('#,###').format(amount);
-    final nowFormatted = DateFormat('MMM dd, yyyy • hh:mm a').format(DateTime.now());
+    final nowFormatted =
+        DateFormat('MMM dd, yyyy • hh:mm a').format(DateTime.now());
 
     return PopScope(
       canPop: false,
@@ -51,7 +53,8 @@ class PaymentSuccessScreen extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.only(top: 8, right: 12),
                   child: IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 26, color: Color(0xFF64748B)),
+                    icon: const Icon(Icons.close_rounded,
+                        size: 26, color: Color(0xFF64748B)),
                     onPressed: () => _handleClose(context),
                   ),
                 ),
@@ -59,7 +62,8 @@ class PaymentSuccessScreen extends StatelessWidget {
 
               Expanded(
                 child: SingleChildScrollView(
-                  padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 24.0, vertical: 8.0),
                   child: Column(
                     children: [
                       const SizedBox(height: 10),
@@ -71,7 +75,8 @@ class PaymentSuccessScreen extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: const Color(0xFFE5F7F8),
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFFC5EFF3), width: 3),
+                          border: Border.all(
+                              color: const Color(0xFFC5EFF3), width: 3),
                         ),
                         child: Center(
                           child: Container(
@@ -147,7 +152,8 @@ class PaymentSuccessScreen extends StatelessWidget {
                                   ),
                                 ),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
                                   decoration: BoxDecoration(
                                     color: const Color(0xFFDCFCE7),
                                     borderRadius: BorderRadius.circular(6),
@@ -179,8 +185,10 @@ class PaymentSuccessScreen extends StatelessWidget {
                             _buildReceiptRow('Plan / Service', itemTitle),
 
                             // Payment Method
-                            if (paymentMethod != null && paymentMethod!.isNotEmpty)
-                              _buildReceiptRow('Payment Method', _formatMethod(paymentMethod!)),
+                            if (paymentMethod != null &&
+                                paymentMethod!.isNotEmpty)
+                              _buildReceiptRow('Payment Method',
+                                  _formatMethod(paymentMethod!)),
 
                             // Date & Time
                             _buildReceiptRow('Date & Time', nowFormatted),
@@ -204,7 +212,8 @@ class PaymentSuccessScreen extends StatelessWidget {
 
               // Bottom Actions
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 16.0),
                 child: Column(
                   children: [
                     SizedBox(
@@ -281,11 +290,12 @@ class PaymentSuccessScreen extends StatelessWidget {
   }
 
   Widget _buildReceiptRow(String label, String value) {
+    final isGooglePay = value.contains('Google Pay');
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Text(
             label,
@@ -297,14 +307,27 @@ class PaymentSuccessScreen extends StatelessWidget {
           ),
           const SizedBox(width: 16),
           Flexible(
-            child: Text(
-              value,
-              style: GoogleFonts.dmSans(
-                fontSize: 13.5,
-                fontWeight: FontWeight.w600,
-                color: const Color(0xFF0F172A),
-              ),
-              textAlign: TextAlign.end,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isGooglePay) ...[
+                  SvgPicture.asset(
+                    'assets/images/google_pay_mark.svg',
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
+                  const SizedBox(width: 6),
+                ],
+                Text(
+                  value,
+                  style: GoogleFonts.dmSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF0F172A),
+                  ),
+                  textAlign: TextAlign.end,
+                ),
+              ],
             ),
           ),
         ],

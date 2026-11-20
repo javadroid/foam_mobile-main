@@ -5,7 +5,7 @@ import 'package:foam_mobile/core/services/foam_payment_service.dart';
 
 void main() {
   testWidgets(
-      'FoamPaymentSheet renders brand-compliant Google Pay Mark and button',
+      'FoamPaymentSheet renders brand-compliant Google Pay Mark and navigates to summary',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
@@ -28,7 +28,30 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Google Pay'), findsWidgets);
+    // Step 1: Payment Method selection view
+    expect(find.text('Choose Payment Method'), findsOneWidget);
+    expect(find.text('Google Pay'), findsOneWidget);
+    expect(find.text('Apple Pay'), findsOneWidget);
+    expect(find.text('Paystack Checkout'), findsOneWidget);
+
+    // Verify marked items are NOT on the methods view
+    expect(find.text('Total Payable'), findsNothing);
+
+    // Step 2: Tap Google Pay to navigate to Order Summary
+    await tester.tap(find.text('Google Pay'));
+    await tester.pumpAndSettle();
+
+    // Verify Order Summary screen
+    expect(find.text('Order Summary'), findsOneWidget);
+    expect(find.text('Standard Plan (Pro)'), findsOneWidget);
+    expect(find.text('Total Payable'), findsOneWidget);
+    expect(find.text('CHANGE'), findsOneWidget);
+    expect(find.text('Pay with '), findsOneWidget);
+
+    // Step 3: Tap CHANGE to go back to methods view
+    await tester.tap(find.text('CHANGE'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Choose Payment Method'), findsOneWidget);
   });
 }
