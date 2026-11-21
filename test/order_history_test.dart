@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/core/Screens/history/model/order.dart';
+import 'package:foam_mobile/core/Screens/history/order_details_screen.dart';
 import 'package:foam_mobile/widgets/history_widget.dart';
 
 void main() {
@@ -184,6 +185,54 @@ void main() {
       expect(find.text('Order #FM-90B180EB'), findsOneWidget);
       expect(find.text('Washing'), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+    });
+
+    testWidgets('OrderDetailsScreen renders the 4 stages from pickup leg screen', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrderDetailsScreen(order: pendingOrder),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order Progression'), findsOneWidget);
+      expect(find.text('Order Placed'), findsOneWidget);
+      expect(find.text('Picked Up'), findsOneWidget);
+      expect(find.text('At Store / Washing'), findsOneWidget);
+      expect(find.text('Out for Delivery'), findsOneWidget);
+      expect(find.text('3 stages left'), findsOneWidget);
+      expect(find.text('Rider heading to pick up laundry'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+    });
+
+    testWidgets('OrderDetailsScreen renders washing stage and completed state properly', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrderDetailsScreen(order: washingOrder),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 stages left'), findsOneWidget);
+      expect(find.text('Washing & processing at Laundry Store'), findsOneWidget);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: OrderDetailsScreen(order: completedOrder),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Order completed!'), findsOneWidget);
+      expect(find.text('Delivered to your address'), findsOneWidget);
 
       await tester.pump(const Duration(milliseconds: 100));
       await tester.pump();
