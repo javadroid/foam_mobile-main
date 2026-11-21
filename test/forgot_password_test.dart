@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/feature/authentication/controller/provider/authprovider.dart';
 import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/create_new_password.dart';
 import 'package:foam_mobile/feature/authentication/view/forgot_password_pages/forgot_email_page.dart';
@@ -9,6 +10,11 @@ import 'package:foam_mobile/theme/theme_main_provider.dart';
 import 'package:provider/provider.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   testWidgets('ForgotPasswordEmail renders correctly without crashing or overflowing', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
@@ -41,6 +47,7 @@ void main() {
     expect(scaffold.backgroundColor, Colors.white);
     expect(find.text('Forgot Password'), findsOneWidget);
     expect(find.text('Send Verification Code'), findsOneWidget);
+    await tester.pump(const Duration(milliseconds: 100));
   });
 
   testWidgets('ForgotPasswordNumber renders correctly without crashing', (tester) async {

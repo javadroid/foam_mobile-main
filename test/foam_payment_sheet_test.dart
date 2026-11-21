@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:foam_mobile/widgets/foam_payment_sheet.dart';
 import 'package:foam_mobile/core/services/foam_payment_service.dart';
 
 void main() {
+  setUpAll(() {
+    TestWidgetsFlutterBinding.ensureInitialized();
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   testWidgets(
       'FoamPaymentSheet renders brand-compliant Google Pay Mark and navigates to summary',
       (WidgetTester tester) async {
