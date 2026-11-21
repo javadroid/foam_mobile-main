@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    tags:
+      - 'testflight-*'
+      - 'v*'
   workflow_dispatch:
     inputs:
       upload_to_testflight:
@@ -24,6 +27,21 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Check Required Secrets
+        run: |
+          MISSING=""
+          if [ -z "${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}" ]; then MISSING="$MISSING IOS_DISTRIBUTION_CERTIFICATE_BASE64"; fi
+          if [ -z "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" ]; then MISSING="$MISSING IOS_CERTIFICATE_PASSWORD"; fi
+          if [ -z "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_API_KEY_ID"; fi
+          if [ -z "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"; fi
+          if [ -z "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_PRIVATE_KEY"; fi
+
+          if [ -n "$MISSING" ]; then
+            echo "::error::The following required GitHub Actions secrets are missing:$MISSING"
+            echo "Please configure them under GitHub Repository Settings -> Secrets and variables -> Actions."
+            exit 1
+          fi
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
@@ -57,11 +75,6 @@ jobs:
           BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.IOS_PROVISION_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD || 'foamTemporaryKeychainPass2026' }}
         run: |
-          if [ -z "$BUILD_CERTIFICATE_BASE64" ]; then
-            echo "::error ::Secret IOS_DISTRIBUTION_CERTIFICATE_BASE64 is required to build a signed iOS IPA."
-            exit 1
-          fi
-
           CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
 
@@ -80,16 +93,27 @@ jobs:
           # Install provisioning profile if provided
           if [ -n "$BUILD_PROVISION_PROFILE_BASE64" ]; then
             PROFILES_DIR="$HOME/Library/MobileDevice/Provisioning Profiles"
-            mkdir -p "$PROFILES_DIR"
-            PROFILE_PATH="$PROFILES_DIR/build_profile.mobileprovision"
-            echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PROFILE_PATH"
-            echo "Installed provisioning profile to $PROFILE_PATH"
+            PROFILES_DIR_XCODE16="$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+            mkdir -p "$PROFILES_DIR" "$PROFILES_DIR_XCODE16"
+            TEMP_PROFILE="$RUNNER_TEMP/temp_profile.mobileprovision"
+            echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$TEMP_PROFILE"
+
+            UUID=$(/usr/libexec/PlistBuddy -c 'Print :UUID' /dev/stdin <<< $(security cms -D -i "$TEMP_PROFILE") 2>/dev/null || true)
+            if [ -n "$UUID" ]; then
+              cp "$TEMP_PROFILE" "$PROFILES_DIR/$UUID.mobileprovision"
+              cp "$TEMP_PROFILE" "$PROFILES_DIR_XCODE16/$UUID.mobileprovision" 2>/dev/null || true
+              echo "Installed provisioning profile with UUID: $UUID"
+            else
+              cp "$TEMP_PROFILE" "$PROFILES_DIR/build_profile.mobileprovision"
+              cp "$TEMP_PROFILE" "$PROFILES_DIR_XCODE16/build_profile.mobileprovision" 2>/dev/null || true
+              echo "Installed default provisioning profile"
+            fi
           fi
 
       - name: Determine Version & Dynamic Build Number
         id: versioning
         run: |
-          BUILD_NUMBER=$((10 + GITHUB_RUN_NUMBER))
+          BUILD_NUMBER=$((100 + GITHUB_RUN_NUMBER))
           echo "build_number=$BUILD_NUMBER" >> $GITHUB_OUTPUT
           echo "Building iOS with build number: $BUILD_NUMBER"
 
@@ -127,6 +151,17 @@ jobs:
             --build-number=${{ steps.versioning.outputs.build_number }} \
             --export-options-plist=ios/ExportOptions.plist
 
+      - name: Locate Generated IPA
+        id: locate-ipa
+        run: |
+          IPA_PATH=$(find build/ios/ipa -type f -name "*.ipa" | head -n 1)
+          if [ -z "$IPA_PATH" ]; then
+            echo "::error::No .ipa file found in build/ios/ipa!"
+            exit 1
+          fi
+          echo "Found IPA: $IPA_PATH"
+          echo "ipa_path=$IPA_PATH" >> $GITHUB_OUTPUT
+
       - name: Upload IPA Artifact to GitHub
         uses: actions/upload-artifact@v4
         with:
@@ -136,23 +171,13 @@ jobs:
           retention-days: 30
 
       - name: Upload to TestFlight / App Store Connect
-        if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight == 'true') && env.APP_STORE_CONNECT_PRIVATE_KEY != '' }}
-        env:
-          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          APP_STORE_CONNECT_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-        run: |
-          API_KEY_PATH="$RUNNER_TEMP/AuthKey_${APP_STORE_CONNECT_API_KEY_ID}.p8"
-          echo -n "$APP_STORE_CONNECT_PRIVATE_KEY" > "$API_KEY_PATH"
-
-          IPA_PATH=$(find build/ios/ipa -name "*.ipa" | head -n 1)
-          echo "Uploading $IPA_PATH to App Store Connect..."
-
-          xcrun altool --upload-app \
-            --type ios \
-            --file "$IPA_PATH" \
-            --apiKey "$APP_STORE_CONNECT_API_KEY_ID" \
-            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID"
+        if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight != 'false') && secrets.APP_STORE_CONNECT_API_KEY_ID != '' }}
+        uses: apple-actions/upload-testflight-build@v5
+        with:
+          app-path: ${{ steps.locate-ipa.outputs.ipa_path }}
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
 
       - name: Clean up Temporary Keychain
         if: always()
