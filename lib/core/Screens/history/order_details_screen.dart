@@ -40,51 +40,49 @@ class OrderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     debugPrint("order is here: ${order.toJson()}");
-    int activeIndex = 0;
     final upperStatus = order.status.toUpperCase();
     final upperVendorStatus = (order.vendorStatus ?? '').toUpperCase();
-    if (upperStatus == 'ACCEPTED' || upperVendorStatus == 'ACCEPTED') {
-      activeIndex = 1;
+
+    // Map order status & vendor status to stage matching 08_pickup_leg_screen
+    String stage;
+    if (upperStatus == 'COMPLETED' ||
+        upperStatus == 'DELIVERED' ||
+        upperVendorStatus == 'COMPLETED' ||
+        upperVendorStatus == 'DELIVERED') {
+      stage = 'DELIVERED';
+    } else if (upperStatus == 'OUT_FOR_DELIVERY' ||
+        upperVendorStatus == 'OUT_FOR_DELIVERY') {
+      stage = 'OUT_FOR_DELIVERY';
     } else if (upperStatus == 'ONGOING' ||
         upperStatus == 'IN_PROGRESS' ||
+        upperStatus == 'READY' ||
         upperVendorStatus == 'RECEIVED_AT_STORE' ||
-        upperVendorStatus == 'WASHING') {
-      activeIndex = 2;
-    } else if (upperStatus == 'READY' ||
-        upperStatus == 'OUT_FOR_DELIVERY' ||
+        upperVendorStatus == 'WASHING' ||
         upperVendorStatus == 'READY' ||
-        upperVendorStatus == 'OUT_FOR_DELIVERY') {
-      activeIndex = 3;
-    } else if (upperStatus == 'COMPLETED' ||
-        upperStatus == 'DELIVERED' ||
-        upperVendorStatus == 'COMPLETED') {
-      activeIndex = 4;
+        upperVendorStatus == 'AT_STORE') {
+      stage = 'AT_STORE';
+    } else if (upperVendorStatus == 'PICKED_UP') {
+      stage = 'PICKED_UP';
+    } else {
+      // PENDING, ACCEPTED, NEW, EN_ROUTE_TO_STORE
+      stage = 'EN_ROUTE_TO_STORE';
     }
 
-    final List<Map<String, String>> stages = [
-      {
-        'title': 'Order Placed',
-        'description': 'You have successfully placed your order',
-      },
-      {
-        'title': 'Order Received',
-        'description': "We've got your laundry!",
-      },
-      {
-        'title': 'Order In Progress',
-        'description': 'Picked up and being washed & cared for',
-      },
-      {
-        'title': 'Ready for Delivery',
-        'description': 'Washed, dried, packaged & ready to go',
-      },
-      {
-        'title': 'Order Delivered',
-        'description': 'Back in your hands, fresh and clean',
-      },
-    ];
+    final storeName = (order.storeName != null && order.storeName!.trim().isNotEmpty)
+        ? order.storeName!
+        : 'Laundry Store';
 
-    int stagesLeft = 4 - activeIndex;
+    int stagesLeft = 0;
+    if (stage == 'EN_ROUTE_TO_STORE') {
+      stagesLeft = 3;
+    } else if (stage == 'PICKED_UP' || stage == 'AT_STORE') {
+      stagesLeft = 2;
+    } else if (stage == 'OUT_FOR_DELIVERY') {
+      stagesLeft = 1;
+    } else if (stage == 'DELIVERED') {
+      stagesLeft = 0;
+    }
+
     String headerText = stagesLeft > 0
         ? '$stagesLeft stage${stagesLeft > 1 ? 's' : ''} left'
         : 'Order completed!';
@@ -206,123 +204,127 @@ class OrderDetailsScreen extends StatelessWidget {
                   ),
                   AppSpaces.verticalSpace20,
                 ] else ...[
-                  // Tracker Title
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 12.0),
-                    child: Text(
-                      headerText,
-                      style: GoogleFonts.dmSans(
-                        fontSize: 13,
-                        color: const Color(0xFF64748B),
-                        fontWeight: FontWeight.w600,
-                      ),
+                  // Progress Stepper Card matching 08_pickup_leg_screen
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: const [
+                        BoxShadow(
+                          color: Color(0x0D000000),
+                          blurRadius: 16,
+                          offset: Offset(0, 4),
+                        ),
+                      ],
+                      border: Border.all(color: const Color(0xFFF1F5F9)),
                     ),
-                  ),
-                  // Tracker Stages
-                  Column(
-                    children: List.generate(stages.length, (index) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Vertical Line & Node Stack
-                          SizedBox(
-                            width: 30,
-                            height: 60,
-                            child: Stack(
-                              alignment: Alignment.topCenter,
-                              children: [
-                                if (index < stages.length - 1)
-                                  Positioned(
-                                    top: 10,
-                                    bottom: 0,
-                                    child: Container(
-                                      width: 2.5,
-                                      color: index < activeIndex
-                                          ? AppColors.primaryAccentColor
-                                          : Colors.grey[200],
-                                    ),
-                                  ),
-                                Positioned(
-                                  top: 0,
-                                  child: Container(
-                                    width: 20,
-                                    height: 20,
-                                    decoration: BoxDecoration(
-                                      color: index <= activeIndex
-                                          ? AppColors.primaryAccentColor
-                                          : Colors.transparent,
-                                      shape: BoxShape.circle,
-                                      border: Border.all(
-                                        color: index <= activeIndex
-                                            ? AppColors.primaryAccentColor
-                                            : Colors.grey[300]!,
-                                        width: index <= activeIndex ? 0 : 2,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Stage Details
-                          Expanded(
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 12.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    stages[index]['title']!,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      color: index <= activeIndex
-                                          ? Colors.black87
-                                          : Colors.grey[400],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    stages[index]['description']!,
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: index <= activeIndex
-                                          ? Colors.black54
-                                          : Colors.grey[400],
-                                    ),
-                                  ),
-                                ],
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Order Progression',
+                              style: GoogleFonts.dmSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: const Color(0xFF1F2937),
                               ),
                             ),
-                          ),
-                          // Timestamp
-                          Text(
-                            index == 0
-                                ? DateFormat('h:mm a').format(order.createdAt)
-                                : (index <= activeIndex ? '✓' : '-'),
-                            style: TextStyle(
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: stage == 'DELIVERED'
+                                    ? const Color(0xFFECFDF5)
+                                    : const Color(0xFFE5F7F8),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                headerText,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: stage == 'DELIVERED'
+                                      ? const Color(0xFF059669)
+                                      : const Color(0xFF00AABC),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        _buildStepperStep(
+                          title: 'Order Placed',
+                          subtitle: 'Order confirmed and registered',
+                          isDone: true,
+                          isActive: false,
+                          trailing: Text(
+                            DateFormat('h:mm a').format(order.createdAt),
+                            style: GoogleFonts.dmSans(
                               fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: index <= activeIndex
-                                  ? AppColors.primaryAccentColor
-                                  : Colors.grey[400],
+                              color: const Color(0xFF6B7280),
+                              fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ],
-                      );
-                    }),
+                        ),
+                        _buildStepperConnector(
+                            isDone: stage != 'EN_ROUTE_TO_STORE'),
+                        _buildStepperStep(
+                          title: 'Picked Up',
+                          subtitle: stage == 'EN_ROUTE_TO_STORE'
+                              ? 'Rider heading to pick up laundry'
+                              : 'Laundry collected from address',
+                          isDone: stage != 'EN_ROUTE_TO_STORE',
+                          isActive: stage == 'EN_ROUTE_TO_STORE' ||
+                              stage == 'PICKED_UP',
+                        ),
+                        _buildStepperConnector(
+                          isDone: stage == 'AT_STORE' ||
+                              stage == 'OUT_FOR_DELIVERY' ||
+                              stage == 'DELIVERED',
+                        ),
+                        _buildStepperStep(
+                          title: 'At Store / Washing',
+                          subtitle: stage == 'AT_STORE'
+                              ? 'Washing & processing at $storeName'
+                              : (stage == 'OUT_FOR_DELIVERY' ||
+                                      stage == 'DELIVERED'
+                                  ? 'Cleaned and packed'
+                                  : 'Waiting to arrive at store'),
+                          isDone: stage == 'OUT_FOR_DELIVERY' ||
+                              stage == 'DELIVERED',
+                          isActive: stage == 'AT_STORE',
+                        ),
+                        _buildStepperConnector(isDone: stage == 'DELIVERED'),
+                        _buildStepperStep(
+                          title: 'Out for Delivery',
+                          subtitle: stage == 'OUT_FOR_DELIVERY'
+                              ? 'Rider dispatched with clean clothes'
+                              : (stage == 'DELIVERED'
+                                  ? 'Delivered to your address'
+                                  : 'Live GPS tracking will unlock here'),
+                          isDone: stage == 'DELIVERED',
+                          isActive: stage == 'OUT_FOR_DELIVERY',
+                          isGatedLock: stage != 'OUT_FOR_DELIVERY' &&
+                              stage != 'DELIVERED',
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 14),
                   // Live Tracking Action Button
                   SizedBox(
                     width: double.infinity,
-                    height: 46,
+                    height: 48,
                     child: ElevatedButton.icon(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryAccentColor,
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
+                          borderRadius: BorderRadius.circular(12),
                         ),
                       ),
                       onPressed: () {
@@ -333,9 +335,14 @@ class OrderDetailsScreen extends StatelessWidget {
                           ),
                         );
                       },
-                      icon: const Icon(Icons.near_me_outlined, color: Colors.white, size: 18),
+                      icon: const Icon(Icons.near_me_outlined,
+                          color: Colors.white, size: 18),
                       label: Text(
-                        'Live Tracking & Stepper',
+                        stage == 'DELIVERED'
+                            ? 'View Delivery Summary'
+                            : (stage == 'OUT_FOR_DELIVERY'
+                                ? 'Track Live Delivery'
+                                : 'Track Order Progress'),
                         style: GoogleFonts.dmSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -629,5 +636,95 @@ class OrderDetailsScreen extends StatelessWidget {
       ),
     ),
   );
+  }
+
+  Widget _buildStepperStep({
+    required String title,
+    required String subtitle,
+    required bool isDone,
+    required bool isActive,
+    bool isGatedLock = false,
+    Widget? trailing,
+  }) {
+    Color iconBg;
+    Color iconColor;
+    IconData icon;
+
+    if (isDone) {
+      iconBg = const Color(0xFF00AABC);
+      iconColor = Colors.white;
+      icon = Icons.check_rounded;
+    } else if (isActive) {
+      iconBg = const Color(0xFFE5F7F8);
+      iconColor = const Color(0xFF00AABC);
+      icon = Icons.radio_button_checked_rounded;
+    } else if (isGatedLock) {
+      iconBg = const Color(0xFFF3F4F6);
+      iconColor = const Color(0xFF9CA3AF);
+      icon = Icons.lock_outline_rounded;
+    } else {
+      iconBg = const Color(0xFFF3F4F6);
+      iconColor = const Color(0xFF9CA3AF);
+      icon = Icons.radio_button_unchecked_rounded;
+    }
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: iconBg,
+            shape: BoxShape.circle,
+            border: isActive
+                ? Border.all(color: const Color(0xFF00AABC), width: 2)
+                : null,
+          ),
+          child: Center(
+            child: Icon(icon, color: iconColor, size: 18),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.dmSans(
+                  fontSize: 14,
+                  fontWeight:
+                      (isDone || isActive) ? FontWeight.w700 : FontWeight.w500,
+                  color: (isDone || isActive)
+                      ? const Color(0xFF1F2937)
+                      : const Color(0xFF9CA3AF),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: GoogleFonts.dmSans(
+                  fontSize: 12,
+                  color: const Color(0xFF6B7280),
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (trailing != null) trailing,
+      ],
+    );
+  }
+
+  Widget _buildStepperConnector({required bool isDone}) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 15),
+      child: Container(
+        width: 2,
+        height: 20,
+        color: isDone ? const Color(0xFF00AABC) : const Color(0xFFE5E7EB),
+      ),
+    );
   }
 }
