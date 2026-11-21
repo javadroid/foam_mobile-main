@@ -284,7 +284,7 @@ class VendorManageStoreScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Include Folding Service',
+                            'Skip Folding',
                             style: GoogleFonts.dmSans(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,

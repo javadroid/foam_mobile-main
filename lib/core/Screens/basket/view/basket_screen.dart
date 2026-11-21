@@ -315,7 +315,7 @@ class _BasketScreenState extends State<BasketScreen> {
                                               CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              'Include folding?',
+                                              'Skip folding?',
                                               style: GoogleFonts.dmSans(
                                                 fontSize: 15,
                                                 fontWeight: FontWeight.w700,
