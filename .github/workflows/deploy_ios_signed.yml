@@ -1,12 +1,6 @@
 name: Deploy Signed iOS to App Store / TestFlight
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'testflight-*'
-      - 'v*'
   workflow_dispatch:
     inputs:
       upload_to_testflight:
@@ -29,6 +23,16 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Select Latest Xcode & iOS SDK
+        run: |
+          LATEST_XCODE=$(find /Applications -maxdepth 1 -name "Xcode*.app" | sort -V | tail -n 1)
+          if [ -n "$LATEST_XCODE" ]; then
+            echo "Selecting $LATEST_XCODE"
+            sudo xcode-select -s "$LATEST_XCODE/Contents/Developer"
+          fi
+          echo "Active Xcode version:"
+          xcodebuild -version
 
       - name: Check Required Secrets
         env:
