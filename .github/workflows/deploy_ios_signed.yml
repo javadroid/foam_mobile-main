@@ -189,13 +189,28 @@ jobs:
 
       - name: Upload to TestFlight / App Store Connect
         if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight != 'false') && env.HAVE_APP_STORE_KEY != '' }}
-        uses: apple-actions/upload-testflight-build@v5
-        with:
-          app-path: ${{ steps.locate-ipa.outputs.ipa_path }}
-          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
-          api-key-id: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
-          api-private-key: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
-          backend: altool
+        env:
+          APP_STORE_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          IPA_PATH: ${{ steps.locate-ipa.outputs.ipa_path }}
+        run: |
+          echo "Setting up App Store Connect API Key for xcrun altool..."
+          mkdir -p ~/.appstoreconnect/private_keys ~/.private_keys
+          echo "$APP_STORE_PRIVATE_KEY" > ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_KEY_ID}.p8
+          cp ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_KEY_ID}.p8 ~/.private_keys/AuthKey_${APP_STORE_KEY_ID}.p8
+
+          echo "Uploading $IPA_PATH to Apple TestFlight via xcrun altool..."
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA_PATH" \
+            --apiKey "$APP_STORE_KEY_ID" \
+            --apiIssuer "$APP_STORE_ISSUER_ID" \
+            --show-progress
+
+          echo "Cleaning up App Store Connect API keys..."
+          rm -f ~/.appstoreconnect/private_keys/AuthKey_${APP_STORE_KEY_ID}.p8 ~/.private_keys/AuthKey_${APP_STORE_KEY_ID}.p8
+          echo "🎉 Successfully uploaded IPA to Apple TestFlight!"
 
       - name: Clean up Temporary Keychain
         if: always()
