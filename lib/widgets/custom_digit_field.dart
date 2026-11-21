@@ -22,55 +22,65 @@ class _CustomTextFieldState extends State<CustomDigitField> {
     return Form(
       child: Padding(
         padding: const EdgeInsets.symmetric(
-          horizontal: 20,
-          vertical: 20,
+          horizontal: 16,
+          vertical: 16,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: List.generate(
-            widget.controllers.length,
-            (index) => SizedBox(
-              height: MediaQuery.sizeOf(context).height / 13,
-              width: MediaQuery.sizeOf(context).width / (widget.controllers.length + 2),
-              child: TextField(
-                controller: widget.controllers[index],
-                onChanged: (value) {
-                  if (value.length == 1 && index < widget.controllers.length - 1) {
-                    FocusScope.of(context).nextFocus();
-                  } else if (value.isEmpty && index > 0) {
-                    FocusScope.of(context).previousFocus();
-                  }
-                },
-                decoration: InputDecoration(
-                  contentPadding: EdgeInsets.zero,
-                  hintText: widget.hintText,
-                  enabledBorder: OutlineInputBorder(
-                    borderSide: const BorderSide(color: Colors.transparent),
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(MediaQuery.sizeOf(context).width / 25),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double itemWidth =
+                (constraints.maxWidth / (widget.controllers.length + 0.8))
+                    .clamp(32.0, 52.0);
+            final double itemHeight =
+                (MediaQuery.sizeOf(context).height / 13).clamp(48.0, 60.0);
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: List.generate(
+                widget.controllers.length,
+                (index) => SizedBox(
+                  height: itemHeight,
+                  width: itemWidth,
+                  child: TextField(
+                    controller: widget.controllers[index],
+                    onChanged: (value) {
+                      if (value.length == 1 &&
+                          index < widget.controllers.length - 1) {
+                        FocusScope.of(context).nextFocus();
+                      } else if (value.isEmpty && index > 0) {
+                        FocusScope.of(context).previousFocus();
+                      }
+                    },
+                    decoration: InputDecoration(
+                      contentPadding: EdgeInsets.zero,
+                      hintText: widget.hintText,
+                      enabledBorder: OutlineInputBorder(
+                        borderSide: const BorderSide(color: Colors.transparent),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(itemWidth / 4),
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderSide: BorderSide(
+                          color: AppColors.primaryAccentColor,
+                        ),
+                        borderRadius: BorderRadius.all(
+                          Radius.circular(itemWidth / 4),
+                        ),
+                      ),
+                      fillColor: AppColors.fadeBlueAccentColor,
+                      filled: true,
                     ),
+                    style: Constants.headingStyle.copyWith(fontSize: 20),
+                    keyboardType: TextInputType.number,
+                    textAlign: TextAlign.center,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(1),
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderSide: BorderSide(
-                      color: AppColors.primaryAccentColor,
-                    ),
-                    borderRadius: BorderRadius.all(
-                      Radius.circular(MediaQuery.sizeOf(context).width / 25),
-                    ),
-                  ),
-                  fillColor: AppColors.fadeBlueAccentColor,
-                  filled: true,
                 ),
-                style: Constants.headingStyle.copyWith(fontSize: 20),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                inputFormatters: [
-                  LengthLimitingTextInputFormatter(1),
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );

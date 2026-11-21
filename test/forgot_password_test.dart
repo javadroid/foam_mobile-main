@@ -18,7 +18,6 @@ void main() {
   testWidgets('ForgotPasswordEmail renders correctly without crashing or overflowing', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
-    addTearDown(tester.view.resetPhysicalSize);
 
     final themeProvider = ThemeProvider();
     final authProvider = AuthProvider();
@@ -29,14 +28,8 @@ void main() {
           ChangeNotifierProvider<ThemeProvider>.value(value: themeProvider),
           ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ],
-        child: Builder(
-          builder: (context) {
-            themeProvider.height = MediaQuery.sizeOf(context).height;
-            themeProvider.width = MediaQuery.sizeOf(context).width;
-            return const MaterialApp(
-              home: ForgotPasswordEmail(),
-            );
-          },
+        child: const MaterialApp(
+          home: ForgotPasswordEmail(),
         ),
       ),
     );
@@ -47,13 +40,15 @@ void main() {
     expect(scaffold.backgroundColor, Colors.white);
     expect(find.text('Forgot Password'), findsOneWidget);
     expect(find.text('Send Verification Code'), findsOneWidget);
-    await tester.pump(const Duration(milliseconds: 100));
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await tester.pump();
   });
 
   testWidgets('ForgotPasswordNumber renders correctly without crashing', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
-    addTearDown(tester.view.resetPhysicalSize);
 
     final themeProvider = ThemeProvider();
     final authProvider = AuthProvider();
@@ -73,12 +68,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Forgot Password'), findsOneWidget);
     expect(find.text('Send Verification Code'), findsOneWidget);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await tester.pump();
   });
 
   testWidgets('VerificationScreen renders correctly in forgot password mode', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
-    addTearDown(tester.view.resetPhysicalSize);
 
     final themeProvider = ThemeProvider();
     final authProvider = AuthProvider();
@@ -90,20 +88,27 @@ void main() {
           ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ],
         child: const MaterialApp(
-          home: VerificationScreen(isForgotPassword: true, email: 'user@test.com'),
+          home: VerificationScreen(
+            isForgotPassword: true,
+            email: 'user@test.com',
+          ),
         ),
       ),
     );
 
     await tester.pumpAndSettle();
+
     expect(find.text('Verify Your Identity'), findsOneWidget);
     expect(find.text('Continue to Reset'), findsOneWidget);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await tester.pump();
   });
 
   testWidgets('CreateNewPassword renders correctly without crashing', (tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.75;
-    addTearDown(tester.view.resetPhysicalSize);
 
     final themeProvider = ThemeProvider();
     final authProvider = AuthProvider();
@@ -115,13 +120,21 @@ void main() {
           ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ],
         child: const MaterialApp(
-          home: CreateNewPassword(email: 'user@test.com', otp: '123456'),
+          home: CreateNewPassword(
+            email: 'user@test.com',
+            otp: '123456',
+          ),
         ),
       ),
     );
 
     await tester.pumpAndSettle();
+
     expect(find.text('Create New Password'), findsOneWidget);
     expect(find.text('Update Password'), findsOneWidget);
+
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
+    await tester.pump();
   });
 }

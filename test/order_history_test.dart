@@ -42,7 +42,7 @@ void main() {
       userId: 'user1',
       status: 'ONGOING',
       vendorStatus: 'WASHING',
-      totalPrice: 4000,
+      totalPrice: 4200,
       paymentType: 'CARD',
       paymentId: 'pay_3',
       paymentStatus: 'PAID',
@@ -71,7 +71,7 @@ void main() {
       totalPrice: 1500,
       paymentType: 'CARD',
       paymentId: 'pay_5',
-      paymentStatus: 'FAILED',
+      paymentStatus: 'PAID',
       createdAt: DateTime.now(),
       items: [],
     );
@@ -147,7 +147,9 @@ void main() {
       expect(find.text('Order #FM-101'), findsOneWidget);
       expect(find.text('Pending'), findsOneWidget);
       expect(find.text('Track'), findsOneWidget);
+
       await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
     });
 
     testWidgets('HistoryWidget formats 36-char UUID into clean FM-XXXXXXXX and does not overflow', (tester) async {
@@ -177,10 +179,14 @@ void main() {
           ),
         ),
       );
+      await tester.pumpAndSettle();
 
       expect(find.text('Order #FM-90B180EB'), findsOneWidget);
       expect(find.text('Washing'), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
     });
   });
 }
