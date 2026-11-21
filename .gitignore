@@ -54,3 +54,11 @@ app.*.map.json
 
 # Environment config
 .env
+
+# iOS Code Signing Keys & Secrets
+ios_signing_keys/
+*.p12
+*.key
+*.mobileprovision
+*.p8
+
