@@ -505,24 +505,6 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                           fontSize: 15, fontWeight: FontWeight.w700),
                     ),
                   ),
-
-                  const SizedBox(height: 12),
-
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pushNamed(context, CustomerAtStoreScreen.id);
-                    },
-                    icon: const Icon(Icons.local_laundry_service_outlined,
-                        color: Color(0xFF00AABC), size: 18),
-                    label: Text(
-                      'View Store Washing Details',
-                      style: GoogleFonts.dmSans(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: const Color(0xFF00AABC),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -925,26 +907,6 @@ class _ScheduleTrackingScreenState extends State<ScheduleTrackingScreen> {
                   ),
 
                   const SizedBox(height: 14),
-
-                  // Simulate / view store progress button
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton.icon(
-                      onPressed: () {
-                        Navigator.pushNamed(context, CustomerAtStoreScreen.id);
-                      },
-                      icon: const Icon(Icons.arrow_forward_rounded,
-                          color: Color(0xFF00AABC), size: 16),
-                      label: Text(
-                        'View Store Washing Status',
-                        style: GoogleFonts.dmSans(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w700,
-                          color: const Color(0xFF00AABC),
-                        ),
-                      ),
-                    ),
-                  ),
                 ],
               ),
             ),
