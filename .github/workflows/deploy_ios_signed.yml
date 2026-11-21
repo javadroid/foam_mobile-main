@@ -23,19 +23,27 @@ jobs:
   deploy-signed-ios:
     name: Build & Sign iOS for App Store
     runs-on: macos-latest
+    env:
+      HAVE_APP_STORE_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
       - name: Check Required Secrets
+        env:
+          CERT_B64: ${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}
+          CERT_PASS: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
         run: |
           MISSING=""
-          if [ -z "${{ secrets.IOS_DISTRIBUTION_CERTIFICATE_BASE64 }}" ]; then MISSING="$MISSING IOS_DISTRIBUTION_CERTIFICATE_BASE64"; fi
-          if [ -z "${{ secrets.IOS_CERTIFICATE_PASSWORD }}" ]; then MISSING="$MISSING IOS_CERTIFICATE_PASSWORD"; fi
-          if [ -z "${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_API_KEY_ID"; fi
-          if [ -z "${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"; fi
-          if [ -z "${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}" ]; then MISSING="$MISSING APP_STORE_CONNECT_PRIVATE_KEY"; fi
+          if [ -z "$CERT_B64" ]; then MISSING="$MISSING IOS_DISTRIBUTION_CERTIFICATE_BASE64"; fi
+          if [ -z "$CERT_PASS" ]; then MISSING="$MISSING IOS_CERTIFICATE_PASSWORD"; fi
+          if [ -z "$KEY_ID" ]; then MISSING="$MISSING APP_STORE_CONNECT_API_KEY_ID"; fi
+          if [ -z "$ISSUER_ID" ]; then MISSING="$MISSING APP_STORE_CONNECT_ISSUER_ID"; fi
+          if [ -z "$KEY_P8" ]; then MISSING="$MISSING APP_STORE_CONNECT_PRIVATE_KEY"; fi
 
           if [ -n "$MISSING" ]; then
             echo "::error::The following required GitHub Actions secrets are missing:$MISSING"
@@ -171,7 +179,7 @@ jobs:
           retention-days: 30
 
       - name: Upload to TestFlight / App Store Connect
-        if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight != 'false') && secrets.APP_STORE_CONNECT_API_KEY_ID != '' }}
+        if: ${{ (github.event_name == 'push' || github.event.inputs.upload_to_testflight != 'false') && env.HAVE_APP_STORE_KEY != '' }}
         uses: apple-actions/upload-testflight-build@v5
         with:
           app-path: ${{ steps.locate-ipa.outputs.ipa_path }}
