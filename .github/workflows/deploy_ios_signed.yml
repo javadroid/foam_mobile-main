@@ -144,7 +144,16 @@ jobs:
               <key>destination</key>
               <string>export</string>
               <key>signingStyle</key>
-              <string>automatic</string>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
+              <key>teamID</key>
+              <string>M9TXAN6WUP</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.foamlaundry.app</key>
+                  <string>Foam App Store Profile</string>
+              </dict>
               <key>stripSwiftSymbols</key>
               <true/>
               <key>compileBitcode</key>
